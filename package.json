@@ -3,9 +3,10 @@
   "version": "1.0.0",
   "description": "Full-stack food ordering platform for Sardar Ji Food Corner",
   "scripts": {
-    "dev": "concurrently \"npm run dev --prefix server\" \"npm run dev --prefix client\"",
+    "dev": "npm run dev --prefix client",
     "build": "npm run build --prefix client",
     "preview": "npm run preview --prefix client",
+    "dev:full": "concurrently \"npm run dev --prefix server\" \"npm run dev --prefix client\"",
     "client:dev": "npm run dev --prefix client",
     "server:dev": "npm run dev --prefix server"
   },

@@ -5,7 +5,7 @@ Production-ready multi-page food ordering platform for a local food business, bu
 - React + React Router + Framer Motion
 - Node.js + Express
 - Supabase Postgres + Auth + Storage
-- Vercel-ready frontend + serverless API routing
+- Vercel-ready static frontend deployment
 
 ## Quick Start
 
@@ -13,7 +13,7 @@ Production-ready multi-page food ordering platform for a local food business, bu
 2. Copy `server/.env.example` to `server/.env`
 3. Fill in the Supabase keys for your project
 4. Run `npm run dev`
-5. Seed the demo users with `npm run seed:supabase-demo --prefix server`
+5. For full-stack local work, seed the demo users with `npm run seed:supabase-demo --prefix server`
 
 Frontend: `http://localhost:5173`
 
@@ -27,9 +27,10 @@ Backend: `http://localhost:5000`
 
 ## Root Scripts
 
-- `npm run dev` starts client and server together
+- `npm run dev` starts the Vite frontend only
 - `npm run build` builds the production client bundle
 - `npm run preview` previews the Vite production bundle locally
+- `npm run dev:full` starts client and server together
 - `npm run client:dev` starts the Vite frontend
 - `npm run server:dev` starts the Express backend
 
@@ -42,7 +43,6 @@ Backend: `http://localhost:5000`
 
 ```text
 .
-|-- api
 |-- dist
 |-- client
 |   |-- src
@@ -74,6 +74,7 @@ Backend: `http://localhost:5000`
 ## Supabase Database
 
 The live schema is defined in `supabase/migrations/20260403_init_sardar_ji_food_corner.sql`.
+The browser deployment security patch is defined in `supabase/migrations/20260403_vercel_static_security_patch.sql`.
 
 ### Tables
 
@@ -125,7 +126,10 @@ Supabase Auth handles email/password accounts. The app stores the profile in `pu
 - `customer`
 - `delivery`
 
-The Express API validates the Supabase user at login and then issues the app JWT used by the React frontend.
+The frontend can run in two production modes:
+
+- direct Supabase mode using `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`
+- external API mode using `VITE_API_URL`
 
 ### Row-Level Security
 
@@ -137,7 +141,11 @@ RLS is enabled on all business tables. Policies cover:
 - scoped order access for customer, assigned delivery partner, and admin
 - secure storage access for product images and per-user uploads
 
-## Core API Routes
+## Optional Express API
+
+The `server/` folder is still available for local full-stack development or a separate backend deployment. The Vercel frontend deployment no longer depends on a root `/api` function to build successfully.
+
+### Core API Routes
 
 - `GET /api/products`
 - `GET /api/products/:id`
@@ -193,6 +201,8 @@ The browser-safe Supabase client is initialized in `client/src/lib/supabase.js` 
 
 The service role key remains server-only and is never exposed to the browser bundle.
 
+If `VITE_API_URL` is not set in production, the frontend automatically falls back to direct Supabase calls for storefront, auth, ordering, and admin flows that are permitted by RLS and the protected RPC functions.
+
 ## Vercel Deployment
 
 ### Vercel Build Settings
@@ -200,14 +210,14 @@ The service role key remains server-only and is never exposed to the browser bun
 - Framework preset: `Vite`
 - Build command: `npm run build`
 - Output directory: `dist`
-- Install command: `npm ci && npm ci --prefix client && npm ci --prefix server`
+- Install command: `npm ci --prefix client`
 
 ### Routing
 
 SPA refresh handling is configured in `vercel.json`:
 
-- `/api/*` stays on the Express serverless function
-- all other routes fall back to `index.html`
+- static assets are served normally
+- all client routes fall back to `index.html`
 
 ### Deploy Steps
 
@@ -215,20 +225,12 @@ SPA refresh handling is configured in `vercel.json`:
 2. Import the repository into Vercel
 3. Set the root directory to the repository root
 4. In Vercel environment variables, add:
-   - `VITE_API_URL=/api`
    - `VITE_GOOGLE_MAPS_API_KEY` if you want embedded maps
    - `VITE_SUPABASE_URL`
    - `VITE_SUPABASE_ANON_KEY`
-   - `SUPABASE_URL`
-   - `SUPABASE_ANON_KEY`
-   - `SUPABASE_SERVICE_ROLE_KEY`
-   - `SUPABASE_PRODUCT_IMAGES_BUCKET=product-images`
-   - `SUPABASE_USER_UPLOADS_BUCKET=user-uploads`
-   - `JWT_SECRET`
-   - `CLIENT_ORIGIN`
-   - `ALLOWED_ORIGINS`
+   - Optional: `VITE_API_URL` if you want the frontend to call a separately deployed backend instead of Supabase directly
 5. Deploy the project
-6. After the first deployment, update `CLIENT_ORIGIN` and `ALLOWED_ORIGINS` to your final Vercel domain or custom domain if needed
+6. If you later deploy `server/` separately, point `VITE_API_URL` at that backend URL
 
 ### Local Production Preview
 
@@ -238,6 +240,7 @@ SPA refresh handling is configured in `vercel.json`:
 
 ## Production Notes
 
+- The frontend deploys cleanly on Vercel as a static Vite app.
 - The backend now uses Supabase instead of Firebase or local JSON storage.
 - Product uploads go to Supabase Storage and fall back to category demo images when no image URL is saved.
 - The customer registration flow only creates `customer` accounts. Admin and delivery users should be seeded or created through a controlled admin flow.
