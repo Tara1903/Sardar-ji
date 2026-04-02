@@ -1,0 +1,19 @@
+{
+  "name": "sardar-ji",
+  "version": "1.0.0",
+  "description": "Full-stack food ordering platform for Sardar Ji Food Corner",
+  "scripts": {
+    "dev": "concurrently \"npm run dev --prefix server\" \"npm run dev --prefix client\"",
+    "build": "npm run build --prefix client",
+    "preview": "npm run preview --prefix client",
+    "client:dev": "npm run dev --prefix client",
+    "server:dev": "npm run dev --prefix server"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "concurrently": "^9.2.1"
+  }
+}

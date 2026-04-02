@@ -1,0 +1,124 @@
+import { lazy, Suspense } from 'react';
+import { BrowserRouter, Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom';
+import { AnimatePresence } from 'framer-motion';
+import { Navbar } from './components/layout/Navbar';
+import { Footer } from './components/layout/Footer';
+import { MobileNav } from './components/layout/MobileNav';
+import { WhatsAppFab } from './components/layout/WhatsAppFab';
+import { ProtectedRoute } from './components/common/ProtectedRoute';
+import { Loader } from './components/common/Loader';
+import { useAppData } from './contexts/AppDataContext';
+
+const HomePage = lazy(() => import('./pages/HomePage').then((module) => ({ default: module.HomePage })));
+const MenuPage = lazy(() => import('./pages/MenuPage').then((module) => ({ default: module.MenuPage })));
+const ProductDetailPage = lazy(() =>
+  import('./pages/ProductDetailPage').then((module) => ({ default: module.ProductDetailPage })),
+);
+const CartPage = lazy(() => import('./pages/CartPage').then((module) => ({ default: module.CartPage })));
+const CheckoutPage = lazy(() =>
+  import('./pages/CheckoutPage').then((module) => ({ default: module.CheckoutPage })),
+);
+const OrderSuccessPage = lazy(() =>
+  import('./pages/OrderSuccessPage').then((module) => ({ default: module.OrderSuccessPage })),
+);
+const TrackOrderPage = lazy(() =>
+  import('./pages/TrackOrderPage').then((module) => ({ default: module.TrackOrderPage })),
+);
+const AuthPage = lazy(() => import('./pages/AuthPage').then((module) => ({ default: module.AuthPage })));
+const ProfilePage = lazy(() =>
+  import('./pages/ProfilePage').then((module) => ({ default: module.ProfilePage })),
+);
+const AdminPage = lazy(() => import('./pages/AdminPage').then((module) => ({ default: module.AdminPage })));
+const DeliveryPage = lazy(() =>
+  import('./pages/DeliveryPage').then((module) => ({ default: module.DeliveryPage })),
+);
+const NotFoundPage = lazy(() =>
+  import('./pages/NotFoundPage').then((module) => ({ default: module.NotFoundPage })),
+);
+
+const CustomerLayout = () => {
+  const { settings } = useAppData();
+
+  return (
+    <div className="app-shell">
+      <Navbar businessName={settings?.businessName} />
+      <div className="page-stack">
+        <Outlet />
+      </div>
+      <Footer settings={settings} />
+      <MobileNav />
+      <WhatsAppFab phoneNumber={settings?.whatsappNumber} />
+    </div>
+  );
+};
+
+const AnimatedRoutes = () => {
+  const location = useLocation();
+
+  return (
+    <Suspense fallback={<Loader message="Opening Sardar Ji Food Corner..." />}>
+      <AnimatePresence mode="wait">
+        <Routes key={location.pathname} location={location}>
+          <Route element={<CustomerLayout />}>
+            <Route index element={<HomePage />} />
+            <Route path="/menu" element={<MenuPage />} />
+            <Route path="/product/:id" element={<ProductDetailPage />} />
+            <Route path="/cart" element={<CartPage />} />
+            <Route
+              path="/checkout"
+              element={
+                <ProtectedRoute roles={['customer']}>
+                  <CheckoutPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/order-success/:orderId"
+              element={
+                <ProtectedRoute roles={['customer']}>
+                  <OrderSuccessPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route path="/track/:orderId" element={<TrackOrderPage />} />
+            <Route
+              path="/profile"
+              element={
+                <ProtectedRoute roles={['customer']}>
+                  <ProfilePage />
+                </ProtectedRoute>
+              }
+            />
+          </Route>
+          <Route path="/auth" element={<AuthPage />} />
+          <Route
+            path="/admin"
+            element={
+              <ProtectedRoute roles={['admin']}>
+                <AdminPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/delivery"
+            element={
+              <ProtectedRoute roles={['delivery']}>
+                <DeliveryPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route path="/track" element={<Navigate replace to="/track/demo" />} />
+          <Route path="*" element={<NotFoundPage />} />
+        </Routes>
+      </AnimatePresence>
+    </Suspense>
+  );
+};
+
+export default function App() {
+  return (
+    <BrowserRouter>
+      <AnimatedRoutes />
+    </BrowserRouter>
+  );
+}
