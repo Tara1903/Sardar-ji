@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js/dist/index.mjs';
+import { createClient } from '@supabase/supabase-js';
 import { publicEnv, publicEnvFlags } from './env';
 
 let supabaseBrowserClient = null;

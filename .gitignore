@@ -1,13 +1,8 @@
+.agents
+plugins
 node_modules
-client/node_modules
-server/node_modules
 dist
-client/dist
 .env
 .env.local
 .vercel
-client/.env
-server/.env
-server/data/local-db.json
-server/uploads/*
-!server/uploads/.gitkeep
+.env.development.local
