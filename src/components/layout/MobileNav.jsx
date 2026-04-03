@@ -6,6 +6,13 @@ import { useAuth } from '../../contexts/AuthContext';
 export const MobileNav = () => {
   const { itemCount } = useCart();
   const { user } = useAuth();
+  const accountLink = user
+    ? user.role === 'admin'
+      ? '/admin/dashboard'
+      : user.role === 'delivery'
+        ? '/delivery'
+        : '/profile'
+    : '/auth';
 
   return (
     <nav className="mobile-nav">
@@ -22,7 +29,7 @@ export const MobileNav = () => {
         Cart
         {itemCount ? <span className="mobile-pill">{itemCount}</span> : null}
       </NavLink>
-      <NavLink className="mobile-nav-link" to={user ? '/profile' : '/auth'}>
+      <NavLink className="mobile-nav-link" to={accountLink}>
         <UserRound size={18} />
         {user ? 'Profile' : 'Login'}
       </NavLink>

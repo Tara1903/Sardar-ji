@@ -1,3 +1,6 @@
+import { DEFAULT_PHONE_NUMBER, DEFAULT_WHATSAPP_NUMBER } from '../../utils/contact';
+import { createWhatsAppLink } from '../../utils/whatsapp';
+
 export const Footer = ({ settings }) => (
   <footer className="site-footer">
     <div className="container footer-grid">
@@ -8,9 +11,18 @@ export const Footer = ({ settings }) => (
       </div>
       <div>
         <h4>Contact</h4>
-        <p>{settings?.phoneNumber || '+91 99999 99999'}</p>
+        <p>{settings?.phoneNumber || DEFAULT_PHONE_NUMBER}</p>
         <p>{settings?.timings || 'Morning to Night'}</p>
-        <a href={`https://wa.me/${(settings?.whatsappNumber || '919999999999').replace(/\D/g, '')}`}>WhatsApp Order</a>
+        <a
+          href={createWhatsAppLink(
+            settings?.whatsappNumber || DEFAULT_WHATSAPP_NUMBER,
+            'Hello Sardar Ji Food Corner, I want to place an order.',
+          )}
+          rel="noreferrer"
+          target="_blank"
+        >
+          WhatsApp Order
+        </a>
       </div>
       <div>
         <h4>Location</h4>
@@ -18,7 +30,7 @@ export const Footer = ({ settings }) => (
           <iframe className="footer-map" loading="lazy" src={settings.mapsEmbedUrl} title="Sardar Ji map" />
         ) : (
           <div className="map-placeholder compact">
-            <p>Google Maps embed ready. Add your location link in admin settings.</p>
+            <p>Business map or pickup landmark can be added from the admin settings.</p>
           </div>
         )}
       </div>

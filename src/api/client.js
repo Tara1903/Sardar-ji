@@ -1,5 +1,13 @@
 import { getFallbackImage } from '../data/fallbackImages';
 import { publicEnv, publicEnvFlags } from '../lib/env';
+import { createTransientSupabaseClient, getSupabaseBrowserClient } from '../lib/supabase';
+import {
+  DEFAULT_PHONE_NUMBER,
+  DEFAULT_WHATSAPP_NUMBER,
+  normalizePhoneDisplay,
+  normalizeWhatsappNumber,
+} from '../utils/contact';
+import { normalizeEmail } from '../utils/validation';
 
 const API_URL = publicEnv.apiUrl.trim();
 const USE_API_SERVER = Boolean(API_URL);
@@ -37,6 +45,7 @@ const request = async (path, options = {}) => {
   }
 
   const data = await response.json().catch(() => ({}));
+
   if (!response.ok) {
     throw new Error(data.message || 'Request failed');
   }
@@ -51,11 +60,22 @@ const getSupabase = async () => {
     );
   }
 
-  const { getSupabaseBrowserClient } = await import('../lib/supabase');
   const client = getSupabaseBrowserClient();
 
   if (!client) {
     throw new Error('Unable to initialize the Supabase browser client.');
+  }
+
+  return client;
+};
+
+const getTransientSupabase = () => {
+  const client = createTransientSupabaseClient();
+
+  if (!client) {
+    throw new Error(
+      'This deployment needs either VITE_API_URL or both VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.',
+    );
   }
 
   return client;
@@ -67,6 +87,26 @@ const delay = (ms) =>
   });
 
 const createError = (error, fallback) => new Error(error?.message || fallback);
+
+const createSlug = (value = '') =>
+  value
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+
+const isDuplicateAuthResponse = (response) => {
+  const user = response?.data?.user;
+  const identities = user?.identities || [];
+
+  return Boolean(
+    user &&
+      !response?.error &&
+      !response?.data?.session &&
+      Array.isArray(identities) &&
+      identities.length === 0,
+  );
+};
 
 const normalizeCategory = (row) => ({
   id: row.id,
@@ -99,13 +139,13 @@ const normalizeProduct = (row) => {
   };
 };
 
-const normalizeSettings = (row) => ({
+const normalizeSettings = (row = {}) => ({
   id: 'business-settings',
-  businessName: row.business_name,
-  tagline: row.tagline,
-  whatsappNumber: row.whatsapp_number,
-  phoneNumber: row.phone_number,
-  timings: row.timings,
+  businessName: row.business_name || 'Sardar Ji Food Corner',
+  tagline: row.tagline || 'Swad Bhi, Budget Bhi',
+  whatsappNumber: normalizeWhatsappNumber(row.whatsapp_number || DEFAULT_WHATSAPP_NUMBER),
+  phoneNumber: normalizePhoneDisplay(row.phone_number || DEFAULT_PHONE_NUMBER),
+  timings: row.timings || 'Morning to Night',
   mapsEmbedUrl: row.maps_embed_url || '',
   trustPoints: row.trust_points || [],
   deliveryRules: row.delivery_rules || {},
@@ -131,13 +171,13 @@ const normalizeUser = (row) => ({
 
 const normalizeOrder = (row) => ({
   id: row.id,
-  orderNumber: row.order_number,
+  orderNumber: row.order_number || row.orderNumber || '',
   userId: row.user_id,
-  customerName: row.customer_name,
-  customerPhone: row.customer_phone,
+  customerName: row.customer_name || '',
+  customerPhone: row.customer_phone || '',
   items: row.items || [],
   address: row.address || {},
-  paymentMethod: row.payment_method,
+  paymentMethod: row.payment_method || row.paymentMethod || 'COD',
   note: row.note || '',
   subtotal: Number(row.subtotal || 0),
   deliveryFee: Number(row.delivery_fee || 0),
@@ -145,23 +185,24 @@ const normalizeOrder = (row) => ({
   discount: Number(row.discount || 0),
   total: Number(row.total || 0),
   status: row.status,
-  estimatedDeliveryAt: row.estimated_delivery_at,
-  deliveredAt: row.delivered_at,
-  assignedDeliveryBoyId: row.assigned_delivery_boy_id || '',
-  assignedDeliveryBoyName: row.assigned_delivery_boy_name || '',
+  estimatedDeliveryAt: row.estimated_delivery_at || row.estimatedDeliveryAt,
+  deliveredAt: row.delivered_at || row.deliveredAt,
+  assignedDeliveryBoyId: row.assigned_delivery_boy_id || row.assignedDeliveryBoyId || '',
+  assignedDeliveryBoyName: row.assigned_delivery_boy_name || row.assignedDeliveryBoyName || '',
   tracking: row.tracking || defaultTracking,
-  createdAt: row.created_at,
-  updatedAt: row.updated_at,
+  createdAt: row.created_at || row.createdAt,
+  updatedAt: row.updated_at || row.updatedAt,
 });
 
 const normalizeTracking = (row) => ({
-  id: row.orderId,
-  orderNumber: row.orderNumber,
+  id: row.orderId || row.order_id || row.id,
+  orderNumber: row.orderNumber || row.order_number || '',
   status: row.status,
-  estimatedDeliveryAt: row.estimatedDeliveryAt,
+  estimatedDeliveryAt: row.estimatedDeliveryAt || row.estimated_delivery_at,
   tracking: {
-    timeline: row.timeline || [],
-    currentLocation: row.currentLocation || null,
+    timeline: row.timeline || row.tracking?.timeline || [],
+    currentLocation:
+      row.currentLocation || row.current_location || row.tracking?.currentLocation || null,
   },
 });
 
@@ -199,7 +240,7 @@ const getCurrentUser = async (supabase, token) => {
 };
 
 const waitForProfile = async (supabase, userId) => {
-  for (let attempt = 0; attempt < 10; attempt += 1) {
+  for (let attempt = 0; attempt < 14; attempt += 1) {
     const { data, error } = await supabase
       .from('users')
       .select('*')
@@ -210,7 +251,7 @@ const waitForProfile = async (supabase, userId) => {
       return normalizeUser(data);
     }
 
-    await delay(150);
+    await delay(180);
   }
 
   throw new Error('User profile not found.');
@@ -218,6 +259,7 @@ const waitForProfile = async (supabase, userId) => {
 
 const getProfile = async (supabase, userId) => {
   const { data, error } = await supabase.from('users').select('*').eq('id', userId).single();
+
   if (error) {
     throw createError(error, 'Unable to load the user profile.');
   }
@@ -225,15 +267,28 @@ const getProfile = async (supabase, userId) => {
   return normalizeUser(data);
 };
 
+const ensureAdmin = async (supabase, token) => {
+  const authUser = await getCurrentUser(supabase, token);
+  const profile = await getProfile(supabase, authUser.id);
+
+  if (profile.role !== 'admin') {
+    throw new Error('Admin access is required for this action.');
+  }
+
+  return profile;
+};
+
 const getCategoryRecord = async (supabase, value) => {
   const cleaned = String(value || '').trim();
 
   let response = await supabase.from('categories').select('*').eq('name', cleaned).maybeSingle();
+
   if (!response.error && response.data) {
     return response.data;
   }
 
   response = await supabase.from('categories').select('*').eq('slug', cleaned).maybeSingle();
+
   if (!response.error && response.data) {
     return response.data;
   }
@@ -288,11 +343,7 @@ const saveAddressIfNew = async (supabase, user, address) => {
 const direct = {
   getSettings: async () => {
     const supabase = await getSupabase();
-    const { data, error } = await supabase
-      .from('app_settings')
-      .select('*')
-      .eq('id', 1)
-      .single();
+    const { data, error } = await supabase.from('app_settings').select('*').eq('id', 1).single();
 
     if (error) {
       throw createError(error, 'Unable to load business settings.');
@@ -307,6 +358,8 @@ const direct = {
     const merged = {
       ...current,
       ...payload,
+      whatsappNumber: normalizeWhatsappNumber(payload.whatsappNumber || current.whatsappNumber),
+      phoneNumber: normalizePhoneDisplay(payload.phoneNumber || current.phoneNumber),
       deliveryRules: {
         ...(current.deliveryRules || {}),
         ...(payload.deliveryRules || {}),
@@ -320,8 +373,8 @@ const direct = {
       .update({
         business_name: merged.businessName,
         tagline: merged.tagline,
-        whatsapp_number: merged.whatsappNumber,
-        phone_number: merged.phoneNumber,
+        whatsapp_number: normalizeWhatsappNumber(merged.whatsappNumber),
+        phone_number: normalizePhoneDisplay(merged.phoneNumber),
         timings: merged.timings,
         maps_embed_url: merged.mapsEmbedUrl || '',
         trust_points: merged.trustPoints || [],
@@ -399,7 +452,7 @@ const direct = {
       .insert({
         category_id: category.id,
         name: payload.name,
-        slug: payload.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, ''),
+        slug: createSlug(payload.name),
         price: Number(payload.price),
         description: payload.description,
         image_url: payload.image || getFallbackImage(category.name),
@@ -423,7 +476,7 @@ const direct = {
 
     if (payload.name !== undefined) {
       update.name = payload.name;
-      update.slug = payload.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+      update.slug = createSlug(payload.name);
     }
 
     if (payload.price !== undefined) {
@@ -449,6 +502,7 @@ const direct = {
     if (payload.category !== undefined) {
       const category = await getCategoryRecord(supabase, payload.category);
       update.category_id = category.id;
+
       if (!update.image_url) {
         update.image_url = getFallbackImage(category.name);
       }
@@ -495,12 +549,11 @@ const direct = {
 
   createCategory: async (payload) => {
     const supabase = await getSupabase();
-    const slug = payload.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
     const { data, error } = await supabase
       .from('categories')
       .insert({
         name: payload.name,
-        slug,
+        slug: createSlug(payload.name),
         description: payload.description || '',
         sort_order: 99,
         is_active: true,
@@ -518,7 +571,7 @@ const direct = {
   login: async (payload) => {
     const supabase = await getSupabase();
     const { data, error } = await supabase.auth.signInWithPassword({
-      email: payload.email.trim().toLowerCase(),
+      email: normalizeEmail(payload.email),
       password: payload.password,
     });
 
@@ -527,26 +580,101 @@ const direct = {
     }
 
     const user = await waitForProfile(supabase, data.user.id);
+
     return {
       token: data.session.access_token,
       user,
     };
   },
 
+  requestRegistrationOtp: async (payload) => {
+    const supabase = getTransientSupabase();
+    const email = normalizeEmail(payload.email);
+    const signUpResponse = await supabase.auth.signUp({
+      email,
+      password: payload.password,
+      options: {
+        data: {
+          name: payload.name.trim(),
+          phoneNumber: payload.phoneNumber.trim(),
+          role: 'customer',
+        },
+      },
+    });
+
+    if (isDuplicateAuthResponse(signUpResponse)) {
+      throw new Error('An account with this email already exists. Please log in instead.');
+    }
+
+    if (signUpResponse.error || !signUpResponse.data.user) {
+      throw createError(signUpResponse.error, 'Unable to create the account.');
+    }
+
+    const otpResponse = await supabase.auth.signInWithOtp({
+      email,
+      options: {
+        shouldCreateUser: false,
+      },
+    });
+
+    if (otpResponse.error) {
+      throw createError(otpResponse.error, 'Unable to send the verification code.');
+    }
+
+    return {
+      email,
+      expiresAt: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
+    };
+  },
+
+  verifyRegistrationOtp: async (payload) => {
+    const supabase = getTransientSupabase();
+    const email = normalizeEmail(payload.email);
+    const { error } = await supabase.auth.verifyOtp({
+      email,
+      token: String(payload.otp || '').trim(),
+      type: 'email',
+    });
+
+    if (error) {
+      throw createError(error, 'Invalid or expired verification code.');
+    }
+
+    const response = await direct.login({
+      email,
+      password: payload.password,
+    });
+
+    if (payload.referralCode?.trim()) {
+      try {
+        await direct.applyReferral(payload.referralCode.trim(), response.token);
+        const mainSupabase = await getSupabase();
+        response.user = await getProfile(mainSupabase, response.user.id);
+      } catch {
+        // Keep registration successful even if the referral code is invalid or already used.
+      }
+    }
+
+    return response;
+  },
+
   register: async (payload) => {
     const supabase = await getSupabase();
-    const role = payload.role && payload.role !== 'customer' ? 'customer' : 'customer';
     const registerResponse = await supabase.auth.signUp({
-      email: payload.email.trim().toLowerCase(),
+      email: normalizeEmail(payload.email),
       password: payload.password,
       options: {
         data: {
           name: payload.name,
           phoneNumber: payload.phoneNumber,
-          role,
+          role: 'customer',
         },
       },
     });
+
+    if (isDuplicateAuthResponse(registerResponse)) {
+      throw new Error('An account with this email already exists. Please log in instead.');
+    }
 
     if (registerResponse.error || !registerResponse.data.user) {
       throw createError(registerResponse.error, 'Unable to create the account.');
@@ -556,7 +684,7 @@ const direct = {
 
     if (!session) {
       const loginResponse = await supabase.auth.signInWithPassword({
-        email: payload.email.trim().toLowerCase(),
+        email: normalizeEmail(payload.email),
         password: payload.password,
       });
 
@@ -581,6 +709,43 @@ const direct = {
     return {
       token: session.access_token,
       user,
+    };
+  },
+
+  createDeliveryPartner: async (payload, token) => {
+    const supabase = await getSupabase();
+    await ensureAdmin(supabase, token);
+
+    const transientSupabase = getTransientSupabase();
+    const email = normalizeEmail(payload.email);
+    const signUpResponse = await transientSupabase.auth.signUp({
+      email,
+      password: payload.password,
+      options: {
+        data: {
+          name: payload.name.trim(),
+          phoneNumber: payload.phoneNumber.trim(),
+          role: 'delivery',
+        },
+      },
+    });
+
+    if (isDuplicateAuthResponse(signUpResponse)) {
+      throw new Error('A delivery partner with this email already exists.');
+    }
+
+    if (signUpResponse.error || !signUpResponse.data.user) {
+      throw createError(signUpResponse.error, 'Unable to create the delivery account.');
+    }
+
+    const createdUser = await waitForProfile(supabase, signUpResponse.data.user.id);
+
+    return {
+      user: createdUser,
+      credentials: {
+        email,
+        password: payload.password,
+      },
     };
   },
 
@@ -614,7 +779,8 @@ const direct = {
     await getCurrentUser(supabase, token);
 
     let query = supabase.from('users').select('*').order('created_at', { ascending: false });
-    if (role) {
+
+    if (role && role !== 'all') {
       query = query.eq('role', role);
     }
 
@@ -649,6 +815,12 @@ const direct = {
     }
 
     return orders;
+  },
+
+  getOrder: async (id, token) => {
+    const supabase = await getSupabase();
+    await getCurrentUser(supabase, token);
+    return getOrderRecord(supabase, id);
   },
 
   placeOrder: async (payload, token) => {
@@ -711,6 +883,7 @@ const direct = {
     const supabase = await getSupabase();
     const authUser = await getCurrentUser(supabase, token);
     const user = await getProfile(supabase, authUser.id);
+
     return buildReferralProgress(user);
   },
 
@@ -740,12 +913,10 @@ const direct = {
 
     const extension = file.name?.split('.').pop() || 'jpg';
     const fileName = `products/${crypto.randomUUID()}.${extension}`;
-    const { error } = await supabase.storage
-      .from('product-images')
-      .upload(fileName, file, {
-        contentType: file.type || 'image/jpeg',
-        upsert: false,
-      });
+    const { error } = await supabase.storage.from('product-images').upload(fileName, file, {
+      contentType: file.type || 'image/jpeg',
+      upsert: false,
+    });
 
     if (error) {
       throw createError(error, 'Unable to upload the image.');
@@ -756,6 +927,44 @@ const direct = {
     return {
       url: data.publicUrl,
       provider: 'supabase-storage',
+    };
+  },
+
+  requestOrderOtp: async ({ email }) => {
+    const supabase = getTransientSupabase();
+    const normalizedEmail = normalizeEmail(email);
+    const { error } = await supabase.auth.signInWithOtp({
+      email: normalizedEmail,
+      options: {
+        shouldCreateUser: false,
+      },
+    });
+
+    if (error) {
+      throw createError(error, 'Unable to send the order confirmation code.');
+    }
+
+    return {
+      email: normalizedEmail,
+      expiresAt: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
+    };
+  },
+
+  verifyOrderOtp: async ({ email, otp }) => {
+    const supabase = getTransientSupabase();
+    const { error } = await supabase.auth.verifyOtp({
+      email: normalizeEmail(email),
+      token: String(otp || '').trim(),
+      type: 'email',
+    });
+
+    if (error) {
+      throw createError(error, 'Invalid or expired order confirmation code.');
+    }
+
+    return {
+      verified: true,
+      verifiedAt: new Date().toISOString(),
     };
   },
 
@@ -803,26 +1012,35 @@ export const api = {
       ? request(`/products/${id}`, { method: 'PUT', body: payload, token })
       : direct.updateProduct(id, payload, token),
   deleteProduct: (id, token) =>
-    USE_API_SERVER ? request(`/products/${id}`, { method: 'DELETE', token }) : direct.deleteProduct(id, token),
+    USE_API_SERVER
+      ? request(`/products/${id}`, { method: 'DELETE', token })
+      : direct.deleteProduct(id, token),
   getCategories: () => (USE_API_SERVER ? request('/categories') : direct.getCategories()),
   createCategory: (payload, token) =>
     USE_API_SERVER
       ? request('/categories', { method: 'POST', body: payload, token })
       : direct.createCategory(payload, token),
-  login: (payload) => (USE_API_SERVER ? request('/auth/login', { method: 'POST', body: payload }) : direct.login(payload)),
+  login: (payload) =>
+    USE_API_SERVER ? request('/auth/login', { method: 'POST', body: payload }) : direct.login(payload),
   register: (payload) =>
     USE_API_SERVER ? request('/auth/register', { method: 'POST', body: payload }) : direct.register(payload),
+  requestRegistrationOtp: (payload) => direct.requestRegistrationOtp(payload),
+  verifyRegistrationOtp: (payload) => direct.verifyRegistrationOtp(payload),
+  createDeliveryPartner: (payload, token) => direct.createDeliveryPartner(payload, token),
   me: (token) => (USE_API_SERVER ? request('/auth/me', { token }) : direct.me(token)),
   updateAddresses: (addresses, token) =>
     USE_API_SERVER
       ? request('/auth/addresses', { method: 'PUT', body: { addresses }, token })
       : direct.updateAddresses(addresses, token),
   getUsers: (role, token) =>
-    USE_API_SERVER ? request(`/auth/users${role ? `?role=${role}` : ''}`, { token }) : direct.getUsers(role, token),
+    USE_API_SERVER
+      ? request(`/auth/users${role ? `?role=${role}` : ''}`, { token })
+      : direct.getUsers(role, token),
   getOrders: (token, search = '') =>
     USE_API_SERVER
       ? request(`/orders${search ? `?search=${encodeURIComponent(search)}` : ''}`, { token })
       : direct.getOrders(token, search),
+  getOrder: (id, token) => direct.getOrder(id, token),
   placeOrder: (payload, token) =>
     USE_API_SERVER
       ? request('/orders', { method: 'POST', body: payload, token })
@@ -831,7 +1049,8 @@ export const api = {
     USE_API_SERVER
       ? request(`/orders/${id}/status`, { method: 'PUT', body: payload, token })
       : direct.updateOrderStatus(id, payload, token),
-  getTracking: (orderId) => (USE_API_SERVER ? request(`/tracking/${orderId}`) : direct.getTracking(orderId)),
+  getTracking: (orderId) =>
+    USE_API_SERVER ? request(`/tracking/${orderId}`) : direct.getTracking(orderId),
   getReferralProgress: (token) =>
     USE_API_SERVER ? request('/referral/me', { token }) : direct.getReferralProgress(token),
   applyReferral: (referralCode, token) =>
@@ -847,6 +1066,8 @@ export const api = {
     formData.append('image', file);
     return request('/upload/image', { method: 'POST', body: formData, token, isForm: true });
   },
+  requestOrderOtp: (payload) => direct.requestOrderOtp(payload),
+  verifyOrderOtp: (payload) => direct.verifyOrderOtp(payload),
   updateDeliveryLocation: (payload, token) =>
     USE_API_SERVER
       ? request('/delivery/location-update', { method: 'POST', body: payload, token })

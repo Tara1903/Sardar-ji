@@ -4,7 +4,7 @@ import { createWhatsAppLink } from '../../utils/whatsapp';
 export const WhatsAppFab = ({ phoneNumber }) => (
   <a
     className="whatsapp-fab"
-    href={createWhatsAppLink(phoneNumber, 'Hello Sardar Ji Food Corner, I want to place an order.')}
+    href={createWhatsAppLink(phoneNumber, 'I want to place an order from Sardar Ji Food Corner.')}
     rel="noreferrer"
     target="_blank"
   >

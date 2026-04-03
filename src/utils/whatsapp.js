@@ -1,5 +1,7 @@
+import { DEFAULT_WHATSAPP_NUMBER, normalizeWhatsappNumber } from './contact';
+
 export const createWhatsAppLink = (phoneNumber, message) => {
-  const cleanPhone = `${phoneNumber || '919999999999'}`.replace(/\D/g, '');
+  const cleanPhone = normalizeWhatsappNumber(phoneNumber || DEFAULT_WHATSAPP_NUMBER);
   return `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`;
 };
 

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { getFallbackImage } from '../../data/fallbackImages';
 
 export const ProductForm = ({
@@ -8,6 +8,7 @@ export const ProductForm = ({
   onCancel,
   saving,
 }) => {
+  const formRef = useRef(null);
   const [formState, setFormState] = useState({
     name: '',
     price: '',
@@ -19,12 +20,13 @@ export const ProductForm = ({
     imageFile: null,
   });
   const [previewImage, setPreviewImage] = useState('');
+  const [objectUrl, setObjectUrl] = useState('');
 
   useEffect(() => {
     const nextState = initialProduct
       ? {
           ...initialProduct,
-          price: initialProduct.price,
+          price: String(initialProduct.price),
           imageFile: null,
         }
       : {
@@ -41,12 +43,35 @@ export const ProductForm = ({
     setPreviewImage(nextState.image || getFallbackImage(nextState.category));
   }, [categories, initialProduct]);
 
+  useEffect(() => {
+    if (initialProduct && formRef.current) {
+      formRef.current.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start',
+      });
+    }
+  }, [initialProduct]);
+
+  useEffect(
+    () => () => {
+      if (objectUrl) {
+        URL.revokeObjectURL(objectUrl);
+      }
+    },
+    [objectUrl],
+  );
+
   const handleChange = (event) => {
     const { name, value, type, checked, files } = event.target;
     if (type === 'file') {
       const file = files?.[0] || null;
+      if (objectUrl) {
+        URL.revokeObjectURL(objectUrl);
+      }
+      const nextObjectUrl = file ? URL.createObjectURL(file) : '';
       setFormState((current) => ({ ...current, imageFile: file }));
-      setPreviewImage(file ? URL.createObjectURL(file) : getFallbackImage(formState.category));
+      setObjectUrl(nextObjectUrl);
+      setPreviewImage(nextObjectUrl || formState.image || getFallbackImage(formState.category));
       return;
     }
 
@@ -64,6 +89,7 @@ export const ProductForm = ({
   return (
     <form
       className="panel-card admin-form"
+      ref={formRef}
       onSubmit={(event) => {
         event.preventDefault();
         onSubmit(formState);
@@ -123,6 +149,10 @@ export const ProductForm = ({
         <button
           className="btn btn-secondary"
           onClick={() => {
+            if (objectUrl) {
+              URL.revokeObjectURL(objectUrl);
+            }
+            setObjectUrl('');
             setFormState((current) => ({ ...current, image: '', imageFile: null }));
             setPreviewImage(getFallbackImage(formState.category));
           }}

@@ -7,7 +7,7 @@ import { EmptyState } from '../components/common/EmptyState';
 import { Loader } from '../components/common/Loader';
 import { OrderTimeline } from '../components/order/OrderTimeline';
 import { TrackingMap } from '../components/order/TrackingMap';
-import { formatDateTime } from '../utils/format';
+import { formatDateTime, formatEtaLabel } from '../utils/format';
 
 export const TrackOrderPage = () => {
   const { orderId } = useParams();
@@ -15,23 +15,6 @@ export const TrackOrderPage = () => {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    if (orderId === 'demo') {
-      setOrder({
-        id: 'demo',
-        orderNumber: 'SJDEMO',
-        status: 'Preparing',
-        estimatedDeliveryAt: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
-        tracking: {
-          timeline: [
-            { status: 'Order Placed', timestamp: new Date().toISOString() },
-            { status: 'Preparing', timestamp: new Date().toISOString() },
-          ],
-          currentLocation: null,
-        },
-      });
-      return;
-    }
-
     const loadTracking = async () => {
       try {
         const response = await api.getTracking(orderId);
@@ -43,7 +26,7 @@ export const TrackOrderPage = () => {
     };
 
     loadTracking();
-    const intervalId = window.setInterval(loadTracking, 8000);
+    const intervalId = window.setInterval(loadTracking, 4000);
     return () => window.clearInterval(intervalId);
   }, [orderId]);
 
@@ -73,11 +56,13 @@ export const TrackOrderPage = () => {
             <div className="order-meta-grid">
               <div>
                 <Clock3 size={16} />
-                <span>ETA: {formatDateTime(order.estimatedDeliveryAt)}</span>
+                <span>
+                  ETA: {formatEtaLabel(order.estimatedDeliveryAt)} ({formatDateTime(order.estimatedDeliveryAt)})
+                </span>
               </div>
               <div>
                 <MapPinned size={16} />
-                <span>Live updates every few seconds</span>
+                <span>Live updates every 4 seconds</span>
               </div>
             </div>
             <OrderTimeline currentStatus={order.status} timeline={order.tracking?.timeline} />

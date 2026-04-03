@@ -3,16 +3,42 @@ import { CheckCircle2, Clock3, MapPinned } from 'lucide-react';
 import { Link, useParams } from 'react-router-dom';
 import { api } from '../api/client';
 import { PageTransition } from '../components/common/PageTransition';
+import { EmptyState } from '../components/common/EmptyState';
 import { Loader } from '../components/common/Loader';
-import { formatCurrency, formatDateTime } from '../utils/format';
+import { useAuth } from '../contexts/AuthContext';
+import { formatCurrency, formatDateTime, formatEtaLabel } from '../utils/format';
 
 export const OrderSuccessPage = () => {
   const { orderId } = useParams();
+  const { token } = useAuth();
   const [order, setOrder] = useState(null);
+  const [error, setError] = useState('');
 
   useEffect(() => {
-    api.getTracking(orderId).then(setOrder);
-  }, [orderId]);
+    const loadOrder = async () => {
+      try {
+        const response = await api.getOrder(orderId, token);
+        setOrder(response);
+        setError('');
+      } catch (loadError) {
+        setError(loadError.message);
+      }
+    };
+
+    loadOrder();
+  }, [orderId, token]);
+
+  if (error) {
+    return (
+      <PageTransition>
+        <section className="section first-section">
+          <div className="container">
+            <EmptyState description={error} title="Order confirmation unavailable" />
+          </div>
+        </section>
+      </PageTransition>
+    );
+  }
 
   if (!order) {
     return <Loader message="Loading your order confirmation..." />;
@@ -35,6 +61,16 @@ export const OrderSuccessPage = () => {
               <p>Order ID: {order.orderNumber}</p>
               <p>Total: {formatCurrency(order.total)}</p>
               <p>Payment: {order.paymentMethod}</p>
+              <div className="order-mini-list">
+                {order.items.map((item, index) => (
+                  <div className="summary-line" key={`${order.id}-${item.id || index}`}>
+                    <span>
+                      {item.name} x {item.quantity}
+                    </span>
+                    <strong>{formatCurrency(item.price * item.quantity)}</strong>
+                  </div>
+                ))}
+              </div>
             </div>
             <div className="panel-card">
               <h3>Delivery address</h3>
@@ -47,7 +83,9 @@ export const OrderSuccessPage = () => {
           <div className="order-meta-grid wide">
             <div>
               <Clock3 size={16} />
-              <span>ETA: {formatDateTime(order.estimatedDeliveryAt)}</span>
+              <span>
+                ETA: {formatEtaLabel(order.estimatedDeliveryAt)} ({formatDateTime(order.estimatedDeliveryAt)})
+              </span>
             </div>
             <div>
               <MapPinned size={16} />

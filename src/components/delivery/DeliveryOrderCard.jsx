@@ -20,6 +20,7 @@ export const DeliveryOrderCard = ({
     <p>
       {order.address.landmark} • {order.address.pincode}
     </p>
+    <p>Customer phone: {order.customerPhone}</p>
 
     <div className="order-meta-grid">
       <div>

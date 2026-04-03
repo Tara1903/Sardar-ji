@@ -1,6 +1,7 @@
-import { Menu, ShoppingBag, User, UtensilsCrossed } from 'lucide-react';
+import { Menu, ShoppingBag, User } from 'lucide-react';
 import { Link, NavLink } from 'react-router-dom';
 import { useState } from 'react';
+import { BrandLockup } from '../brand/BrandLockup';
 import { useCart } from '../../contexts/CartContext';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -8,25 +9,24 @@ export const Navbar = ({ businessName }) => {
   const [open, setOpen] = useState(false);
   const { itemCount } = useCart();
   const { user, logout } = useAuth();
+  const accountLink = user
+    ? user.role === 'admin'
+      ? '/admin/dashboard'
+      : user.role === 'delivery'
+        ? '/delivery'
+        : '/profile'
+    : '/auth';
 
   const navItems = [
     { to: '/', label: 'Home' },
     { to: '/menu', label: 'Menu' },
-    { to: '/track/demo', label: 'Track order' },
+    { to: '/track', label: 'Track order' },
   ];
 
   return (
     <header className="site-header">
       <div className="container nav-shell">
-        <Link className="brand-mark" to="/">
-          <span className="brand-icon">
-            <UtensilsCrossed size={20} />
-          </span>
-          <div>
-            <strong>{businessName || 'Sardar Ji Food Corner'}</strong>
-            <span>Swad Bhi, Budget Bhi</span>
-          </div>
-        </Link>
+        <BrandLockup tagline="Swad Bhi, Budget Bhi" title={businessName || 'Sardar Ji Food Corner'} />
 
         <nav className="desktop-nav">
           {navItems.map((item) => (
@@ -41,7 +41,7 @@ export const Navbar = ({ businessName }) => {
             <ShoppingBag size={18} />
             {itemCount ? <span className="cart-count">{itemCount}</span> : null}
           </Link>
-          <Link className="icon-btn" to={user ? (user.role === 'customer' ? '/profile' : `/${user.role}`) : '/auth'}>
+          <Link className="icon-btn" to={accountLink}>
             <User size={18} />
           </Link>
           {user ? (
@@ -69,7 +69,7 @@ export const Navbar = ({ businessName }) => {
           <NavLink className="drawer-link" onClick={() => setOpen(false)} to="/cart">
             Cart
           </NavLink>
-          <NavLink className="drawer-link" onClick={() => setOpen(false)} to={user ? '/profile' : '/auth'}>
+          <NavLink className="drawer-link" onClick={() => setOpen(false)} to={accountLink}>
             {user ? 'Profile' : 'Login'}
           </NavLink>
         </div>

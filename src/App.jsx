@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react';
-import { BrowserRouter, Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom';
+import { BrowserRouter, Outlet, Route, Routes, useLocation } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import { Navbar } from './components/layout/Navbar';
 import { Footer } from './components/layout/Footer';
@@ -21,6 +21,9 @@ const CheckoutPage = lazy(() =>
 const OrderSuccessPage = lazy(() =>
   import('./pages/OrderSuccessPage').then((module) => ({ default: module.OrderSuccessPage })),
 );
+const TrackLookupPage = lazy(() =>
+  import('./pages/TrackLookupPage').then((module) => ({ default: module.TrackLookupPage })),
+);
 const TrackOrderPage = lazy(() =>
   import('./pages/TrackOrderPage').then((module) => ({ default: module.TrackOrderPage })),
 );
@@ -29,6 +32,31 @@ const ProfilePage = lazy(() =>
   import('./pages/ProfilePage').then((module) => ({ default: module.ProfilePage })),
 );
 const AdminPage = lazy(() => import('./pages/AdminPage').then((module) => ({ default: module.AdminPage })));
+const AdminIndexRedirect = lazy(() =>
+  import('./pages/AdminPage').then((module) => ({ default: module.AdminIndexRedirect })),
+);
+const AdminDashboardPage = lazy(() =>
+  import('./pages/admin/AdminDashboardPage').then((module) => ({
+    default: module.AdminDashboardPage,
+  })),
+);
+const AdminProductsPage = lazy(() =>
+  import('./pages/admin/AdminProductsPage').then((module) => ({ default: module.AdminProductsPage })),
+);
+const AdminOrdersPage = lazy(() =>
+  import('./pages/admin/AdminOrdersPage').then((module) => ({ default: module.AdminOrdersPage })),
+);
+const AdminCategoriesPage = lazy(() =>
+  import('./pages/admin/AdminCategoriesPage').then((module) => ({
+    default: module.AdminCategoriesPage,
+  })),
+);
+const AdminDeliveryPage = lazy(() =>
+  import('./pages/admin/AdminDeliveryPage').then((module) => ({ default: module.AdminDeliveryPage })),
+);
+const AdminUsersPage = lazy(() =>
+  import('./pages/admin/AdminUsersPage').then((module) => ({ default: module.AdminUsersPage })),
+);
 const DeliveryPage = lazy(() =>
   import('./pages/DeliveryPage').then((module) => ({ default: module.DeliveryPage })),
 );
@@ -98,7 +126,15 @@ const AnimatedRoutes = () => {
                 <AdminPage />
               </ProtectedRoute>
             }
-          />
+          >
+            <Route index element={<AdminIndexRedirect />} />
+            <Route path="dashboard" element={<AdminDashboardPage />} />
+            <Route path="products" element={<AdminProductsPage />} />
+            <Route path="orders" element={<AdminOrdersPage />} />
+            <Route path="categories" element={<AdminCategoriesPage />} />
+            <Route path="delivery" element={<AdminDeliveryPage />} />
+            <Route path="users" element={<AdminUsersPage />} />
+          </Route>
           <Route
             path="/delivery"
             element={
@@ -107,7 +143,7 @@ const AnimatedRoutes = () => {
               </ProtectedRoute>
             }
           />
-          <Route path="/track" element={<Navigate replace to="/track/demo" />} />
+          <Route path="/track" element={<TrackLookupPage />} />
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </AnimatePresence>

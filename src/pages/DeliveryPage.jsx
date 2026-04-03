@@ -1,14 +1,16 @@
 import { useEffect, useMemo, useState } from 'react';
-import { LogOut, MapPinned, PackageOpen } from 'lucide-react';
+import { Clock3, LogOut, MapPinned, PackageOpen } from 'lucide-react';
 import { api } from '../api/client';
 import { DeliveryOrderCard } from '../components/delivery/DeliveryOrderCard';
 import { Loader } from '../components/common/Loader';
 import { useAuth } from '../contexts/AuthContext';
+import { formatDateTime } from '../utils/format';
 
 export const DeliveryPage = () => {
   const { token, logout, user } = useAuth();
   const [orders, setOrders] = useState([]);
   const [trackingOrderId, setTrackingOrderId] = useState('');
+  const [lastLocationPing, setLastLocationPing] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -26,7 +28,7 @@ export const DeliveryPage = () => {
 
   useEffect(() => {
     loadOrders();
-    const intervalId = window.setInterval(loadOrders, 8000);
+    const intervalId = window.setInterval(loadOrders, 4000);
     return () => window.clearInterval(intervalId);
   }, [token]);
 
@@ -40,37 +42,50 @@ export const DeliveryPage = () => {
       return undefined;
     }
 
-    const watchId = navigator.geolocation.watchPosition(
-      (position) => {
-        api.updateDeliveryLocation(
-          {
-            orderId: trackingOrderId,
-            latitude: position.coords.latitude,
-            longitude: position.coords.longitude,
-          },
-          token,
-        ).catch((locationError) => setError(locationError.message));
-      },
-      (geolocationError) => setError(geolocationError.message),
-      {
-        enableHighAccuracy: true,
-        maximumAge: 0,
-        timeout: 5000,
-      },
-    );
+    const sendLocation = () => {
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          try {
+            await api.updateDeliveryLocation(
+              {
+                orderId: trackingOrderId,
+                latitude: position.coords.latitude,
+                longitude: position.coords.longitude,
+              },
+              token,
+            );
+            setLastLocationPing(new Date().toISOString());
+            setError('');
+          } catch (locationError) {
+            setError(locationError.message);
+          }
+        },
+        (geolocationError) => setError(geolocationError.message),
+        {
+          enableHighAccuracy: true,
+          maximumAge: 0,
+          timeout: 5000,
+        },
+      );
+    };
 
-    return () => navigator.geolocation.clearWatch(watchId);
+    sendLocation();
+    const intervalId = window.setInterval(sendLocation, 4000);
+    return () => window.clearInterval(intervalId);
   }, [token, trackingOrderId]);
 
   const handleStatusChange = async (orderId, status) => {
     await api.updateOrderStatus(orderId, { status }, token);
+
     if (status === 'Out for Delivery') {
       setTrackingOrderId(orderId);
     }
+
     if (status === 'Delivered' && trackingOrderId === orderId) {
       setTrackingOrderId('');
     }
-    loadOrders();
+
+    await loadOrders();
   };
 
   const completedToday = useMemo(
@@ -79,6 +94,7 @@ export const DeliveryPage = () => {
         if (order.status !== 'Delivered') {
           return false;
         }
+
         const today = new Date().toDateString();
         return new Date(order.updatedAt).toDateString() === today;
       }).length,
@@ -104,7 +120,7 @@ export const DeliveryPage = () => {
       </header>
 
       <main className="panel-content">
-        <section className="metrics-grid">
+        <section className="metrics-grid admin-metrics-grid">
           <article className="panel-card">
             <PackageOpen size={18} />
             <strong>{orders.length}</strong>
@@ -119,6 +135,11 @@ export const DeliveryPage = () => {
             <PackageOpen size={18} />
             <strong>{completedToday}</strong>
             <span>Completed today</span>
+          </article>
+          <article className="panel-card">
+            <Clock3 size={18} />
+            <strong>{lastLocationPing ? formatDateTime(lastLocationPing) : 'Waiting'}</strong>
+            <span>Last location sync</span>
           </article>
         </section>
 
