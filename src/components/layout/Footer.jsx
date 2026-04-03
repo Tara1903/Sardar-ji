@@ -1,11 +1,12 @@
 import { DEFAULT_PHONE_NUMBER, DEFAULT_WHATSAPP_NUMBER } from '../../utils/contact';
 import { createWhatsAppLink } from '../../utils/whatsapp';
+import { BrandLockup } from '../brand/BrandLockup';
 
 export const Footer = ({ settings }) => (
   <footer className="site-footer">
     <div className="container footer-grid">
       <div>
-        <h3>{settings?.businessName || 'Sardar Ji Food Corner'}</h3>
+        <BrandLockup className="footer-brand" linkTo="/" />
         <p>{settings?.tagline || 'Swad Bhi, Budget Bhi'}</p>
         <p>Fresh veg meals, fast local delivery, and clear pricing for busy days.</p>
       </div>

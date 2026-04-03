@@ -7,6 +7,12 @@ import {
   normalizePhoneDisplay,
   normalizeWhatsappNumber,
 } from '../utils/contact';
+import {
+  clearOtpRequest,
+  formatOtpDuration,
+  getOtpRequestState,
+  storeOtpRequest,
+} from '../utils/otpState';
 import { normalizeEmail } from '../utils/validation';
 
 const API_URL = publicEnv.apiUrl.trim();
@@ -87,6 +93,62 @@ const delay = (ms) =>
   });
 
 const createError = (error, fallback) => new Error(error?.message || fallback);
+
+const isOtpRateLimitError = (error) =>
+  /rate limit|too many requests|security purposes/i.test(error?.message || '');
+
+const buildOtpResponse = ({ email, expiresAt, cooldownEndsAt, message, reused = false }) => ({
+  email,
+  expiresAt,
+  cooldownEndsAt,
+  reused,
+  message,
+});
+
+const buildStoredOtpResponse = (scope, email, label) => {
+  const requestState = getOtpRequestState(scope, email);
+
+  if (!requestState) {
+    return null;
+  }
+
+  if (requestState.cooldownRemainingSeconds > 0) {
+    return buildOtpResponse({
+      email,
+      expiresAt: requestState.expiresAt,
+      cooldownEndsAt: requestState.cooldownEndsAt,
+      reused: true,
+      message: `Please wait ${formatOtpDuration(requestState.cooldownRemainingSeconds)} before requesting another ${label}.`,
+    });
+  }
+
+  return buildOtpResponse({
+    email,
+    expiresAt: requestState.expiresAt,
+    cooldownEndsAt: requestState.cooldownEndsAt,
+    reused: true,
+    message: `The last ${label} sent to ${email} is still valid for ${formatOtpDuration(requestState.validRemainingSeconds)}.`,
+  });
+};
+
+const buildFreshOtpResponse = (scope, email, message) => {
+  const requestState = storeOtpRequest(scope, email);
+
+  return buildOtpResponse({
+    email,
+    expiresAt: requestState?.expiresAt || new Date(Date.now() + 5 * 60 * 1000).toISOString(),
+    cooldownEndsAt: requestState?.cooldownEndsAt || new Date(Date.now() + 60 * 1000).toISOString(),
+    message,
+  });
+};
+
+const createOtpRequestError = (error, fallback) => {
+  if (isOtpRateLimitError(error)) {
+    return new Error('Please wait 60 seconds before requesting another OTP.');
+  }
+
+  return createError(error, fallback);
+};
 
 const createSlug = (value = '') =>
   value
@@ -590,6 +652,12 @@ const direct = {
   requestRegistrationOtp: async (payload) => {
     const supabase = getTransientSupabase();
     const email = normalizeEmail(payload.email);
+    const cachedResponse = buildStoredOtpResponse('registration', email, 'verification code');
+
+    if (cachedResponse) {
+      return cachedResponse;
+    }
+
     const signUpResponse = await supabase.auth.signUp({
       email,
       password: payload.password,
@@ -607,24 +675,39 @@ const direct = {
     }
 
     if (signUpResponse.error || !signUpResponse.data.user) {
-      throw createError(signUpResponse.error, 'Unable to create the account.');
+      throw createOtpRequestError(signUpResponse.error, 'Unable to create the account.');
     }
 
-    const otpResponse = await supabase.auth.signInWithOtp({
+    return buildFreshOtpResponse(
+      'registration',
       email,
-      options: {
-        shouldCreateUser: false,
-      },
+      `Verification code sent to ${email}. It expires in 5 minutes.`,
+    );
+  },
+
+  resendRegistrationOtp: async ({ email }) => {
+    const supabase = getTransientSupabase();
+    const normalizedEmail = normalizeEmail(email);
+    const cachedResponse = buildStoredOtpResponse('registration', normalizedEmail, 'verification code');
+
+    if (cachedResponse) {
+      return cachedResponse;
+    }
+
+    const { error } = await supabase.auth.resend({
+      email: normalizedEmail,
+      type: 'signup',
     });
 
-    if (otpResponse.error) {
-      throw createError(otpResponse.error, 'Unable to send the verification code.');
+    if (error) {
+      throw createOtpRequestError(error, 'Unable to send a fresh verification code.');
     }
 
-    return {
-      email,
-      expiresAt: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
-    };
+    return buildFreshOtpResponse(
+      'registration',
+      normalizedEmail,
+      `A fresh verification code was sent to ${normalizedEmail}. It expires in 5 minutes.`,
+    );
   },
 
   verifyRegistrationOtp: async (payload) => {
@@ -639,6 +722,8 @@ const direct = {
     if (error) {
       throw createError(error, 'Invalid or expired verification code.');
     }
+
+    clearOtpRequest('registration', email);
 
     const response = await direct.login({
       email,
@@ -933,6 +1018,12 @@ const direct = {
   requestOrderOtp: async ({ email }) => {
     const supabase = getTransientSupabase();
     const normalizedEmail = normalizeEmail(email);
+    const cachedResponse = buildStoredOtpResponse('order', normalizedEmail, 'OTP');
+
+    if (cachedResponse) {
+      return cachedResponse;
+    }
+
     const { error } = await supabase.auth.signInWithOtp({
       email: normalizedEmail,
       options: {
@@ -941,19 +1032,21 @@ const direct = {
     });
 
     if (error) {
-      throw createError(error, 'Unable to send the order confirmation code.');
+      throw createOtpRequestError(error, 'Unable to send the order confirmation code.');
     }
 
-    return {
-      email: normalizedEmail,
-      expiresAt: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
-    };
+    return buildFreshOtpResponse(
+      'order',
+      normalizedEmail,
+      `Verification code sent to ${normalizedEmail}. It expires in 5 minutes.`,
+    );
   },
 
   verifyOrderOtp: async ({ email, otp }) => {
     const supabase = getTransientSupabase();
+    const normalizedEmail = normalizeEmail(email);
     const { error } = await supabase.auth.verifyOtp({
-      email: normalizeEmail(email),
+      email: normalizedEmail,
       token: String(otp || '').trim(),
       type: 'email',
     });
@@ -961,6 +1054,8 @@ const direct = {
     if (error) {
       throw createError(error, 'Invalid or expired order confirmation code.');
     }
+
+    clearOtpRequest('order', normalizedEmail);
 
     return {
       verified: true,
@@ -1025,6 +1120,7 @@ export const api = {
   register: (payload) =>
     USE_API_SERVER ? request('/auth/register', { method: 'POST', body: payload }) : direct.register(payload),
   requestRegistrationOtp: (payload) => direct.requestRegistrationOtp(payload),
+  resendRegistrationOtp: (payload) => direct.resendRegistrationOtp(payload),
   verifyRegistrationOtp: (payload) => direct.verifyRegistrationOtp(payload),
   createDeliveryPartner: (payload, token) => direct.createDeliveryPartner(payload, token),
   me: (token) => (USE_API_SERVER ? request('/auth/me', { token }) : direct.me(token)),

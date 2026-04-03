@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Clock3, LogOut, MapPinned, PackageOpen } from 'lucide-react';
 import { api } from '../api/client';
 import { DeliveryOrderCard } from '../components/delivery/DeliveryOrderCard';
+import { BrandLockup } from '../components/brand/BrandLockup';
 import { Loader } from '../components/common/Loader';
 import { useAuth } from '../contexts/AuthContext';
 import { formatDateTime } from '../utils/format';
@@ -109,6 +110,7 @@ export const DeliveryPage = () => {
     <div className="panel-page">
       <header className="panel-header">
         <div>
+          <BrandLockup className="panel-brand" compact linkTo="/" showTagline={false} />
           <p className="eyebrow">Delivery panel</p>
           <h1>Welcome, {user.name}</h1>
           <p>Assigned orders, customer addresses, and live GPS sharing in one place.</p>

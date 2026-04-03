@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { ArrowLeft, MailCheck, ShieldCheck } from 'lucide-react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { api } from '../api/client';
@@ -28,13 +28,14 @@ export const AuthPage = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const redirectPath = searchParams.get('redirect');
-  const { login } = useAuth();
+  const { acceptAuthSession, login } = useAuth();
   const [mode, setMode] = useState('login');
   const [formState, setFormState] = useState(emptyRegisterState);
   const [otpExpiresAt, setOtpExpiresAt] = useState('');
   const [info, setInfo] = useState('');
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const actionLockRef = useRef(false);
 
   const isOtpStage = mode === 'register' && Boolean(otpExpiresAt);
   const hasOtpExpired =
@@ -147,7 +148,7 @@ export const AuthPage = () => {
         email: normalizeEmail(formState.email),
       });
       setOtpExpiresAt(response.expiresAt);
-      setInfo(`Verification code sent to ${response.email}. It expires in 5 minutes.`);
+      setInfo(response.message);
       setError('');
     } catch (authError) {
       setError(authError.message);
@@ -159,12 +160,12 @@ export const AuthPage = () => {
   const handleResendOtp = async () => {
     setSubmitting(true);
     try {
-      const response = await api.requestOrderOtp({
+      const response = await api.resendRegistrationOtp({
         email: normalizeEmail(formState.email),
       });
       setOtpExpiresAt(response.expiresAt);
       setFormState((current) => ({ ...current, otp: '' }));
-      setInfo(`A fresh verification code was sent to ${response.email}. It expires in 5 minutes.`);
+      setInfo(response.message);
       setError('');
     } catch (authError) {
       setError(authError.message);
@@ -186,14 +187,11 @@ export const AuthPage = () => {
 
     setSubmitting(true);
     try {
-      await api.verifyRegistrationOtp({
+      const response = await api.verifyRegistrationOtp({
         ...formState,
         email: normalizeEmail(formState.email),
       });
-      const user = await login({
-        email: normalizeEmail(formState.email),
-        password: formState.password,
-      });
+      const user = acceptAuthSession(response);
 
       navigate(redirectPath || getFallbackRoute(user));
     } catch (authError) {
@@ -204,24 +202,33 @@ export const AuthPage = () => {
   };
 
   const handlePrimaryAction = async () => {
-    resetMessages();
-
-    if (mode === 'login') {
-      await handleLogin();
+    if (actionLockRef.current) {
       return;
     }
 
-    if (!isOtpStage || hasOtpExpired) {
-      if (hasOtpExpired && isOtpStage) {
-        await handleResendOtp();
+    actionLockRef.current = true;
+    resetMessages();
+
+    try {
+      if (mode === 'login') {
+        await handleLogin();
         return;
       }
 
-      await handleSendOtp();
-      return;
-    }
+      if (!isOtpStage || hasOtpExpired) {
+        if (hasOtpExpired && isOtpStage) {
+          await handleResendOtp();
+          return;
+        }
 
-    await handleVerifyRegistration();
+        await handleSendOtp();
+        return;
+      }
+
+      await handleVerifyRegistration();
+    } finally {
+      actionLockRef.current = false;
+    }
   };
 
   return (
@@ -358,9 +365,18 @@ export const AuthPage = () => {
                 <button
                   className="btn btn-secondary"
                   disabled={submitting}
-                  onClick={() => {
+                  onClick={async () => {
+                    if (actionLockRef.current) {
+                      return;
+                    }
+
+                    actionLockRef.current = true;
                     resetMessages();
-                    handleResendOtp();
+                    try {
+                      await handleResendOtp();
+                    } finally {
+                      actionLockRef.current = false;
+                    }
                   }}
                   type="button"
                 >

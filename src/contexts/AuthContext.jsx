@@ -49,6 +49,15 @@ export const AuthProvider = ({ children }) => {
     return response.user;
   };
 
+  const acceptAuthSession = (response) => {
+    if (!response?.token || !response?.user) {
+      throw new Error('A valid authenticated session is required.');
+    }
+
+    persistSession(response.token, response.user);
+    return response.user;
+  };
+
   const register = async (payload) => {
     const response = await api.register(payload);
     persistSession(response.token, response.user);
@@ -92,6 +101,7 @@ export const AuthProvider = ({ children }) => {
       isAuthenticated: Boolean(user && token),
       login,
       register,
+      acceptAuthSession,
       logout,
       refreshUser,
       updateAddresses,

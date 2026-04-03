@@ -9,21 +9,23 @@ export const BrandLockup = ({
   tagline = 'Swad Bhi, Budget Bhi',
 }) => {
   const Wrapper = linkTo ? Link : 'div';
+  const accessibleLabel = showTagline ? `${title} - ${tagline}` : title;
 
   return (
-    <Wrapper className={`brand-mark ${compact ? 'compact' : ''} ${className}`.trim()} {...(linkTo ? { to: linkTo } : {})}>
+    <Wrapper
+      aria-label={accessibleLabel}
+      className={`brand-mark ${compact ? 'compact' : ''} ${className}`.trim()}
+      {...(linkTo ? { to: linkTo } : {})}
+    >
       <img
         alt={`${title} logo`}
         className="brand-logo"
-        height={compact ? 40 : 48}
+        height={compact ? 62 : 82}
         loading="eager"
-        src="/favicon.svg"
-        width={compact ? 40 : 48}
+        src="/brand-logo.png"
+        width={compact ? 182 : 238}
       />
-      <div className="brand-copy">
-        <strong>{title}</strong>
-        {showTagline ? <span>{tagline}</span> : null}
-      </div>
+      <span className="sr-only">{accessibleLabel}</span>
     </Wrapper>
   );
 };

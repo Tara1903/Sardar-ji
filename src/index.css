@@ -419,29 +419,8 @@ textarea {
 .brand-mark {
   display: flex;
   align-items: center;
-  gap: 0.9rem;
+  flex: 0 0 auto;
   min-width: 0;
-}
-
-.brand-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 2.9rem;
-  height: 2.9rem;
-  color: var(--brand);
-  background: linear-gradient(135deg, rgba(23, 116, 58, 0.1), rgba(243, 202, 66, 0.38));
-  border-radius: 18px;
-}
-
-.brand-mark strong,
-.brand-mark span {
-  display: block;
-}
-
-.brand-mark span {
-  font-size: 0.84rem;
-  color: var(--muted);
 }
 
 .desktop-nav {
@@ -1251,27 +1230,39 @@ textarea {
 }
 
 .brand-logo {
-  flex-shrink: 0;
-  width: 3rem;
-  height: 3rem;
+  display: block;
+  width: 238px;
+  max-width: min(100%, 238px);
+  height: auto;
   object-fit: contain;
-  border-radius: 18px;
-  box-shadow: 0 10px 24px rgba(17, 41, 22, 0.12);
-  background: white;
 }
 
 .brand-mark.compact .brand-logo {
-  width: 2.5rem;
-  height: 2.5rem;
-}
-
-.brand-copy {
-  min-width: 0;
+  width: 182px;
+  max-width: min(100%, 182px);
 }
 
 .auth-brand,
-.admin-brand {
+.admin-brand,
+.footer-brand,
+.panel-brand {
   margin: 1rem 0;
+}
+
+.footer-brand {
+  margin-bottom: 0.85rem;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .success-text {
@@ -1612,6 +1603,16 @@ textarea {
     align-items: flex-start;
   }
 
+  .brand-logo {
+    width: 210px;
+    max-width: min(100%, 210px);
+  }
+
+  .brand-mark.compact .brand-logo {
+    width: 168px;
+    max-width: min(100%, 168px);
+  }
+
   .admin-sidebar {
     position: static;
   }
@@ -1657,5 +1658,15 @@ textarea {
   .delivery-stats-row,
   .user-row-card {
     grid-template-columns: 1fr;
+  }
+
+  .brand-logo {
+    width: 176px;
+    max-width: min(100%, 176px);
+  }
+
+  .brand-mark.compact .brand-logo {
+    width: 152px;
+    max-width: min(100%, 152px);
   }
 }

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Clock3, MailCheck, MapPin, MessageCircleMore, ShieldCheck } from 'lucide-react';
 import { PageTransition } from '../components/common/PageTransition';
@@ -35,6 +35,9 @@ export const CheckoutPage = () => {
   const [verifyingOtp, setVerifyingOtp] = useState(false);
   const [error, setError] = useState('');
   const [info, setInfo] = useState('');
+  const otpRequestLockRef = useRef(false);
+  const otpVerifyLockRef = useRef(false);
+  const placeOrderLockRef = useRef(false);
 
   useEffect(() => {
     if (user?.addresses?.length && selectedAddressId !== 'new') {
@@ -60,22 +63,32 @@ export const CheckoutPage = () => {
   const checkoutMessage = `I want to place an order from checkout. Total: ${formatCurrency(totals.total)}`;
 
   const sendOrderOtp = async () => {
+    if (otpRequestLockRef.current) {
+      return;
+    }
+
+    otpRequestLockRef.current = true;
     setSendingOtp(true);
     try {
       const response = await api.requestOrderOtp({ email: user.email });
       setOtpExpiresAt(response.expiresAt);
       setOtpVerifiedAt('');
       setOtpCode('');
-      setInfo(`Verification code sent to ${response.email}. It expires in 5 minutes.`);
+      setInfo(response.message);
       setError('');
     } catch (otpError) {
       setError(otpError.message);
     } finally {
+      otpRequestLockRef.current = false;
       setSendingOtp(false);
     }
   };
 
   const verifyOrderOtp = async () => {
+    if (otpVerifyLockRef.current) {
+      return;
+    }
+
     if (otpExpired) {
       setError('The code expired. Send a new code to continue.');
       return;
@@ -86,6 +99,7 @@ export const CheckoutPage = () => {
       return;
     }
 
+    otpVerifyLockRef.current = true;
     setVerifyingOtp(true);
     try {
       const response = await api.verifyOrderOtp({
@@ -98,6 +112,7 @@ export const CheckoutPage = () => {
     } catch (otpError) {
       setError(otpError.message);
     } finally {
+      otpVerifyLockRef.current = false;
       setVerifyingOtp(false);
     }
   };
@@ -127,6 +142,10 @@ export const CheckoutPage = () => {
   };
 
   const handlePlaceOrder = async () => {
+    if (placeOrderLockRef.current) {
+      return;
+    }
+
     const validationError = validateOrder();
 
     if (validationError) {
@@ -134,6 +153,7 @@ export const CheckoutPage = () => {
       return;
     }
 
+    placeOrderLockRef.current = true;
     setPlacingOrder(true);
     try {
       const order = await api.placeOrder(
@@ -151,6 +171,7 @@ export const CheckoutPage = () => {
     } catch (placeError) {
       setError(placeError.message);
     } finally {
+      placeOrderLockRef.current = false;
       setPlacingOrder(false);
     }
   };
