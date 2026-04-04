@@ -319,14 +319,25 @@ const normalizeTracking = (row) => ({
   },
 });
 
-const buildReferralProgress = (user, explicitReferralCount = null) => {
+const normalizeReferralEntry = (row) => ({
+  id: row.id,
+  referralCode: row.referral_code || row.referralCode || '',
+  referredUserId: row.referred_user_id || row.referredUserId || '',
+  status: row.status || 'successful',
+  createdAt: row.created_at || row.createdAt,
+});
+
+const buildReferralProgress = (user, explicitReferralCount = null, referralEntries = []) => {
   const referralCount =
-    typeof explicitReferralCount === 'number' ? explicitReferralCount : user.successfulReferrals?.length || 0;
+    typeof explicitReferralCount === 'number'
+      ? explicitReferralCount
+      : referralEntries.length || user.successfulReferrals?.length || 0;
 
   return {
     referralCode: user.referralCode,
     appliedReferralCode: user.referralApplied || '',
     successfulReferralCount: referralCount,
+    referralEntries,
     milestones: [
       {
         target: 6,
@@ -394,6 +405,21 @@ const getSuccessfulReferralCount = async (supabase, userId) => {
   }
 
   return count || 0;
+};
+
+const getReferralEntries = async (supabase, userId) => {
+  const { data, error } = await supabase
+    .from('referrals')
+    .select('id, referral_code, referred_user_id, status, created_at')
+    .eq('referrer_user_id', userId)
+    .in('status', ['successful', 'rewarded'])
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    throw createError(error, 'Unable to load referral entries.');
+  }
+
+  return (data || []).map(normalizeReferralEntry);
 };
 
 const ensureAdmin = async (supabase, token) => {
@@ -1163,12 +1189,13 @@ const direct = {
   getReferralProgress: async (token) => {
     const supabase = await getSupabaseForToken(token);
     const authUser = await getCurrentUser(supabase, token);
-    const [user, successfulReferralCount] = await Promise.all([
+    const [user, successfulReferralCount, referralEntries] = await Promise.all([
       getProfile(supabase, authUser.id),
       getSuccessfulReferralCount(supabase, authUser.id),
+      getReferralEntries(supabase, authUser.id),
     ]);
 
-    return buildReferralProgress(user, successfulReferralCount);
+    return buildReferralProgress(user, successfulReferralCount, referralEntries);
   },
 
   applyReferral: async (referralCode, token) => {
@@ -1184,9 +1211,12 @@ const direct = {
     }
 
     const user = await getProfile(supabase, authUser.id);
-    const successfulReferralCount = await getSuccessfulReferralCount(supabase, authUser.id);
+    const [successfulReferralCount, referralEntries] = await Promise.all([
+      getSuccessfulReferralCount(supabase, authUser.id),
+      getReferralEntries(supabase, authUser.id),
+    ]);
 
-    return buildReferralProgress(user, successfulReferralCount);
+    return buildReferralProgress(user, successfulReferralCount, referralEntries);
   },
 
   uploadImage: async (file, token) => {

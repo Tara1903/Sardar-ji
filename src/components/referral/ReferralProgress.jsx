@@ -1,3 +1,7 @@
+import { formatDateOnly } from '../../utils/format';
+
+const shortId = (value = '') => (value ? `${value.slice(0, 8)}...${value.slice(-4)}` : 'Updating');
+
 export const ReferralProgress = ({ progress }) => {
   if (!progress) {
     return null;
@@ -24,6 +28,27 @@ export const ReferralProgress = ({ progress }) => {
           </div>
         ))}
       </div>
+
+      {progress.referralEntries?.length ? (
+        <div className="referral-entry-list">
+          <div className="space-between">
+            <h4>Existing referral joins</h4>
+            <span>{progress.referralEntries.length} linked</span>
+          </div>
+          {progress.referralEntries.map((entry) => (
+            <div className="referral-entry-row" key={entry.id}>
+              <div>
+                <strong>{shortId(entry.referredUserId)}</strong>
+                <p>Referral ID: {shortId(entry.id)}</p>
+              </div>
+              <div>
+                <strong>{entry.status}</strong>
+                <p>{formatDateOnly(entry.createdAt)}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : null}
     </section>
   );
 };
