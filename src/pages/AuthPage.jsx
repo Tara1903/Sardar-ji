@@ -216,12 +216,27 @@ export const AuthPage = () => {
         cooldownEndsAt: existingLoginOtp?.cooldownEndsAt || '',
       });
       setLoginOtp('');
-      setInfo(
-        existingLoginOtp
-          ? `A valid login code is already active for ${response.user.email}.`
-          : 'Password confirmed. Tap Send login code once to finish signing in.',
-      );
-      setError('');
+      try {
+        const otpResponse = await api.requestLoginOtp({ email: response.user.email });
+        setCustomerLoginChallenge((current) => ({
+          ...current,
+          expiresAt: otpResponse.expiresAt,
+          cooldownEndsAt: otpResponse.cooldownEndsAt,
+        }));
+        setInfo(
+          otpResponse.reused
+            ? otpResponse.message
+            : `Verification code sent automatically to ${response.user.email}.`,
+        );
+        setError('');
+      } catch (otpError) {
+        setError(otpError.message);
+        setInfo(
+          existingLoginOtp
+            ? `A valid login code is already active for ${response.user.email}.`
+            : 'Password confirmed. Send a login code if the automatic email does not arrive.',
+        );
+      }
     } catch (authError) {
       setError(authError.message);
     } finally {
