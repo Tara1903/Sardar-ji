@@ -4077,6 +4077,34 @@ body {
     align-items: flex-start;
   }
 
+  .menu-page-shell .menu-sidebar .category-showcase {
+    display: grid;
+    grid-auto-flow: row;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1rem 0.7rem;
+    overflow: visible;
+    padding-bottom: 0;
+  }
+
+  .menu-page-shell .menu-sidebar .category-orb {
+    min-width: 0;
+    align-content: start;
+    gap: 0.55rem;
+  }
+
+  .menu-page-shell .menu-sidebar .category-orb-image-wrap {
+    width: 64px;
+    height: 64px;
+  }
+
+  .menu-page-shell .menu-sidebar .category-orb-label {
+    max-width: 100%;
+    font-size: 0.88rem;
+    line-height: 1.12;
+    text-align: center;
+    text-wrap: balance;
+  }
+
   .quick-picks-grid,
   .storefront-grid {
     display: grid;
