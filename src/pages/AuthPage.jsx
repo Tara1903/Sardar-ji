@@ -190,7 +190,7 @@ export const AuthPage = () => {
       setOtpExpiresAt(response.expiresAt);
       setCooldownEndsAt(response.cooldownEndsAt);
       setInfo(response.message);
-      showOtpPopup(response.reused ? 'Code already active' : 'OTP sent successfully', response.message);
+      showOtpPopup(response.reused ? 'Code already active' : 'Verification code sent', response.message);
       setError('');
     } catch (authError) {
       setError(authError.message);
@@ -214,7 +214,7 @@ export const AuthPage = () => {
       setCooldownEndsAt(response.cooldownEndsAt);
       setFormState((current) => ({ ...current, otp: '' }));
       setInfo(response.message);
-      showOtpPopup(response.reused ? 'Code already active' : 'OTP sent successfully', response.message);
+      showOtpPopup(response.reused ? 'Code already active' : 'Verification code sent', response.message);
       setError('');
     } catch (authError) {
       setError(authError.message);
@@ -403,8 +403,9 @@ export const AuthPage = () => {
             </div>
 
             <p>
-              This deployment currently sends the verification code to{' '}
-              <strong>{normalizeEmail(formState.email) || 'your email'}</strong>. Your phone number is saved for delivery calls and WhatsApp fallback.
+              We will send a 6-digit verification code to{' '}
+              <strong>{normalizeEmail(formState.email) || 'your email'}</strong> to secure your new
+              account. Your phone number is saved for delivery calls and WhatsApp support.
             </p>
 
             {isOtpStage ? (
@@ -439,7 +440,7 @@ export const AuthPage = () => {
             ) : (
               <div className="helper-note">
                 <ShieldCheck size={16} />
-                <span>One code, one device, and a 5-minute validity window for safer signups.</span>
+                <span>Your code stays valid for 5 minutes and helps keep new accounts secure.</span>
               </div>
             )}
           </div>

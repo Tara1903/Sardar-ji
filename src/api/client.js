@@ -127,6 +127,11 @@ const isOtpRateLimitError = (error) =>
     `${error?.message || ''} ${error?.code || ''} ${error?.error_code || ''}`,
   );
 
+const isOtpMailSendError = (error) =>
+  /error sending .*email|confirmation email|unexpected_failure/i.test(
+    `${error?.message || ''} ${error?.code || ''} ${error?.error_code || ''}`,
+  );
+
 const buildOtpResponse = ({ email, expiresAt, cooldownEndsAt, message, reused = false }) => ({
   email,
   expiresAt,
@@ -177,6 +182,10 @@ const createOtpRequestError = (error, fallback) => {
     return new Error(
       'Too many email codes were requested recently. Please wait a minute, then tap Send login code only once.',
     );
+  }
+
+  if (isOtpMailSendError(error)) {
+    return new Error('We could not send your verification code right now. Please try again in a moment.');
   }
 
   return createError(error, fallback);
