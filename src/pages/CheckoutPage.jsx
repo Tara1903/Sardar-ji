@@ -1,15 +1,17 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Clock3, MailCheck, MapPin, MessageCircleMore, ShieldCheck } from 'lucide-react';
+import { Clock3, Gift, MailCheck, MapPin, MessageCircleMore, ShieldCheck } from 'lucide-react';
+import { PromoBanner } from '../components/common/PromoBanner';
 import { PageTransition } from '../components/common/PageTransition';
 import { useCart } from '../contexts/CartContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useAppData } from '../contexts/AppDataContext';
-import { computeCartPricing } from '../utils/pricing';
+import { getCartOfferState } from '../utils/pricing';
 import { formatCurrency } from '../utils/format';
 import { api } from '../api/client';
-import { createWhatsAppLink } from '../utils/whatsapp';
+import { createCartOrderMessage, createWhatsAppLink } from '../utils/whatsapp';
 import { isValidPhoneNumber } from '../utils/validation';
+import { useStoreDistance } from '../hooks/useStoreDistance';
 
 const emptyAddress = {
   name: '',
@@ -23,7 +25,8 @@ export const CheckoutPage = () => {
   const navigate = useNavigate();
   const { items, clearCart } = useCart();
   const { user, token, refreshUser } = useAuth();
-  const { settings } = useAppData();
+  const { products, settings } = useAppData();
+  const { distanceKm, locationStatus, isLocating } = useStoreDistance();
   const [selectedAddressId, setSelectedAddressId] = useState(user?.addresses?.[0]?.id || 'new');
   const [addressDraft, setAddressDraft] = useState(user?.addresses?.[0] || emptyAddress);
   const [paymentMethod, setPaymentMethod] = useState('COD');
@@ -48,7 +51,13 @@ export const CheckoutPage = () => {
     }
   }, [selectedAddressId, user]);
 
-  const totals = computeCartPricing(items, settings?.deliveryRules);
+  const cartOfferState = getCartOfferState(
+    items,
+    products,
+    settings?.deliveryRules,
+    0,
+    distanceKm,
+  );
   const chosenAddress = useMemo(
     () =>
       selectedAddressId === 'new'
@@ -60,7 +69,7 @@ export const CheckoutPage = () => {
   const otpExpired = Boolean(otpExpiresAt) && new Date(otpExpiresAt).getTime() <= Date.now();
   const otpStillTrusted =
     Boolean(otpVerifiedAt) && Date.now() - new Date(otpVerifiedAt).getTime() < 5 * 60 * 1000;
-  const checkoutMessage = `I want to place an order from checkout. Total: ${formatCurrency(totals.total)}`;
+  const checkoutMessage = createCartOrderMessage(cartOfferState.displayItems, cartOfferState);
 
   const sendOrderOtp = async () => {
     if (otpRequestLockRef.current) {
@@ -134,6 +143,10 @@ export const CheckoutPage = () => {
       return 'Enter a valid delivery phone number.';
     }
 
+    if (cartOfferState.notDeliverable) {
+      return 'This address is outside our current 10 km delivery zone.';
+    }
+
     if (!otpStillTrusted) {
       return 'Verify the checkout OTP before placing the order.';
     }
@@ -158,9 +171,17 @@ export const CheckoutPage = () => {
     try {
       const order = await api.placeOrder(
         {
-          items,
+          items: cartOfferState.orderItems,
           address: chosenAddress,
           paymentMethod,
+          pricing: {
+            subtotal: cartOfferState.subtotal,
+            deliveryFee: cartOfferState.deliveryFee,
+            handlingFee: cartOfferState.handlingFee,
+            discount: cartOfferState.discount,
+            total: cartOfferState.total,
+            distanceKm: cartOfferState.distanceKm,
+          },
           note: '',
         },
         token,
@@ -181,6 +202,25 @@ export const CheckoutPage = () => {
       <section className="section first-section">
         <div className="container checkout-layout">
           <div className="checkout-main">
+            <PromoBanner
+              description={
+                cartOfferState.notDeliverable
+                  ? cartOfferState.deliveryMessage
+                  : cartOfferState.freebieUnlocked
+                    ? 'Your order includes the complimentary mango juice already.'
+                    : cartOfferState.deliveryMessage
+              }
+              eyebrow="Checkout offer"
+              title={cartOfferState.offerMessage}
+              tone={
+                cartOfferState.notDeliverable
+                  ? 'danger'
+                  : cartOfferState.freebieUnlocked || cartOfferState.deliveryFee === 0
+                    ? 'success'
+                    : 'warning'
+              }
+            />
+
             <div className="panel-card">
               <div className="section-heading compact">
                 <div>
@@ -361,32 +401,56 @@ export const CheckoutPage = () => {
           <aside className="summary-card sticky">
             <h3>Order summary</h3>
             <div className="order-mini-list">
-              {items.map((item) => (
+              {cartOfferState.displayItems.map((item) => (
                 <div className="summary-line" key={item.id}>
                   <span>
                     {item.name} x {item.quantity}
                   </span>
-                  <strong>{formatCurrency(item.price * item.quantity)}</strong>
+                  <strong>{item.isFreebie ? 'FREE' : formatCurrency(item.price * item.quantity)}</strong>
                 </div>
               ))}
             </div>
 
             <div className="summary-line">
               <span>Subtotal</span>
-              <strong>{formatCurrency(totals.subtotal)}</strong>
+              <strong>{formatCurrency(cartOfferState.subtotal)}</strong>
+            </div>
+            <div className="summary-line delivery-distance-line">
+              <span>
+                <MapPin size={14} />
+                {isLocating ? 'Checking distance...' : locationStatus}
+              </span>
+              <strong>{distanceKm !== null ? `${distanceKm.toFixed(1)} km` : 'Manual'}</strong>
             </div>
             <div className="summary-line">
-              <span>Delivery fee</span>
-              <strong>{formatCurrency(totals.deliveryFee)}</strong>
+              <span>{cartOfferState.deliveryFeeLabel}</span>
+              <strong>{cartOfferState.deliveryFee ? formatCurrency(cartOfferState.deliveryFee) : 'FREE'}</strong>
             </div>
-            <div className="summary-line">
-              <span>Handling fee</span>
-              <strong>{formatCurrency(totals.handlingFee)}</strong>
-            </div>
+            {cartOfferState.deliveryDiscount > 0 ? (
+              <div className="summary-line summary-line-discount">
+                <span>Delivery discount</span>
+                <strong>-{formatCurrency(cartOfferState.deliveryDiscount)}</strong>
+              </div>
+            ) : null}
+            {cartOfferState.freebieItem ? (
+              <div className="summary-line summary-line-freebie">
+                <span>
+                  <Gift size={14} />
+                  {cartOfferState.freebieItem.name}
+                </span>
+                <strong>FREE</strong>
+              </div>
+            ) : null}
             <div className="summary-line total">
               <span>Total</span>
-              <strong>{formatCurrency(totals.total)}</strong>
+              <strong>{formatCurrency(cartOfferState.total)}</strong>
             </div>
+            {cartOfferState.deliveryDiscount > 0 ? (
+              <p className="hint subtle-copy">
+                Original delivery {formatCurrency(cartOfferState.baseDeliveryFee)} reduced to{' '}
+                {cartOfferState.deliveryFee ? formatCurrency(cartOfferState.deliveryFee) : 'FREE'}.
+              </p>
+            ) : null}
             <div className="eta-box">
               <Clock3 size={16} />
               Estimated delivery: {settings?.deliveryRules?.estimatedDeliveryMinutes || 35} minutes
@@ -402,8 +466,13 @@ export const CheckoutPage = () => {
             </a>
             {info ? <p className="success-text">{info}</p> : null}
             {error ? <p className="error-text">{error}</p> : null}
-            <button className="btn btn-primary full-width" disabled={placingOrder} onClick={handlePlaceOrder} type="button">
-              {placingOrder ? 'Placing order...' : 'Place order'}
+            <button
+              className="btn btn-primary full-width"
+              disabled={placingOrder || cartOfferState.notDeliverable}
+              onClick={handlePlaceOrder}
+              type="button"
+            >
+              {placingOrder ? 'Placing order...' : cartOfferState.notDeliverable ? 'Outside delivery zone' : 'Place order'}
             </button>
           </aside>
         </div>

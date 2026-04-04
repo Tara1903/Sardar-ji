@@ -6,10 +6,13 @@ Simple Vite + React frontend for Sardar Ji Food Corner, connected directly to Su
 
 ```text
 .
+|-- android
+|-- assets
 |-- src
 |-- public
 |-- supabase
 |   `-- migrations
+|-- tools
 |-- index.html
 |-- package.json
 |-- vite.config.js
@@ -43,6 +46,40 @@ The app will open on `http://localhost:5173`.
 - `npm run dev`
 - `npm run build`
 - `npm run preview`
+- `npm run android:sync`
+- `npm run android:build:debug`
+- `npm run android:build:release`
+- `npm run android:open`
+
+## Android App
+
+The project is configured with Capacitor using:
+
+- app name: `Sardar Ji Food Corner`
+- app id: `com.sardarjifood.app`
+- web directory: `dist`
+
+Helpful notes:
+
+- `npm run android:build:debug` builds the web app, syncs Capacitor, and generates a debug APK.
+- `npm run android:build:release` builds a signed release APK and AAB for distribution.
+- The current debug APK is created at `android/app/build/outputs/apk/debug/app-debug.apk`.
+- The signed release APK is created at `android/app/build/outputs/apk/release/app-release.apk`.
+- The signed release AAB is created at `android/app/build/outputs/bundle/release/app-release.aab`.
+- The debug build script prefers Android Studio's bundled JBR and `%LOCALAPPDATA%\\Android\\Sdk`, then falls back to `tools/android-sdk` and `tools/jdk21` if needed.
+- `android/local.properties` points Android Studio to the local SDK path.
+
+## Android Release Signing
+
+Local release signing is configured through:
+
+- `android/release-keystore.properties`
+- `android/sardar-ji-food-corner-release.jks`
+
+Important:
+
+- Back up both files somewhere safe before reinstalling Windows or moving machines.
+- Without the same keystore, future Play Store updates for `com.sardarjifood.app` cannot be published as updates.
 
 ## Supabase
 
@@ -79,3 +116,4 @@ These define the menu, orders, referrals, tracking, storage, and security rules 
 - Product and order data come directly from Supabase.
 - `vercel.json` is intentionally minimal and only exists to support React Router deep links on Vercel.
 - Google Maps is optional. Without an API key, tracking still shows location details and a map link.
+- The active storefront offer is `₹499+ Order = FREE Delivery + FREE Mango Juice 🥭`.

@@ -4,6 +4,7 @@ import { AnimatePresence } from 'framer-motion';
 import { Navbar } from './components/layout/Navbar';
 import { Footer } from './components/layout/Footer';
 import { MobileNav } from './components/layout/MobileNav';
+import { SpecialOfferPopup } from './components/layout/SpecialOfferPopup';
 import { WhatsAppFab } from './components/layout/WhatsAppFab';
 import { ProtectedRoute } from './components/common/ProtectedRoute';
 import { Loader } from './components/common/Loader';
@@ -66,6 +67,7 @@ const NotFoundPage = lazy(() =>
 
 const CustomerLayout = () => {
   const { settings } = useAppData();
+  const location = useLocation();
 
   return (
     <div className="app-shell">
@@ -75,6 +77,10 @@ const CustomerLayout = () => {
       </div>
       <Footer settings={settings} />
       <MobileNav />
+      <SpecialOfferPopup
+        enabled={location.pathname === '/'}
+        phoneNumber={settings?.whatsappNumber}
+      />
       <WhatsAppFab phoneNumber={settings?.whatsappNumber} />
     </div>
   );

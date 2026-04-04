@@ -1,14 +1,14 @@
 import { MessageCircleMore } from 'lucide-react';
-import { createWhatsAppLink } from '../../utils/whatsapp';
+import { createGeneralOrderMessage, createWhatsAppLink } from '../../utils/whatsapp';
 
 export const WhatsAppFab = ({ phoneNumber }) => (
   <a
     className="whatsapp-fab"
-    href={createWhatsAppLink(phoneNumber, 'I want to place an order from Sardar Ji Food Corner.')}
+    href={createWhatsAppLink(phoneNumber, createGeneralOrderMessage())}
     rel="noreferrer"
     target="_blank"
   >
     <MessageCircleMore size={22} />
-    Order
+    Order on WhatsApp
   </a>
 );

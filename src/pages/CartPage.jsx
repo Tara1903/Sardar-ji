@@ -1,17 +1,27 @@
 import { Link } from 'react-router-dom';
-import { Minus, Plus, Trash2 } from 'lucide-react';
+import { Gift, MapPin, MessageCircleMore, Minus, Plus, Trash2 } from 'lucide-react';
+import { PromoBanner } from '../components/common/PromoBanner';
 import { PageTransition } from '../components/common/PageTransition';
 import { EmptyState } from '../components/common/EmptyState';
 import { SmartImage } from '../components/common/SmartImage';
 import { useCart } from '../contexts/CartContext';
 import { useAppData } from '../contexts/AppDataContext';
-import { computeCartPricing } from '../utils/pricing';
+import { getCartOfferState } from '../utils/pricing';
 import { formatCurrency } from '../utils/format';
+import { createCartOrderMessage, createWhatsAppLink } from '../utils/whatsapp';
+import { useStoreDistance } from '../hooks/useStoreDistance';
 
 export const CartPage = () => {
   const { items, updateQuantity, removeFromCart, clearCart } = useCart();
-  const { settings } = useAppData();
-  const totals = computeCartPricing(items, settings?.deliveryRules);
+  const { settings, products } = useAppData();
+  const { distanceKm, locationStatus, isLocating } = useStoreDistance();
+  const cartOfferState = getCartOfferState(
+    items,
+    products,
+    settings?.deliveryRules,
+    0,
+    distanceKm,
+  );
 
   if (!items.length) {
     return (
@@ -38,32 +48,66 @@ export const CartPage = () => {
       <section className="section first-section">
         <div className="container cart-layout">
           <div className="cart-list">
-            {items.map((item) => (
+            <PromoBanner
+              description={
+                cartOfferState.notDeliverable
+                  ? cartOfferState.deliveryMessage
+                  : cartOfferState.freebieUnlocked
+                    ? 'The complimentary mango juice is now included in your order summary.'
+                    : cartOfferState.deliveryMessage
+              }
+              eyebrow="Cart offer"
+              title={cartOfferState.offerMessage}
+              tone={
+                cartOfferState.notDeliverable
+                  ? 'danger'
+                  : cartOfferState.freebieUnlocked || cartOfferState.deliveryFee === 0
+                    ? 'success'
+                    : 'warning'
+              }
+            />
+
+            {cartOfferState.displayItems.map((item) => (
               <article className="cart-item" key={item.id}>
                 <SmartImage alt={item.name} className="cart-item-image" src={item.image} />
                 <div className="cart-copy">
                   <div className="space-between">
                     <div>
                       <p className="eyebrow">{item.category}</p>
-                      <h3>{item.name}</h3>
+                      <h3>
+                        {item.name}
+                        {item.isFreebie ? (
+                          <span className="freebie-inline-pill">
+                            <Gift size={14} />
+                            FREE
+                          </span>
+                        ) : null}
+                      </h3>
                     </div>
-                    <strong>{formatCurrency(item.price * item.quantity)}</strong>
+                    <strong>{item.isFreebie ? 'FREE' : formatCurrency(item.price * item.quantity)}</strong>
                   </div>
                   <p>{item.description}</p>
-                  <div className="space-between">
-                    <div className="qty-control">
-                      <button onClick={() => updateQuantity(item.id, item.quantity - 1)} type="button">
-                        <Minus size={14} />
-                      </button>
-                      <span>{item.quantity}</span>
-                      <button onClick={() => updateQuantity(item.id, item.quantity + 1)} type="button">
-                        <Plus size={14} />
+                  {item.isFreebie ? (
+                    <div className="freebie-lock-row">
+                      <Gift size={16} />
+                      <span>Unlocked automatically with your ₹499+ order.</span>
+                    </div>
+                  ) : (
+                    <div className="space-between">
+                      <div className="qty-control">
+                        <button onClick={() => updateQuantity(item.id, item.quantity - 1)} type="button">
+                          <Minus size={14} />
+                        </button>
+                        <span>{item.quantity}</span>
+                        <button onClick={() => updateQuantity(item.id, item.quantity + 1)} type="button">
+                          <Plus size={14} />
+                        </button>
+                      </div>
+                      <button className="icon-btn" onClick={() => removeFromCart(item.id)} type="button">
+                        <Trash2 size={16} />
                       </button>
                     </div>
-                    <button className="icon-btn" onClick={() => removeFromCart(item.id)} type="button">
-                      <Trash2 size={16} />
-                    </button>
-                  </div>
+                  )}
                 </div>
               </article>
             ))}
@@ -78,26 +122,74 @@ export const CartPage = () => {
             </div>
             <div className="summary-line">
               <span>Subtotal</span>
-              <strong>{formatCurrency(totals.subtotal)}</strong>
+              <strong>{formatCurrency(cartOfferState.subtotal)}</strong>
+            </div>
+            <div className="summary-line delivery-distance-line">
+              <span>
+                <MapPin size={14} />
+                {isLocating ? 'Checking distance...' : locationStatus}
+              </span>
+              <strong>{distanceKm !== null ? `${distanceKm.toFixed(1)} km` : 'Manual'}</strong>
             </div>
             <div className="summary-line">
-              <span>Delivery fee</span>
-              <strong>{formatCurrency(totals.deliveryFee)}</strong>
+              <span>{cartOfferState.deliveryFeeLabel}</span>
+              <strong>{cartOfferState.deliveryFee ? formatCurrency(cartOfferState.deliveryFee) : 'FREE'}</strong>
             </div>
-            <div className="summary-line">
-              <span>Handling</span>
-              <strong>{formatCurrency(totals.handlingFee)}</strong>
-            </div>
+            {cartOfferState.deliveryDiscount > 0 ? (
+              <div className="summary-line summary-line-discount">
+                <span>Delivery discount</span>
+                <strong>-{formatCurrency(cartOfferState.deliveryDiscount)}</strong>
+              </div>
+            ) : null}
+            {cartOfferState.freebieItem ? (
+              <div className="summary-line summary-line-freebie">
+                <span>{cartOfferState.freebieItem.name}</span>
+                <strong>FREE</strong>
+              </div>
+            ) : null}
             <div className="summary-line total">
               <span>Total</span>
-              <strong>{formatCurrency(totals.total)}</strong>
+              <strong>{formatCurrency(cartOfferState.total)}</strong>
             </div>
-            <p className="hint">
-              {totals.qualifiesForFreeDelivery
-                ? 'You unlocked FREE delivery on this order.'
-                : `Add ${formatCurrency((settings?.deliveryRules?.freeDeliveryThreshold || 299) - totals.subtotal)} more for FREE delivery.`}
+            <p
+              className={`hint cart-offer-hint ${
+                cartOfferState.notDeliverable
+                  ? 'is-danger'
+                  : cartOfferState.freebieUnlocked || cartOfferState.deliveryFee === 0
+                    ? 'is-success'
+                    : 'is-warning'
+              }`}
+            >
+              {cartOfferState.offerMessage}
             </p>
-            <Link className="btn btn-primary full-width" to="/checkout">
+            {cartOfferState.deliveryDiscount > 0 ? (
+              <p className="hint subtle-copy">
+                Original delivery {formatCurrency(cartOfferState.baseDeliveryFee)} reduced to{' '}
+                {cartOfferState.deliveryFee ? formatCurrency(cartOfferState.deliveryFee) : 'FREE'}.
+              </p>
+            ) : null}
+            <a
+              className="btn btn-secondary full-width"
+              href={createWhatsAppLink(
+                settings?.whatsappNumber,
+                createCartOrderMessage(cartOfferState.displayItems, cartOfferState),
+              )}
+              rel="noreferrer"
+              target="_blank"
+            >
+              <MessageCircleMore size={16} />
+              Order on WhatsApp
+            </a>
+            <Link
+              aria-disabled={cartOfferState.notDeliverable}
+              className={`btn btn-primary full-width ${cartOfferState.notDeliverable ? 'is-disabled' : ''}`}
+              onClick={(event) => {
+                if (cartOfferState.notDeliverable) {
+                  event.preventDefault();
+                }
+              }}
+              to="/checkout"
+            >
               Proceed to checkout
             </Link>
           </aside>

@@ -13,6 +13,12 @@ import {
   getOtpRequestState,
   storeOtpRequest,
 } from '../utils/otpState';
+import { defaultDeliveryRules } from '../utils/pricing';
+import {
+  DEFAULT_OFFERS,
+  DEFAULT_TRUST_POINTS,
+  STORE_MAP_EMBED_URL,
+} from '../utils/storefront';
 import { normalizeEmail } from '../utils/validation';
 
 const API_URL = publicEnv.apiUrl.trim();
@@ -157,6 +163,12 @@ const createSlug = (value = '') =>
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '');
 
+const createOrderNumber = () =>
+  `SJ${new Date().toISOString().replace(/\D/g, '').slice(2, 12)}${Math.random()
+    .toString(36)
+    .slice(2, 6)
+    .toUpperCase()}`;
+
 const isDuplicateAuthResponse = (response) => {
   const user = response?.data?.user;
   const identities = user?.identities || [];
@@ -208,10 +220,13 @@ const normalizeSettings = (row = {}) => ({
   whatsappNumber: normalizeWhatsappNumber(row.whatsapp_number || DEFAULT_WHATSAPP_NUMBER),
   phoneNumber: normalizePhoneDisplay(row.phone_number || DEFAULT_PHONE_NUMBER),
   timings: row.timings || 'Morning to Night',
-  mapsEmbedUrl: row.maps_embed_url || '',
-  trustPoints: row.trust_points || [],
-  deliveryRules: row.delivery_rules || {},
-  offers: row.offers || [],
+  mapsEmbedUrl: row.maps_embed_url || STORE_MAP_EMBED_URL,
+  trustPoints: row.trust_points?.length ? row.trust_points : DEFAULT_TRUST_POINTS,
+  deliveryRules: {
+    ...defaultDeliveryRules,
+    ...(row.delivery_rules || {}),
+  },
+  offers: row.offers?.length ? row.offers : DEFAULT_OFFERS,
   createdAt: row.created_at,
   updatedAt: row.updated_at,
 });
@@ -911,25 +926,61 @@ const direct = {
   placeOrder: async (payload, token) => {
     const supabase = await getSupabase();
     const authUser = await getCurrentUser(supabase, token);
+    const user = await getProfile(supabase, authUser.id);
 
     if (!payload?.items?.length) {
       throw new Error('Add at least one item before placing the order.');
     }
 
-    const { data, error } = await supabase.rpc('place_order', {
-      p_user_id: authUser.id,
-      p_address: payload.address,
-      p_payment_method: payload.paymentMethod || 'COD',
-      p_items: payload.items,
-      p_note: payload.note || '',
-    });
+    const settings = await direct.getSettings();
+    const pricing = payload.pricing || {};
+    const estimatedDeliveryAt = new Date(
+      Date.now() + (settings.deliveryRules?.estimatedDeliveryMinutes || 35) * 60 * 1000,
+    ).toISOString();
+    const orderNumber = createOrderNumber();
+    const orderPayload = {
+      order_number: orderNumber,
+      user_id: authUser.id,
+      customer_name: user.name,
+      customer_phone: user.phoneNumber || payload.address?.phoneNumber || '',
+      items: payload.items,
+      address: payload.address,
+      payment_method: payload.paymentMethod || 'COD',
+      note: payload.note || '',
+      subtotal: Number(pricing.subtotal || 0),
+      delivery_fee: Number(pricing.deliveryFee || 0),
+      handling_fee: Number(pricing.handlingFee || 0),
+      discount: Number(pricing.discount || 0),
+      total: Number(pricing.total || 0),
+      status: 'Order Placed',
+      estimated_delivery_at: estimatedDeliveryAt,
+      tracking: {
+        timeline: [],
+        currentLocation: null,
+      },
+    };
+
+    const { data, error } = await supabase
+      .from('orders')
+      .insert(orderPayload)
+      .select('*')
+      .single();
 
     if (error || !data?.id) {
       throw createError(error, 'Unable to place the order.');
     }
 
-    const profile = await getProfile(supabase, authUser.id);
-    await saveAddressIfNew(supabase, profile, payload.address);
+    await saveAddressIfNew(supabase, user, payload.address);
+    const { error: trackingError } = await supabase.rpc('update_order_status', {
+      p_order_id: data.id,
+      p_status: 'Order Placed',
+      p_assigned_delivery_user_id: null,
+      p_actor_user_id: authUser.id,
+    });
+
+    if (trackingError) {
+      throw createError(trackingError, 'Unable to initialize order tracking.');
+    }
 
     return getOrderRecord(supabase, data.id);
   },

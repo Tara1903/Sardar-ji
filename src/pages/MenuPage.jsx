@@ -1,6 +1,7 @@
 import { startTransition, useDeferredValue, useMemo, useState } from 'react';
 import { Filter, Search, ShoppingBag } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { PromoBanner } from '../components/common/PromoBanner';
 import { PageTransition } from '../components/common/PageTransition';
 import { EmptyState } from '../components/common/EmptyState';
 import { SkeletonGrid } from '../components/common/Loader';
@@ -8,7 +9,8 @@ import { ProductCard } from '../components/menu/ProductCard';
 import { useAppData } from '../contexts/AppDataContext';
 import { useCart } from '../contexts/CartContext';
 import { formatCurrency } from '../utils/format';
-import { computeCartPricing } from '../utils/pricing';
+import { getCartOfferState } from '../utils/pricing';
+import { SPECIAL_OFFER_TITLE } from '../utils/storefront';
 
 const priceFilters = [
   { label: 'All prices', value: 'all' },
@@ -52,7 +54,7 @@ export const MenuPage = () => {
     });
   }, [activeCategory, deferredSearch, priceFilter, products]);
 
-  const cartTotals = computeCartPricing(items, settings?.deliveryRules);
+  const cartOfferState = getCartOfferState(items, products, settings?.deliveryRules);
 
   return (
     <PageTransition>
@@ -64,6 +66,14 @@ export const MenuPage = () => {
               <h1>Search, filter, and order in seconds</h1>
             </div>
           </div>
+
+          <PromoBanner
+            className="menu-offer-banner"
+            description="₹299 = Free Delivery (≤5km) | ₹499 = Free Delivery + FREE Mango Juice 🥭"
+            eyebrow="Offer of the day"
+            title={SPECIAL_OFFER_TITLE}
+            tone="accent"
+          />
 
           <div className="toolbar">
             <label className="search-bar">
@@ -136,7 +146,8 @@ export const MenuPage = () => {
         <div className="mobile-order-bar">
           <div>
             <strong>{itemCount} items in cart</strong>
-            <span>{formatCurrency(cartTotals.total)}</span>
+            <span>{formatCurrency(cartOfferState.total)}</span>
+            <small>{cartOfferState.offerMessage}</small>
           </div>
           <Link className="btn btn-primary" to="/cart">
             <ShoppingBag size={16} />

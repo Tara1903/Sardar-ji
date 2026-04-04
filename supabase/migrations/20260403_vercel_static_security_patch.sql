@@ -38,7 +38,7 @@ begin
   end if;
 
   select delivery_rules into v_delivery_rules from public.app_settings where id = 1;
-  v_threshold := coalesce((v_delivery_rules->>'freeDeliveryThreshold')::numeric, 299);
+  v_threshold := coalesce((v_delivery_rules->>'freeDeliveryThreshold')::numeric, 499);
   v_eta_minutes := coalesce((v_delivery_rules->>'estimatedDeliveryMinutes')::integer, 35);
 
   select coalesce(sum((item.value->>'quantity')::int * prod.price), 0)
@@ -55,7 +55,7 @@ begin
     v_handling_fee := 0;
   else
     v_delivery_fee := coalesce((v_delivery_rules->>'deliveryFeeBelowThreshold')::numeric, 30);
-    v_handling_fee := coalesce((v_delivery_rules->>'handlingFeeBelowThreshold')::numeric, 9);
+    v_handling_fee := coalesce((v_delivery_rules->>'handlingFeeBelowThreshold')::numeric, 0);
   end if;
 
   v_total := v_subtotal + v_delivery_fee + v_handling_fee - v_discount;

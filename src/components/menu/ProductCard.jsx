@@ -48,7 +48,7 @@ export const ProductCard = ({ product, whatsappNumber }) => {
           rel="noreferrer"
           target="_blank"
         >
-          WhatsApp
+          Order on WhatsApp
         </a>
       </div>
     </motion.article>

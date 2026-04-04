@@ -67,7 +67,7 @@ export const OrderSuccessPage = () => {
                     <span>
                       {item.name} x {item.quantity}
                     </span>
-                    <strong>{formatCurrency(item.price * item.quantity)}</strong>
+                    <strong>{item.isFreebie ? 'FREE' : formatCurrency(item.price * item.quantity)}</strong>
                   </div>
                 ))}
               </div>

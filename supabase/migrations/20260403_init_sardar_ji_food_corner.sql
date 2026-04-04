@@ -109,8 +109,8 @@ create table if not exists public.app_settings (
   id integer primary key default 1 check (id = 1),
   business_name text not null default 'Sardar Ji Food Corner',
   tagline text not null default 'Swad Bhi, Budget Bhi',
-  whatsapp_number text not null default '919999999999',
-  phone_number text not null default '+91 99999 99999',
+  whatsapp_number text not null default '919779195979',
+  phone_number text not null default '+91 97791 95979',
   timings text not null default 'Morning to Night',
   maps_embed_url text not null default '',
   trust_points jsonb not null default '[]'::jsonb,
@@ -396,7 +396,7 @@ begin
   end if;
 
   select delivery_rules into v_delivery_rules from public.app_settings where id = 1;
-  v_threshold := coalesce((v_delivery_rules->>'freeDeliveryThreshold')::numeric, 299);
+  v_threshold := coalesce((v_delivery_rules->>'freeDeliveryThreshold')::numeric, 499);
   v_eta_minutes := coalesce((v_delivery_rules->>'estimatedDeliveryMinutes')::integer, 35);
 
   select coalesce(sum((item.value->>'quantity')::int * prod.price), 0)
@@ -413,7 +413,7 @@ begin
     v_handling_fee := 0;
   else
     v_delivery_fee := coalesce((v_delivery_rules->>'deliveryFeeBelowThreshold')::numeric, 30);
-    v_handling_fee := coalesce((v_delivery_rules->>'handlingFeeBelowThreshold')::numeric, 9);
+    v_handling_fee := coalesce((v_delivery_rules->>'handlingFeeBelowThreshold')::numeric, 0);
   end if;
 
   v_total := v_subtotal + v_delivery_fee + v_handling_fee - v_discount;
@@ -999,17 +999,17 @@ values (
   1,
   'Sardar Ji Food Corner',
   'Swad Bhi, Budget Bhi',
-  '919999999999',
-  '+91 99999 99999',
+  '919779195979',
+  '+91 97791 95979',
   'Morning to Night',
   '',
   '["Fresh homestyle veg meals", "Fast local delivery", "Clear pricing and offers"]'::jsonb,
-  '{"freeDeliveryThreshold":299,"deliveryFeeBelowThreshold":30,"handlingFeeBelowThreshold":9,"estimatedDeliveryMinutes":35}'::jsonb,
+  '{"perKmRate":10,"minDelivery":20,"maxDistance":10,"freeThreshold1":299,"freeDistanceLimit":5,"freeThreshold2":499,"deliveryFeeLabel":"Delivery + handling","freeItemSlug":"mango-juice-150ml-freebie","freeItemName":"Mango Juice (150ml)","freeItemDescription":"Complimentary on orders above ₹499.","estimatedDeliveryMinutes":35}'::jsonb,
   '[
+    {"id":"offer-delivery-299","title":"₹299 = Free Delivery (≤5km)","description":"Stay above ₹299 and we waive delivery charges within 5 km of the store."},
+    {"id":"offer-delivery-499","title":"₹499 = Free Delivery + FREE Mango Juice 🥭","description":"Cross ₹499 and your order unlocks both free delivery and a complimentary mango juice."},
     {"id":"offer-budget","title":"₹70 se ₹149 tak Har Budget ki Thali","description":"Daily budget-friendly thalis for office, hostel, and family meals."},
-    {"id":"offer-delivery","title":"₹299 Order = FREE Delivery","description":"Cross the free delivery threshold and the delivery fee drops to zero."},
-    {"id":"offer-referral","title":"6 Referral = 1 Month FREE","description":"Invite friends and unlock free meals plus milestone rewards."},
-    {"id":"offer-double","title":"Missed thali = next day double","description":"If a confirmed thali is missed, the next day is covered double."}
+    {"id":"offer-referral","title":"6 Referral = 1 Month FREE","description":"Invite friends and unlock free meals plus milestone rewards."}
   ]'::jsonb
 )
 on conflict (id) do update

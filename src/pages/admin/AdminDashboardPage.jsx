@@ -127,6 +127,54 @@ export const AdminDashboardPage = () => {
               />
             </label>
             <label>
+              Rate per km
+              <input
+                onChange={(event) =>
+                  setSettingsDraft((current) => ({
+                    ...current,
+                    deliveryRules: {
+                      ...current.deliveryRules,
+                      perKmRate: Number(event.target.value),
+                    },
+                  }))
+                }
+                type="number"
+                value={settingsDraft.deliveryRules.perKmRate || ''}
+              />
+            </label>
+            <label>
+              Minimum delivery charge
+              <input
+                onChange={(event) =>
+                  setSettingsDraft((current) => ({
+                    ...current,
+                    deliveryRules: {
+                      ...current.deliveryRules,
+                      minDelivery: Number(event.target.value),
+                    },
+                  }))
+                }
+                type="number"
+                value={settingsDraft.deliveryRules.minDelivery || ''}
+              />
+            </label>
+            <label>
+              Max delivery distance (km)
+              <input
+                onChange={(event) =>
+                  setSettingsDraft((current) => ({
+                    ...current,
+                    deliveryRules: {
+                      ...current.deliveryRules,
+                      maxDistance: Number(event.target.value),
+                    },
+                  }))
+                }
+                type="number"
+                value={settingsDraft.deliveryRules.maxDistance || ''}
+              />
+            </label>
+            <label>
               Free delivery threshold
               <input
                 onChange={(event) =>
@@ -134,44 +182,44 @@ export const AdminDashboardPage = () => {
                     ...current,
                     deliveryRules: {
                       ...current.deliveryRules,
-                      freeDeliveryThreshold: Number(event.target.value),
+                      freeThreshold1: Number(event.target.value),
                     },
                   }))
                 }
                 type="number"
-                value={settingsDraft.deliveryRules.freeDeliveryThreshold || ''}
+                value={settingsDraft.deliveryRules.freeThreshold1 || ''}
               />
             </label>
             <label>
-              Delivery fee below threshold
+              Free delivery limit (km)
               <input
                 onChange={(event) =>
                   setSettingsDraft((current) => ({
                     ...current,
                     deliveryRules: {
                       ...current.deliveryRules,
-                      deliveryFeeBelowThreshold: Number(event.target.value),
+                      freeDistanceLimit: Number(event.target.value),
                     },
                   }))
                 }
                 type="number"
-                value={settingsDraft.deliveryRules.deliveryFeeBelowThreshold || ''}
+                value={settingsDraft.deliveryRules.freeDistanceLimit || ''}
               />
             </label>
             <label>
-              Handling fee below threshold
+              Free delivery + juice threshold
               <input
                 onChange={(event) =>
                   setSettingsDraft((current) => ({
                     ...current,
                     deliveryRules: {
                       ...current.deliveryRules,
-                      handlingFeeBelowThreshold: Number(event.target.value),
+                      freeThreshold2: Number(event.target.value),
                     },
                   }))
                 }
                 type="number"
-                value={settingsDraft.deliveryRules.handlingFeeBelowThreshold || ''}
+                value={settingsDraft.deliveryRules.freeThreshold2 || ''}
               />
             </label>
             <label>
@@ -191,6 +239,10 @@ export const AdminDashboardPage = () => {
               />
             </label>
           </div>
+
+          <p className="hint">
+            Delivery is distance-based: free within 5 km above ₹299, 50% off above ₹299 outside 5 km, and free delivery plus Mango Juice above ₹499.
+          </p>
 
           <div className="stack-list">
             {(settingsDraft.offers || []).map((offer, index) => (

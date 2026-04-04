@@ -6,9 +6,18 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "android:sync": "npm run build && node .\\node_modules\\@capacitor\\cli\\dist\\index.js sync android",
+    "android:build:debug": "npm run android:sync && tools\\build-android-debug.cmd",
+    "android:build:release": "npm run android:sync && tools\\build-android-release.cmd",
+    "android:open": "node .\\node_modules\\@capacitor\\cli\\dist\\index.js open android"
   },
   "dependencies": {
+    "@capacitor/android": "^8.3.0",
+    "@capacitor/cli": "^8.3.0",
+    "@capacitor/core": "^8.3.0",
+    "@capacitor/splash-screen": "^8.0.1",
+    "@capacitor/status-bar": "^8.0.2",
     "@supabase/supabase-js": "^2.57.4",
     "framer-motion": "^12.38.0",
     "leaflet": "^1.9.4",
@@ -19,6 +28,7 @@
     "react-router-dom": "^6.30.1"
   },
   "devDependencies": {
+    "@capacitor/assets": "^3.0.5",
     "@vitejs/plugin-react": "^4.3.4",
     "vite": "^5.4.18"
   }

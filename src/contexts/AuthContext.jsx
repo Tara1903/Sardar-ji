@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { api } from '../api/client';
+import { getSupabaseBrowserClient } from '../lib/supabase';
 
 const AuthContext = createContext(null);
 const STORAGE_KEY = 'sardar-ji-session';
@@ -65,12 +66,8 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = () => {
-    import('../lib/supabase')
-      .then(({ getSupabaseBrowserClient }) => {
-        const supabase = getSupabaseBrowserClient();
-        return supabase?.auth.signOut();
-      })
-      .catch(() => {});
+    const supabase = getSupabaseBrowserClient();
+    supabase?.auth.signOut().catch(() => {});
     setToken('');
     setUser(null);
     localStorage.removeItem(STORAGE_KEY);

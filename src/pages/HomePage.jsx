@@ -1,15 +1,40 @@
 import { motion } from 'framer-motion';
-import { ArrowRight, BadgeIndianRupee, Bike, Gift, ShieldCheck, Sparkles, Star } from 'lucide-react';
+import {
+  ArrowRight,
+  BadgeIndianRupee,
+  Bike,
+  Gift,
+  MessageCircleMore,
+  ShieldCheck,
+  Sparkles,
+  Star,
+} from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { PageTransition } from '../components/common/PageTransition';
+import { PromoBanner } from '../components/common/PromoBanner';
 import { SkeletonGrid } from '../components/common/Loader';
+import { ReviewsSection } from '../components/home/ReviewsSection';
+import { VisitUsSection } from '../components/home/VisitUsSection';
 import { SmartImage } from '../components/common/SmartImage';
 import { ProductCard } from '../components/menu/ProductCard';
 import { useAppData } from '../contexts/AppDataContext';
+import { useCart } from '../contexts/CartContext';
+import { getCartOfferState } from '../utils/pricing';
+import { createGeneralOrderMessage, createWhatsAppLink } from '../utils/whatsapp';
+import {
+  FREE_DELIVERY_THRESHOLD,
+  SPECIAL_OFFER_SUBTITLE,
+  SPECIAL_OFFER_TITLE,
+} from '../utils/storefront';
 
 export const HomePage = () => {
   const { products, categories, settings, loading } = useAppData();
+  const { items } = useCart();
   const featuredProducts = products.filter((product) => product.badge).slice(0, 4);
+  const heroOfferState = getCartOfferState(items, products, settings?.deliveryRules);
+  const dynamicHeroLine = items.length
+    ? heroOfferState.offerMessage
+    : `Order above ₹${FREE_DELIVERY_THRESHOLD} for free delivery within 5 km, or cross ₹499 for a FREE Mango Juice 🥭`;
 
   return (
     <PageTransition>
@@ -20,38 +45,49 @@ export const HomePage = () => {
             initial={{ opacity: 0, y: 20 }}
             transition={{ duration: 0.45 }}
           >
-            <span className="hero-chip">Local premium veg delivery</span>
-            <h1>
-              {settings?.businessName || 'Sardar Ji Food Corner'}
-              <span>{settings?.tagline || 'Swad Bhi, Budget Bhi'}</span>
-            </h1>
+            <span className="hero-chip">{settings?.businessName || 'Sardar Ji Food Corner'}</span>
+            <p className="eyebrow hero-kicker">Fresh food, quick local delivery</p>
+            <h1>Hot, Fresh & Delicious Food Delivered Fast</h1>
             <p>
-              Daily thalis, parathas, chaat, snacks, and beverages delivered with fast local service
-              and pricing built for repeat orders.
+              Order from Sardar Ji Food Corner and enjoy fresh taste with exciting offers on every order.
             </p>
 
+            <PromoBanner
+              className="hero-offer-banner"
+              description={dynamicHeroLine}
+              eyebrow="Today's delivery rewards"
+              title={SPECIAL_OFFER_TITLE}
+              tone="hero"
+            />
+
             <div className="hero-actions">
-              <Link className="btn btn-primary" to="/menu">
-                Order Now
-                <ArrowRight size={16} />
-              </Link>
+              <a
+                className="btn btn-primary"
+                href={createWhatsAppLink(settings?.whatsappNumber, createGeneralOrderMessage())}
+                rel="noreferrer"
+                target="_blank"
+              >
+                <MessageCircleMore size={16} />
+                Order on WhatsApp
+              </a>
               <Link className="btn btn-secondary" to="/menu">
                 View Menu
+                <ArrowRight size={16} />
               </Link>
             </div>
 
             <div className="hero-highlights">
               <div>
                 <BadgeIndianRupee size={18} />
-                Rs 70 se Rs 149 tak har budget ki thali
+                ₹70 se ₹149 tak har budget ki thali
               </div>
               <div>
                 <Bike size={18} />
-                Rs 299 order = free delivery
+                ₹299 = FREE delivery within 5 km
               </div>
               <div>
                 <Gift size={18} />
-                6 referrals = 1 month free
+                ₹499 = FREE delivery + Mango Juice 🥭
               </div>
             </div>
           </motion.div>
@@ -63,8 +99,8 @@ export const HomePage = () => {
             transition={{ delay: 0.08, duration: 0.55 }}
           >
             <div className="hero-card accent">
-              <strong>Today's best pickup</strong>
-              <span>Regular Thali + Chaach combo</span>
+              <strong>Hungry right now?</strong>
+              <span>Start with thali, paratha, or chaat in minutes</span>
             </div>
             <SmartImage
               alt="Sardar Ji thali presentation"
@@ -74,7 +110,7 @@ export const HomePage = () => {
             />
             <div className="hero-card floating">
               <Sparkles size={18} />
-              <span>Fresh veg kitchen, cooked daily</span>
+              <span>{SPECIAL_OFFER_SUBTITLE}</span>
             </div>
           </motion.div>
         </div>
@@ -173,6 +209,9 @@ export const HomePage = () => {
           </div>
         </div>
       </section>
+
+      <ReviewsSection />
+      <VisitUsSection />
     </PageTransition>
   );
 };

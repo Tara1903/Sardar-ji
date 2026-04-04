@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Sardar Ji Food Corner</string>
+    <string name="title_activity_main">Sardar Ji Food Corner</string>
+    <string name="package_name">com.sardarjifood.app</string>
+    <string name="custom_url_scheme">com.sardarjifood.app</string>
+</resources>

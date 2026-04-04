@@ -6,3 +6,17 @@ dist
 .env.local
 .vercel
 .env.development.local
+android/.gradle
+android/.idea
+android/build
+android/app/build
+android/local.properties
+android/release-keystore.properties
+android/*.jks
+android/*.keystore
+tools/android-sdk
+tools/jdk17
+tools/jdk21
+tools/*.zip
+tools/*.msi
+tools/*.log
