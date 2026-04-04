@@ -1,9 +1,10 @@
-import { useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, Clock3, MailCheck, ShieldCheck } from 'lucide-react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { api } from '../api/client';
 import { BrandLockup } from '../components/brand/BrandLockup';
 import { OtpCodeInput } from '../components/auth/OtpCodeInput';
+import { OtpSuccessPopup } from '../components/auth/OtpSuccessPopup';
 import { useAuth } from '../contexts/AuthContext';
 import { useCountdown } from '../hooks/useCountdown';
 import { formatOtpDuration, getOtpRequestState } from '../utils/otpState';
@@ -31,6 +32,12 @@ const emptyCustomerLoginChallenge = {
   cooldownEndsAt: '',
 };
 
+const emptyOtpPopup = {
+  open: false,
+  title: '',
+  message: '',
+};
+
 const getFallbackRoute = (user) =>
   user.role === 'admin' ? '/admin/dashboard' : user.role === 'delivery' ? '/delivery' : '/';
 
@@ -47,6 +54,7 @@ export const AuthPage = () => {
   const [cooldownEndsAt, setCooldownEndsAt] = useState('');
   const [info, setInfo] = useState('');
   const [error, setError] = useState('');
+  const [otpPopup, setOtpPopup] = useState(emptyOtpPopup);
   const [submitting, setSubmitting] = useState(false);
   const actionLockRef = useRef(false);
 
@@ -92,6 +100,22 @@ export const AuthPage = () => {
     setError('');
     setInfo('');
   };
+
+  const closeOtpPopup = useCallback(() => {
+    setOtpPopup(emptyOtpPopup);
+  }, []);
+
+  const showOtpPopup = useCallback((title, message) => {
+    setOtpPopup({
+      open: true,
+      title,
+      message,
+    });
+  }, []);
+
+  useEffect(() => {
+    closeOtpPopup();
+  }, [closeOtpPopup, mode, isCustomerLoginOtpStage]);
 
   const resetCustomerLoginStage = () => {
     setCustomerLoginChallenge(emptyCustomerLoginChallenge);
@@ -195,6 +219,12 @@ export const AuthPage = () => {
             ? otpResponse.message
             : `Verification code sent automatically to ${response.user.email}.`,
         );
+        showOtpPopup(
+          otpResponse.reused ? 'Code already active' : 'OTP sent successfully',
+          otpResponse.reused
+            ? otpResponse.message
+            : `A verification code has been sent to ${response.user.email}.`,
+        );
         setError('');
       } catch (otpError) {
         setError(otpError.message);
@@ -232,6 +262,7 @@ export const AuthPage = () => {
         cooldownEndsAt: response.cooldownEndsAt,
       }));
       setInfo(response.message);
+      showOtpPopup(response.reused ? 'Code already active' : 'OTP sent successfully', response.message);
       setError('');
     } catch (authError) {
       setError(authError.message);
@@ -289,6 +320,7 @@ export const AuthPage = () => {
       setOtpExpiresAt(response.expiresAt);
       setCooldownEndsAt(response.cooldownEndsAt);
       setInfo(response.message);
+      showOtpPopup(response.reused ? 'Code already active' : 'OTP sent successfully', response.message);
       setError('');
     } catch (authError) {
       setError(authError.message);
@@ -312,6 +344,7 @@ export const AuthPage = () => {
       setCooldownEndsAt(response.cooldownEndsAt);
       setFormState((current) => ({ ...current, otp: '' }));
       setInfo(response.message);
+      showOtpPopup(response.reused ? 'Code already active' : 'OTP sent successfully', response.message);
       setError('');
     } catch (authError) {
       setError(authError.message);
@@ -389,6 +422,12 @@ export const AuthPage = () => {
 
   return (
     <section className="auth-shell">
+      <OtpSuccessPopup
+        message={otpPopup.message}
+        onClose={closeOtpPopup}
+        open={otpPopup.open}
+        title={otpPopup.title}
+      />
       <div className="auth-card">
         <Link className="text-link" to="/">
           <ArrowLeft size={16} />
