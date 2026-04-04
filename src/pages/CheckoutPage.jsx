@@ -39,8 +39,10 @@ export const CheckoutPage = () => {
   const [placingOrder, setPlacingOrder] = useState(false);
   const [error, setError] = useState('');
   const [placedOrder, setPlacedOrder] = useState(null);
+  const [redirectSeconds, setRedirectSeconds] = useState(4);
   const placeOrderLockRef = useRef(false);
   const redirectTimeoutRef = useRef(null);
+  const countdownIntervalRef = useRef(null);
 
   useEffect(() => {
     if (user?.addresses?.length && selectedAddressId !== 'new') {
@@ -55,6 +57,9 @@ export const CheckoutPage = () => {
     () => () => {
       if (redirectTimeoutRef.current) {
         window.clearTimeout(redirectTimeoutRef.current);
+      }
+      if (countdownIntervalRef.current) {
+        window.clearInterval(countdownIntervalRef.current);
       }
     },
     [],
@@ -152,14 +157,24 @@ export const CheckoutPage = () => {
       );
       setError('');
       setPlacedOrder(order);
+      setRedirectSeconds(4);
       clearCart();
       refreshUser().catch(() => {});
+      if (countdownIntervalRef.current) {
+        window.clearInterval(countdownIntervalRef.current);
+      }
+      countdownIntervalRef.current = window.setInterval(() => {
+        setRedirectSeconds((current) => (current > 1 ? current - 1 : current));
+      }, 1000);
       if (redirectTimeoutRef.current) {
         window.clearTimeout(redirectTimeoutRef.current);
       }
       redirectTimeoutRef.current = window.setTimeout(() => {
+        if (countdownIntervalRef.current) {
+          window.clearInterval(countdownIntervalRef.current);
+        }
         openTracking(order);
-      }, 1800);
+      }, 3600);
     } catch (placeError) {
       setError(placeError.message);
     } finally {
@@ -175,6 +190,7 @@ export const CheckoutPage = () => {
           onTrackNow={() => openTracking(placedOrder)}
           open={Boolean(placedOrder)}
           orderNumber={placedOrder?.orderNumber}
+          redirectSeconds={redirectSeconds}
           totalLabel={placedOrder ? formatCurrency(placedOrder.total) : ''}
         />
         <div className="container checkout-layout">

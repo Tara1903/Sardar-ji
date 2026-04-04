@@ -1,7 +1,7 @@
-import { CheckCircle2, Radar } from 'lucide-react';
+import { CheckCircle2, Clock3, Radar } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 
-export const OrderPlacedPopup = ({ open, orderNumber, totalLabel, onTrackNow }) => (
+export const OrderPlacedPopup = ({ open, orderNumber, redirectSeconds, totalLabel, onTrackNow }) => (
   <AnimatePresence>
     {open ? (
       <motion.div
@@ -20,19 +20,24 @@ export const OrderPlacedPopup = ({ open, orderNumber, totalLabel, onTrackNow }) 
         >
           <div className="order-placed-popup-badge">
             <CheckCircle2 size={18} />
-            Order placed successfully
+            Your order is placed successfully
           </div>
 
-          <h3>We are opening live tracking now</h3>
+          <h3>Your order has been confirmed</h3>
           <p>
             {orderNumber ? `Order ${orderNumber} has been confirmed.` : 'Your order has been confirmed.'}{' '}
-            {totalLabel ? `Total: ${totalLabel}.` : ''} The kitchen has received it.
+            {totalLabel ? `Total: ${totalLabel}.` : ''} The kitchen has received it and we are preparing
+            live tracking for you.
           </p>
 
           <div className="order-placed-popup-meta">
             <span>
               <Radar size={16} />
               Live order tracking starts automatically
+            </span>
+            <span>
+              <Clock3 size={16} />
+              Redirecting in {redirectSeconds || 4} seconds
             </span>
           </div>
 
