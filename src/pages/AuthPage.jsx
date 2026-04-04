@@ -50,6 +50,15 @@ export const AuthPage = () => {
   const [submitting, setSubmitting] = useState(false);
   const actionLockRef = useRef(false);
 
+  const goToDestination = (destination, { hardRedirect = false } = {}) => {
+    if (hardRedirect && typeof window !== 'undefined') {
+      window.location.assign(destination);
+      return;
+    }
+
+    navigate(destination);
+  };
+
   const isCustomerLoginOtpStage = mode === 'login' && Boolean(customerLoginChallenge.pendingSession);
   const isOtpStage = mode === 'register' && Boolean(otpExpiresAt);
   const loginOtpSecondsRemaining = useCountdown(customerLoginChallenge.expiresAt);
@@ -204,7 +213,7 @@ export const AuthPage = () => {
 
       if (response.user.role !== 'customer') {
         const user = acceptAuthSession(response);
-        navigate(redirectPath || getFallbackRoute(user));
+        goToDestination(redirectPath || getFallbackRoute(user), { hardRedirect: true });
         return;
       }
 
@@ -297,7 +306,7 @@ export const AuthPage = () => {
       });
       const user = acceptAuthSession(customerLoginChallenge.pendingSession);
       resetCustomerLoginStage();
-      navigate(redirectPath || getFallbackRoute(user));
+      goToDestination(redirectPath || getFallbackRoute(user));
     } catch (authError) {
       setError(authError.message);
     } finally {
@@ -372,7 +381,7 @@ export const AuthPage = () => {
       });
       const user = acceptAuthSession(response);
 
-      navigate(redirectPath || getFallbackRoute(user));
+      goToDestination(redirectPath || getFallbackRoute(user));
     } catch (authError) {
       setError(authError.message);
     } finally {
