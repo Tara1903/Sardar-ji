@@ -4077,13 +4077,34 @@ body {
     align-items: flex-start;
   }
 
+  .quick-picks-grid,
+  .storefront-grid {
+    display: grid;
+    align-items: start;
+  }
+
   .quick-picks-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.2rem;
   }
 
   .storefront-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 1.2rem;
+  }
+
+  .quick-picks-grid .product-card-compact {
+    min-height: 100%;
+    padding: 1rem;
+  }
+
+  .quick-picks-grid .product-card-compact .product-image-wrap {
+    aspect-ratio: 1.24 / 1;
+  }
+
+  .quick-picks-grid .product-card-compact .product-copy {
+    gap: 0.5rem;
+    padding-top: 0.85rem;
   }
 
   .storefront-grid .product-card:not(.product-card-compact) {
