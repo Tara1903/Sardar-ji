@@ -1,8 +1,16 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Clock3, Gift, MailCheck, MapPin, MessageCircleMore, ShieldCheck } from 'lucide-react';
+import {
+  Clock3,
+  Gift,
+  MailCheck,
+  MapPin,
+  MessageCircleMore,
+  ShieldCheck,
+} from 'lucide-react';
 import { PromoBanner } from '../components/common/PromoBanner';
 import { PageTransition } from '../components/common/PageTransition';
+import { OtpCodeInput } from '../components/auth/OtpCodeInput';
 import { useCart } from '../contexts/CartContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useAppData } from '../contexts/AppDataContext';
@@ -10,6 +18,8 @@ import { getCartOfferState } from '../utils/pricing';
 import { formatCurrency } from '../utils/format';
 import { api } from '../api/client';
 import { createCartOrderMessage, createWhatsAppLink } from '../utils/whatsapp';
+import { useCountdown } from '../hooks/useCountdown';
+import { formatOtpDuration } from '../utils/otpState';
 import { isValidPhoneNumber } from '../utils/validation';
 import { useStoreDistance } from '../hooks/useStoreDistance';
 
@@ -33,6 +43,7 @@ export const CheckoutPage = () => {
   const [placingOrder, setPlacingOrder] = useState(false);
   const [otpCode, setOtpCode] = useState('');
   const [otpExpiresAt, setOtpExpiresAt] = useState('');
+  const [cooldownEndsAt, setCooldownEndsAt] = useState('');
   const [otpVerifiedAt, setOtpVerifiedAt] = useState('');
   const [sendingOtp, setSendingOtp] = useState(false);
   const [verifyingOtp, setVerifyingOtp] = useState(false);
@@ -51,13 +62,7 @@ export const CheckoutPage = () => {
     }
   }, [selectedAddressId, user]);
 
-  const cartOfferState = getCartOfferState(
-    items,
-    products,
-    settings?.deliveryRules,
-    0,
-    distanceKm,
-  );
+  const cartOfferState = getCartOfferState(items, products, settings?.deliveryRules, 0, distanceKm);
   const chosenAddress = useMemo(
     () =>
       selectedAddressId === 'new'
@@ -66,10 +71,21 @@ export const CheckoutPage = () => {
     [addressDraft, selectedAddressId, user],
   );
 
-  const otpExpired = Boolean(otpExpiresAt) && new Date(otpExpiresAt).getTime() <= Date.now();
+  const otpSecondsRemaining = useCountdown(otpExpiresAt);
+  const resendSecondsRemaining = useCountdown(cooldownEndsAt);
+  const otpExpired = Boolean(otpExpiresAt) && otpSecondsRemaining <= 0;
   const otpStillTrusted =
     Boolean(otpVerifiedAt) && Date.now() - new Date(otpVerifiedAt).getTime() < 5 * 60 * 1000;
-  const checkoutMessage = createCartOrderMessage(cartOfferState.displayItems, cartOfferState);
+  const checkoutMessage = [
+    createCartOrderMessage(cartOfferState.displayItems, cartOfferState),
+    chosenAddress.name ? `Name: ${chosenAddress.name}` : '',
+    chosenAddress.phoneNumber ? `Phone: ${chosenAddress.phoneNumber}` : '',
+    chosenAddress.fullAddress ? `Address: ${chosenAddress.fullAddress}` : '',
+    chosenAddress.landmark ? `Landmark: ${chosenAddress.landmark}` : '',
+    chosenAddress.pincode ? `Pincode: ${chosenAddress.pincode}` : '',
+  ]
+    .filter(Boolean)
+    .join('\n');
 
   const sendOrderOtp = async () => {
     if (otpRequestLockRef.current) {
@@ -81,6 +97,7 @@ export const CheckoutPage = () => {
     try {
       const response = await api.requestOrderOtp({ email: user.email });
       setOtpExpiresAt(response.expiresAt);
+      setCooldownEndsAt(response.cooldownEndsAt);
       setOtpVerifiedAt('');
       setOtpCode('');
       setInfo(response.message);
@@ -103,8 +120,8 @@ export const CheckoutPage = () => {
       return;
     }
 
-    if (!otpCode.trim()) {
-      setError('Enter the verification code from your email.');
+    if (String(otpCode || '').trim().length < 6) {
+      setError('Enter the full verification code from your email.');
       return;
     }
 
@@ -116,7 +133,7 @@ export const CheckoutPage = () => {
         otp: otpCode,
       });
       setOtpVerifiedAt(response.verifiedAt);
-      setInfo('Email verification complete. You can place the order now.');
+      setInfo('Verification complete. You can place the order now.');
       setError('');
     } catch (otpError) {
       setError(otpError.message);
@@ -148,7 +165,7 @@ export const CheckoutPage = () => {
     }
 
     if (!otpStillTrusted) {
-      return 'Verify the checkout OTP before placing the order.';
+      return 'Verify the checkout code before placing the order, or continue with WhatsApp order.';
     }
 
     return '';
@@ -361,39 +378,70 @@ export const CheckoutPage = () => {
             <div className="panel-card">
               <div className="section-heading compact">
                 <div>
-                  <p className="eyebrow">Email verification</p>
+                  <p className="eyebrow">Verification</p>
                   <h2>Confirm this checkout with OTP</h2>
                 </div>
                 <MailCheck size={18} />
               </div>
 
-              <p>We send a 5-minute order confirmation code to {user.email}.</p>
+              <p>
+                We send a secure 5-minute code to <strong>{user.email}</strong> before final order placement.
+              </p>
 
-              <div className="otp-grid">
-                <button className="btn btn-secondary" disabled={sendingOtp} onClick={sendOrderOtp} type="button">
-                  {sendingOtp ? 'Sending...' : otpExpiresAt ? 'Send new code' : 'Send OTP'}
-                </button>
-                <label className="full-width">
-                  OTP code
-                  <input
-                    onChange={(event) => setOtpCode(event.target.value)}
-                    placeholder="Enter the code from your email"
-                    value={otpCode}
-                  />
-                </label>
+              <OtpCodeInput
+                autoFocus={Boolean(otpExpiresAt)}
+                disabled={sendingOtp || verifyingOtp}
+                onChange={setOtpCode}
+                value={otpCode}
+              />
+
+              <div className="otp-status-row">
+                <span>
+                  <Clock3 size={15} />
+                  {otpStillTrusted
+                    ? 'Code verified for this checkout'
+                    : otpExpiresAt
+                      ? otpExpired
+                        ? 'Code expired'
+                        : `Expires in ${formatOtpDuration(otpSecondsRemaining)}`
+                      : 'Send a code to continue'}
+                </span>
                 <button
-                  className="btn btn-primary"
-                  disabled={verifyingOtp}
-                  onClick={verifyOrderOtp}
+                  className="text-button"
+                  disabled={sendingOtp || resendSecondsRemaining > 0}
+                  onClick={sendOrderOtp}
                   type="button"
                 >
+                  {sendingOtp
+                    ? 'Sending...'
+                    : resendSecondsRemaining > 0
+                      ? `Resend in ${formatOtpDuration(resendSecondsRemaining)}`
+                      : otpExpiresAt
+                        ? 'Send new code'
+                        : 'Send OTP'}
+                </button>
+              </div>
+
+              <div className="checkout-verification-actions">
+                <button className="btn btn-primary" disabled={verifyingOtp} onClick={verifyOrderOtp} type="button">
                   {verifyingOtp ? 'Verifying...' : 'Verify OTP'}
                 </button>
+                <a
+                  className="btn btn-secondary"
+                  href={createWhatsAppLink(settings?.whatsappNumber, checkoutMessage)}
+                  rel="noreferrer"
+                  target="_blank"
+                >
+                  <MessageCircleMore size={16} />
+                  Continue with WhatsApp Order
+                </a>
               </div>
 
               <div className="helper-note">
                 <ShieldCheck size={16} />
-                <span>{otpStillTrusted ? 'OTP verified for this checkout.' : 'Order placement stays locked until OTP is verified.'}</span>
+                <span>
+                  No dead ends here: if your code is delayed, continue on WhatsApp with the same cart details.
+                </span>
               </div>
             </div>
           </div>
@@ -455,15 +503,6 @@ export const CheckoutPage = () => {
               <Clock3 size={16} />
               Estimated delivery: {settings?.deliveryRules?.estimatedDeliveryMinutes || 35} minutes
             </div>
-            <a
-              className="btn btn-secondary full-width"
-              href={createWhatsAppLink(settings?.whatsappNumber, checkoutMessage)}
-              rel="noreferrer"
-              target="_blank"
-            >
-              <MessageCircleMore size={16} />
-              Confirm on WhatsApp
-            </a>
             {info ? <p className="success-text">{info}</p> : null}
             {error ? <p className="error-text">{error}</p> : null}
             <button
@@ -472,7 +511,11 @@ export const CheckoutPage = () => {
               onClick={handlePlaceOrder}
               type="button"
             >
-              {placingOrder ? 'Placing order...' : cartOfferState.notDeliverable ? 'Outside delivery zone' : 'Place order'}
+              {placingOrder
+                ? 'Placing order...'
+                : cartOfferState.notDeliverable
+                  ? 'Outside delivery zone'
+                  : 'Place order'}
             </button>
           </aside>
         </div>

@@ -11,13 +11,21 @@ export const FREEBIE_DESCRIPTION = 'Complimentary on orders above ₹499.';
 export const DELIVERY_FEE_LABEL = 'Delivery + handling';
 export const SPECIAL_OFFER_TITLE = '₹299 = Free Delivery (≤5km) | ₹499 = Free Delivery + FREE Mango Juice 🥭';
 export const SPECIAL_OFFER_SUBTITLE =
-  'Smart delivery pricing based on distance, with free delivery within 5 km above ₹299 and a free mango juice above ₹499.';
+  'Smart distance-based pricing built for quick local orders, with stronger rewards as the cart grows.';
 export const SPECIAL_OFFER_UNLOCKED_MESSAGE =
   '🎉 You unlocked FREE Delivery + FREE Mango Juice 🥭';
 export const SPECIAL_OFFER_POPUP_STORAGE_KEY = 'sjfc-special-offer-popup-v2';
 export const STORE_ADDRESS =
   'Silicon Road, Palm n Dine Market, Agra - Mumbai Hwy, near Chika Chik Hotel, Indore, Madhya Pradesh 452012';
 export const STORE_ADDRESS_SHORT = 'Silicon Road, Palm n Dine Market, Indore';
+export const STORE_PRIMARY_HEADLINE = 'Delicious Food Delivered Fast 🍽️';
+export const STORE_PRIMARY_SUBTEXT =
+  'Order from Sardar Ji Food Corner and enjoy fresh taste with exciting offers on every order.';
+export const DELIVERY_RULE_BADGES = [
+  'Free delivery within 5 km above ₹299',
+  '₹10/km distance pricing with a ₹20 minimum',
+  '50% OFF on delivery above ₹299',
+];
 
 const coordinateQuery = `${RESTAURANT_LOCATION.lat},${RESTAURANT_LOCATION.lng}`;
 
@@ -63,8 +71,8 @@ export const DEFAULT_OFFERS = [
     description: 'Cross ₹499 and your order unlocks both free delivery and a complimentary mango juice.',
   },
   {
-    id: 'offer-budget',
-    title: '₹70 se ₹149 tak Har Budget ki Thali',
-    description: 'Daily budget-friendly veg meals built for office, hostel, and home delivery.',
+    id: 'offer-speed',
+    title: 'Fresh meals for office, hostel, and home',
+    description: 'Fast local delivery, clear pricing, and a menu designed for quick repeat orders.',
   },
 ];

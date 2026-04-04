@@ -1,9 +1,12 @@
 import { useMemo, useRef, useState } from 'react';
-import { ArrowLeft, MailCheck, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, Clock3, MailCheck, ShieldCheck } from 'lucide-react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { api } from '../api/client';
 import { BrandLockup } from '../components/brand/BrandLockup';
+import { OtpCodeInput } from '../components/auth/OtpCodeInput';
 import { useAuth } from '../contexts/AuthContext';
+import { useCountdown } from '../hooks/useCountdown';
+import { formatOtpDuration } from '../utils/otpState';
 import {
   isStrongPassword,
   isValidEmail,
@@ -32,14 +35,16 @@ export const AuthPage = () => {
   const [mode, setMode] = useState('login');
   const [formState, setFormState] = useState(emptyRegisterState);
   const [otpExpiresAt, setOtpExpiresAt] = useState('');
+  const [cooldownEndsAt, setCooldownEndsAt] = useState('');
   const [info, setInfo] = useState('');
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const actionLockRef = useRef(false);
 
   const isOtpStage = mode === 'register' && Boolean(otpExpiresAt);
-  const hasOtpExpired =
-    Boolean(otpExpiresAt) && new Date(otpExpiresAt).getTime() <= Date.now();
+  const otpSecondsRemaining = useCountdown(otpExpiresAt);
+  const resendSecondsRemaining = useCountdown(cooldownEndsAt);
+  const hasOtpExpired = Boolean(otpExpiresAt) && otpSecondsRemaining <= 0;
 
   const heading = useMemo(() => {
     if (mode === 'login') {
@@ -47,7 +52,7 @@ export const AuthPage = () => {
     }
 
     if (isOtpStage) {
-      return 'Verify your email to finish account setup';
+      return 'Verify your account and start ordering';
     }
 
     return 'Create your customer account';
@@ -60,6 +65,7 @@ export const AuthPage = () => {
 
   const resetRegistrationStage = () => {
     setOtpExpiresAt('');
+    setCooldownEndsAt('');
     setFormState((current) => ({ ...current, otp: '' }));
   };
 
@@ -148,6 +154,7 @@ export const AuthPage = () => {
         email: normalizeEmail(formState.email),
       });
       setOtpExpiresAt(response.expiresAt);
+      setCooldownEndsAt(response.cooldownEndsAt);
       setInfo(response.message);
       setError('');
     } catch (authError) {
@@ -158,12 +165,18 @@ export const AuthPage = () => {
   };
 
   const handleResendOtp = async () => {
+    if (resendSecondsRemaining > 0) {
+      setInfo(`Please wait ${formatOtpDuration(resendSecondsRemaining)} before requesting another code.`);
+      return;
+    }
+
     setSubmitting(true);
     try {
       const response = await api.resendRegistrationOtp({
         email: normalizeEmail(formState.email),
       });
       setOtpExpiresAt(response.expiresAt);
+      setCooldownEndsAt(response.cooldownEndsAt);
       setFormState((current) => ({ ...current, otp: '' }));
       setInfo(response.message);
       setError('');
@@ -180,8 +193,8 @@ export const AuthPage = () => {
       return;
     }
 
-    if (!formState.otp.trim()) {
-      setError('Enter the code sent to your email.');
+    if (String(formState.otp || '').trim().length < 6) {
+      setError('Enter the full verification code from your email.');
       return;
     }
 
@@ -243,7 +256,9 @@ export const AuthPage = () => {
 
         <p className="eyebrow">Secure access</p>
         <h1>{heading}</h1>
-        <p>Customer, admin, and delivery access stay protected, but no credentials are exposed in the interface.</p>
+        <p className="auth-intro-copy">
+          Create an account once, save addresses, and move through checkout faster on your next order.
+        </p>
 
         <div className="tab-switch">
           <button className={mode === 'login' ? 'active' : ''} onClick={() => switchMode('login')} type="button">
@@ -279,6 +294,7 @@ export const AuthPage = () => {
                       phoneNumber: event.target.value,
                     }))
                   }
+                  placeholder="For delivery updates and WhatsApp fallback"
                   value={formState.phoneNumber}
                 />
               </label>
@@ -340,53 +356,50 @@ export const AuthPage = () => {
           <div className="otp-panel">
             <div className="space-between">
               <div>
-                <p className="eyebrow">Email OTP</p>
-                <h3>Verify your email before first login</h3>
+                <p className="eyebrow">Verification code</p>
+                <h3>Secure your account before first order</h3>
               </div>
               <MailCheck size={18} />
             </div>
 
             <p>
-              We send a verification code to your email. The code stays valid for 5 minutes.
+              This deployment currently sends the verification code to{' '}
+              <strong>{normalizeEmail(formState.email) || 'your email'}</strong>. Your phone number is saved for delivery calls and WhatsApp fallback.
             </p>
 
             {isOtpStage ? (
-              <div className="otp-grid">
-                <label className="full-width">
-                  Verification code
-                  <input
-                    onChange={(event) =>
-                      setFormState((current) => ({ ...current, otp: event.target.value }))
-                    }
-                    placeholder="Enter the code from your email"
-                    value={formState.otp}
-                  />
-                </label>
-                <button
-                  className="btn btn-secondary"
+              <>
+                <OtpCodeInput
+                  autoFocus
                   disabled={submitting}
-                  onClick={async () => {
-                    if (actionLockRef.current) {
-                      return;
-                    }
-
-                    actionLockRef.current = true;
-                    resetMessages();
-                    try {
-                      await handleResendOtp();
-                    } finally {
-                      actionLockRef.current = false;
-                    }
-                  }}
-                  type="button"
-                >
-                  Send new code
-                </button>
-              </div>
+                  onChange={(nextValue) =>
+                    setFormState((current) => ({ ...current, otp: nextValue }))
+                  }
+                  value={formState.otp}
+                />
+                <div className="otp-status-row">
+                  <span>
+                    <Clock3 size={15} />
+                    {hasOtpExpired
+                      ? 'Code expired'
+                      : `Expires in ${formatOtpDuration(otpSecondsRemaining)}`}
+                  </span>
+                  <button
+                    className="text-button"
+                    disabled={submitting || resendSecondsRemaining > 0}
+                    onClick={handleResendOtp}
+                    type="button"
+                  >
+                    {resendSecondsRemaining > 0
+                      ? `Resend in ${formatOtpDuration(resendSecondsRemaining)}`
+                      : 'Resend code'}
+                  </button>
+                </div>
+              </>
             ) : (
               <div className="helper-note">
                 <ShieldCheck size={16} />
-                <span>Use your real email address to receive the OTP.</span>
+                <span>One code, one device, and a 5-minute validity window for safer signups.</span>
               </div>
             )}
           </div>
@@ -395,7 +408,12 @@ export const AuthPage = () => {
         {info ? <p className="success-text">{info}</p> : null}
         {error ? <p className="error-text">{error}</p> : null}
 
-        <button className="btn btn-primary full-width" disabled={submitting} onClick={handlePrimaryAction} type="button">
+        <button
+          className="btn btn-primary full-width"
+          disabled={submitting}
+          onClick={handlePrimaryAction}
+          type="button"
+        >
           {submitting
             ? 'Please wait...'
             : mode === 'login'

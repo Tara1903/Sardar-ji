@@ -1,5 +1,5 @@
 import { startTransition, useDeferredValue, useMemo, useState } from 'react';
-import { Filter, Search, ShoppingBag } from 'lucide-react';
+import { Filter, MapPin, Search, ShoppingBag } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { PromoBanner } from '../components/common/PromoBanner';
 import { PageTransition } from '../components/common/PageTransition';
@@ -11,6 +11,7 @@ import { useCart } from '../contexts/CartContext';
 import { formatCurrency } from '../utils/format';
 import { getCartOfferState } from '../utils/pricing';
 import { SPECIAL_OFFER_TITLE } from '../utils/storefront';
+import { useStoreDistance } from '../hooks/useStoreDistance';
 
 const priceFilters = [
   { label: 'All prices', value: 'all' },
@@ -22,6 +23,7 @@ const priceFilters = [
 export const MenuPage = () => {
   const { products, categories, settings, loading } = useAppData();
   const { itemCount, items } = useCart();
+  const { distanceKm, locationStatus, isLocating } = useStoreDistance();
   const [search, setSearch] = useState('');
   const [activeCategory, setActiveCategory] = useState('All');
   const [priceFilter, setPriceFilter] = useState('all');
@@ -29,6 +31,10 @@ export const MenuPage = () => {
 
   const filteredProducts = useMemo(() => {
     return products.filter((product) => {
+      if (!product.isAvailable) {
+        return false;
+      }
+
       if (activeCategory !== 'All' && product.category !== activeCategory) {
         return false;
       }
@@ -50,49 +56,38 @@ export const MenuPage = () => {
         return false;
       }
 
-      return product.isAvailable;
+      return true;
     });
   }, [activeCategory, deferredSearch, priceFilter, products]);
 
-  const cartOfferState = getCartOfferState(items, products, settings?.deliveryRules);
+  const cartOfferState = getCartOfferState(items, products, settings?.deliveryRules, 0, distanceKm);
 
   return (
     <PageTransition>
       <section className="section first-section">
-        <div className="container">
-          <div className="section-heading">
-            <div>
-              <p className="eyebrow">Browse the menu</p>
-              <h1>Search, filter, and order in seconds</h1>
+        <div className="container menu-experience-layout">
+          <aside className="panel-card menu-sidebar">
+            <div className="section-heading compact">
+              <div>
+                <p className="eyebrow">Find your meal</p>
+                <h2>Search Paneer, Thali...</h2>
+              </div>
             </div>
-          </div>
 
-          <PromoBanner
-            className="menu-offer-banner"
-            description="₹299 = Free Delivery (≤5km) | ₹499 = Free Delivery + FREE Mango Juice 🥭"
-            eyebrow="Offer of the day"
-            title={SPECIAL_OFFER_TITLE}
-            tone="accent"
-          />
-
-          <div className="toolbar">
-            <label className="search-bar">
+            <label className="search-bar landing-search-bar">
               <Search size={18} />
               <input
                 onChange={(event) => startTransition(() => setSearch(event.target.value))}
-                placeholder="Search by item name"
+                placeholder="Search Paneer, Thali..."
                 value={search}
               />
             </label>
 
-            <div className="filter-row">
-              <span className="filter-chip active">
-                <Filter size={14} />
-                Veg only
-              </span>
-              <div className="chip-row">
+            <div className="menu-filter-block">
+              <strong>Categories</strong>
+              <div className="menu-sidebar-list">
                 <button
-                  className={`filter-chip ${activeCategory === 'All' ? 'active' : ''}`}
+                  className={`category-scroll-chip ${activeCategory === 'All' ? 'active' : ''}`}
                   onClick={() => setActiveCategory('All')}
                   type="button"
                 >
@@ -100,7 +95,7 @@ export const MenuPage = () => {
                 </button>
                 {categories.map((category) => (
                   <button
-                    className={`filter-chip ${activeCategory === category.name ? 'active' : ''}`}
+                    className={`category-scroll-chip ${activeCategory === category.name ? 'active' : ''}`}
                     key={category.id}
                     onClick={() => setActiveCategory(category.name)}
                     type="button"
@@ -111,34 +106,109 @@ export const MenuPage = () => {
               </div>
             </div>
 
-            <div className="chip-row">
-              {priceFilters.map((filter) => (
-                <button
-                  className={`filter-chip ${priceFilter === filter.value ? 'active' : ''}`}
-                  key={filter.value}
-                  onClick={() => setPriceFilter(filter.value)}
-                  type="button"
-                >
-                  {filter.label}
-                </button>
-              ))}
+            <div className="menu-filter-block">
+              <strong>
+                <Filter size={15} />
+                Price filters
+              </strong>
+              <div className="menu-sidebar-list">
+                {priceFilters.map((filter) => (
+                  <button
+                    className={`category-scroll-chip ${priceFilter === filter.value ? 'active' : ''}`}
+                    key={filter.value}
+                    onClick={() => setPriceFilter(filter.value)}
+                    type="button"
+                  >
+                    {filter.label}
+                  </button>
+                ))}
+              </div>
             </div>
+
+            <div className="helper-note">
+              <ShoppingBag size={16} />
+              <span>100% veg menu with fast scanning and quick add buttons.</span>
+            </div>
+          </aside>
+
+          <div className="menu-main-surface">
+            <div className="section-heading">
+              <div>
+                <p className="eyebrow">Browse the full menu</p>
+                <h1>Order above ₹499 & get FREE Delivery + FREE Mango Juice 🥭</h1>
+              </div>
+              <span className="hero-chip">Veg only</span>
+            </div>
+
+            <PromoBanner
+              className="menu-offer-banner"
+              description="₹299 = Free Delivery (≤5km) | ₹499 = Free Delivery + FREE Mango Juice 🥭"
+              eyebrow="Offer of the day"
+              title={SPECIAL_OFFER_TITLE}
+              tone="accent"
+            />
+
+            {loading ? (
+              <SkeletonGrid count={8} />
+            ) : filteredProducts.length ? (
+              <div className="grid storefront-grid">
+                {filteredProducts.map((product) => (
+                  <ProductCard key={product.id} product={product} whatsappNumber={settings?.whatsappNumber} />
+                ))}
+              </div>
+            ) : (
+              <EmptyState
+                title="No items found"
+                description="Try another search term or reset the category and price filters."
+              />
+            )}
           </div>
 
-          {loading ? (
-            <SkeletonGrid />
-          ) : filteredProducts.length ? (
-            <div className="grid cards-grid">
-              {filteredProducts.map((product) => (
-                <ProductCard key={product.id} product={product} whatsappNumber={settings?.whatsappNumber} />
-              ))}
+          <aside className="summary-card sticky menu-cart-panel">
+            <div className="space-between">
+              <h3>Sticky cart summary</h3>
+              <span className="hero-chip">{itemCount} items</span>
             </div>
-          ) : (
-            <EmptyState
-              title="No items found"
-              description="Try another search term or reset the category and price filters."
-            />
-          )}
+            <div className="summary-line">
+              <span>Subtotal</span>
+              <strong>{formatCurrency(cartOfferState.subtotal)}</strong>
+            </div>
+            <div className="summary-line delivery-distance-line">
+              <span>
+                <MapPin size={14} />
+                {isLocating ? 'Checking distance...' : locationStatus}
+              </span>
+              <strong>{distanceKm !== null ? `${distanceKm.toFixed(1)} km` : 'Manual'}</strong>
+            </div>
+            <div className="summary-line">
+              <span>{cartOfferState.deliveryFeeLabel}</span>
+              <strong>{cartOfferState.deliveryFee ? formatCurrency(cartOfferState.deliveryFee) : 'FREE'}</strong>
+            </div>
+            {cartOfferState.deliveryDiscount > 0 ? (
+              <div className="summary-line summary-line-discount">
+                <span>Delivery discount</span>
+                <strong>-{formatCurrency(cartOfferState.deliveryDiscount)}</strong>
+              </div>
+            ) : null}
+            <div className="summary-line total">
+              <span>Current total</span>
+              <strong>{formatCurrency(cartOfferState.total)}</strong>
+            </div>
+            <p
+              className={`hint cart-offer-hint ${
+                cartOfferState.notDeliverable
+                  ? 'is-danger'
+                  : cartOfferState.freebieUnlocked || cartOfferState.deliveryFee === 0
+                    ? 'is-success'
+                    : 'is-warning'
+              }`}
+            >
+              {cartOfferState.offerMessage}
+            </p>
+            <Link className="btn btn-primary full-width" to={itemCount ? '/cart' : '/menu'}>
+              {itemCount ? 'Open cart' : 'Add items to begin'}
+            </Link>
+          </aside>
         </div>
       </section>
 

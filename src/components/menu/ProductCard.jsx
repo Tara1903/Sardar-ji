@@ -5,15 +5,18 @@ import { useCart } from '../../contexts/CartContext';
 import { SmartImage } from '../common/SmartImage';
 import { formatCurrency } from '../../utils/format';
 import { createProductOrderMessage, createWhatsAppLink } from '../../utils/whatsapp';
+import { STORE_AVERAGE_RATING } from '../../utils/catalog';
 
-export const ProductCard = ({ product, whatsappNumber }) => {
+export const ProductCard = ({ product, whatsappNumber, variant = 'default' }) => {
   const { addToCart } = useCart();
+  const isCompact = variant === 'compact';
 
   return (
     <motion.article
-      className="product-card"
-      whileHover={{ y: -6, scale: 1.01 }}
+      className={`product-card ${isCompact ? 'product-card-compact' : ''}`.trim()}
       transition={{ duration: 0.2 }}
+      whileHover={{ y: -6, scale: 1.01 }}
+      whileTap={{ scale: 0.99 }}
     >
       <Link className="product-image-wrap" to={`/product/${product.id}`}>
         <SmartImage alt={product.name} className="product-image" src={product.image} />
@@ -32,24 +35,38 @@ export const ProductCard = ({ product, whatsappNumber }) => {
           </div>
           <strong>{formatCurrency(product.price)}</strong>
         </div>
+        <div className="product-meta-row">
+          <span className="product-rating">
+            <Star fill="currentColor" size={14} />
+            {STORE_AVERAGE_RATING.toFixed(1)}
+          </span>
+          <span>{product.badge || 'Fresh today'}</span>
+        </div>
         <p>{product.description}</p>
       </div>
       <div className="product-actions">
-        <button className="btn btn-primary" onClick={() => addToCart(product)} type="button">
-          <ShoppingBag size={16} />
-          Add to cart
-        </button>
-        <a
-          className="btn btn-secondary"
-          href={createWhatsAppLink(
-            whatsappNumber,
-            createProductOrderMessage(product.name, product.price),
-          )}
-          rel="noreferrer"
-          target="_blank"
+        <motion.button
+          className="btn btn-primary"
+          onClick={() => addToCart(product)}
+          type="button"
+          whileTap={{ scale: 0.96 }}
         >
-          Order on WhatsApp
-        </a>
+          <ShoppingBag size={16} />
+          {isCompact ? '+ Add' : 'Add to cart'}
+        </motion.button>
+        {isCompact ? null : (
+          <a
+            className="btn btn-secondary"
+            href={createWhatsAppLink(
+              whatsappNumber,
+              createProductOrderMessage(product.name, product.price),
+            )}
+            rel="noreferrer"
+            target="_blank"
+          >
+            Order on WhatsApp
+          </a>
+        )}
       </div>
     </motion.article>
   );

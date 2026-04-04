@@ -1,9 +1,10 @@
-import { Menu, ShoppingBag, User } from 'lucide-react';
+import { MapPin, Menu, ShoppingBag, Star, User } from 'lucide-react';
 import { Link, NavLink } from 'react-router-dom';
 import { useState } from 'react';
 import { BrandLockup } from '../brand/BrandLockup';
 import { useCart } from '../../contexts/CartContext';
 import { useAuth } from '../../contexts/AuthContext';
+import { STORE_AVERAGE_RATING, STORE_CITY, STORE_ORDER_SOCIAL_PROOF } from '../../utils/catalog';
 
 export const Navbar = ({ businessName }) => {
   const [open, setOpen] = useState(false);
@@ -26,7 +27,23 @@ export const Navbar = ({ businessName }) => {
   return (
     <header className="site-header">
       <div className="container nav-shell">
-        <BrandLockup tagline="Swad Bhi, Budget Bhi" title={businessName || 'Sardar Ji Food Corner'} />
+        <div className="header-brand-block">
+          <BrandLockup
+            compact
+            tagline="Swad Bhi, Budget Bhi"
+            title={businessName || 'Sardar Ji Food Corner'}
+          />
+          <div className="header-brand-meta">
+            <span>
+              <MapPin size={13} />
+              {STORE_CITY}
+            </span>
+            <span>
+              <Star fill="currentColor" size={13} />
+              {STORE_AVERAGE_RATING.toFixed(1)} | {STORE_ORDER_SOCIAL_PROOF}
+            </span>
+          </div>
+        </div>
 
         <nav className="desktop-nav">
           {navItems.map((item) => (
