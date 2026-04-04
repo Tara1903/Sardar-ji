@@ -44,8 +44,10 @@ export const AuthProvider = ({ children }) => {
     );
   };
 
+  const authenticateCredentials = async (payload) => api.login(payload);
+
   const login = async (payload) => {
-    const response = await api.login(payload);
+    const response = await authenticateCredentials(payload);
     persistSession(response.token, response.user);
     return response.user;
   };
@@ -96,6 +98,7 @@ export const AuthProvider = ({ children }) => {
       user,
       loading,
       isAuthenticated: Boolean(user && token),
+      authenticateCredentials,
       login,
       register,
       acceptAuthSession,

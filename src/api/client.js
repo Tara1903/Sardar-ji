@@ -646,7 +646,7 @@ const direct = {
   },
 
   login: async (payload) => {
-    const supabase = await getSupabase();
+    const supabase = getTransientSupabase();
     const { data, error } = await supabase.auth.signInWithPassword({
       email: normalizeEmail(payload.email),
       password: payload.password,
@@ -661,6 +661,54 @@ const direct = {
     return {
       token: data.session.access_token,
       user,
+    };
+  },
+
+  requestLoginOtp: async ({ email }) => {
+    const supabase = getTransientSupabase();
+    const normalizedEmail = normalizeEmail(email);
+    const cachedResponse = buildStoredOtpResponse('login', normalizedEmail, 'login code');
+
+    if (cachedResponse) {
+      return cachedResponse;
+    }
+
+    const { error } = await supabase.auth.signInWithOtp({
+      email: normalizedEmail,
+      options: {
+        shouldCreateUser: false,
+      },
+    });
+
+    if (error) {
+      throw createOtpRequestError(error, 'Unable to send the login verification code.');
+    }
+
+    return buildFreshOtpResponse(
+      'login',
+      normalizedEmail,
+      `Verification code sent to ${normalizedEmail}. It expires in 5 minutes.`,
+    );
+  },
+
+  verifyLoginOtp: async ({ email, otp }) => {
+    const supabase = getTransientSupabase();
+    const normalizedEmail = normalizeEmail(email);
+    const { error } = await supabase.auth.verifyOtp({
+      email: normalizedEmail,
+      token: String(otp || '').trim(),
+      type: 'email',
+    });
+
+    if (error) {
+      throw createError(error, 'Invalid or expired login verification code.');
+    }
+
+    clearOtpRequest('login', normalizedEmail);
+
+    return {
+      verified: true,
+      verifiedAt: new Date().toISOString(),
     };
   },
 
@@ -1168,6 +1216,8 @@ export const api = {
       : direct.createCategory(payload, token),
   login: (payload) =>
     USE_API_SERVER ? request('/auth/login', { method: 'POST', body: payload }) : direct.login(payload),
+  requestLoginOtp: (payload) => direct.requestLoginOtp(payload),
+  verifyLoginOtp: (payload) => direct.verifyLoginOtp(payload),
   register: (payload) =>
     USE_API_SERVER ? request('/auth/register', { method: 'POST', body: payload }) : direct.register(payload),
   requestRegistrationOtp: (payload) => direct.requestRegistrationOtp(payload),

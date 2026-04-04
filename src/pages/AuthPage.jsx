@@ -24,6 +24,13 @@ const emptyRegisterState = {
   otp: '',
 };
 
+const emptyCustomerLoginChallenge = {
+  email: '',
+  pendingSession: null,
+  expiresAt: '',
+  cooldownEndsAt: '',
+};
+
 const getFallbackRoute = (user) =>
   user.role === 'admin' ? '/admin/dashboard' : user.role === 'delivery' ? '/delivery' : '/';
 
@@ -31,9 +38,11 @@ export const AuthPage = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const redirectPath = searchParams.get('redirect');
-  const { acceptAuthSession, login } = useAuth();
+  const { acceptAuthSession, authenticateCredentials } = useAuth();
   const [mode, setMode] = useState('login');
   const [formState, setFormState] = useState(emptyRegisterState);
+  const [customerLoginChallenge, setCustomerLoginChallenge] = useState(emptyCustomerLoginChallenge);
+  const [loginOtp, setLoginOtp] = useState('');
   const [otpExpiresAt, setOtpExpiresAt] = useState('');
   const [cooldownEndsAt, setCooldownEndsAt] = useState('');
   const [info, setInfo] = useState('');
@@ -41,12 +50,21 @@ export const AuthPage = () => {
   const [submitting, setSubmitting] = useState(false);
   const actionLockRef = useRef(false);
 
+  const isCustomerLoginOtpStage = mode === 'login' && Boolean(customerLoginChallenge.pendingSession);
   const isOtpStage = mode === 'register' && Boolean(otpExpiresAt);
+  const loginOtpSecondsRemaining = useCountdown(customerLoginChallenge.expiresAt);
+  const loginResendSecondsRemaining = useCountdown(customerLoginChallenge.cooldownEndsAt);
   const otpSecondsRemaining = useCountdown(otpExpiresAt);
   const resendSecondsRemaining = useCountdown(cooldownEndsAt);
+  const hasCustomerLoginOtpExpired =
+    Boolean(customerLoginChallenge.expiresAt) && loginOtpSecondsRemaining <= 0;
   const hasOtpExpired = Boolean(otpExpiresAt) && otpSecondsRemaining <= 0;
 
   const heading = useMemo(() => {
+    if (isCustomerLoginOtpStage) {
+      return 'Verify your customer login';
+    }
+
     if (mode === 'login') {
       return 'Login to continue ordering';
     }
@@ -56,11 +74,28 @@ export const AuthPage = () => {
     }
 
     return 'Create your customer account';
-  }, [isOtpStage, mode]);
+  }, [isCustomerLoginOtpStage, isOtpStage, mode]);
+
+  const introCopy = useMemo(() => {
+    if (isCustomerLoginOtpStage) {
+      return 'One quick email code keeps customer accounts secure before checkout. Admin and delivery accounts continue without this step.';
+    }
+
+    if (mode === 'login') {
+      return 'Log in to your customer, admin, or delivery account and pick up right where you left off.';
+    }
+
+    return 'Create an account once, save addresses, and move through checkout faster on your next order.';
+  }, [isCustomerLoginOtpStage, mode]);
 
   const resetMessages = () => {
     setError('');
     setInfo('');
+  };
+
+  const resetCustomerLoginStage = () => {
+    setCustomerLoginChallenge(emptyCustomerLoginChallenge);
+    setLoginOtp('');
   };
 
   const resetRegistrationStage = () => {
@@ -72,6 +107,7 @@ export const AuthPage = () => {
   const switchMode = (nextMode) => {
     setMode(nextMode);
     resetMessages();
+    resetCustomerLoginStage();
 
     if (nextMode === 'login') {
       resetRegistrationStage();
@@ -114,7 +150,9 @@ export const AuthPage = () => {
   };
 
   const handleLogin = async () => {
-    if (!isValidEmail(formState.email)) {
+    const normalizedEmail = normalizeEmail(formState.email);
+
+    if (!isValidEmail(normalizedEmail)) {
       setError('Enter a valid email address.');
       return;
     }
@@ -126,11 +164,98 @@ export const AuthPage = () => {
 
     setSubmitting(true);
     try {
-      const user = await login({
-        email: normalizeEmail(formState.email),
+      const response = await authenticateCredentials({
+        email: normalizedEmail,
         password: formState.password,
       });
 
+      if (response.user.role !== 'customer') {
+        const user = acceptAuthSession(response);
+        navigate(redirectPath || getFallbackRoute(user));
+        return;
+      }
+
+      setCustomerLoginChallenge({
+        email: response.user.email,
+        pendingSession: response,
+        expiresAt: '',
+        cooldownEndsAt: '',
+      });
+      setLoginOtp('');
+
+      try {
+        const otpResponse = await api.requestLoginOtp({ email: response.user.email });
+        setCustomerLoginChallenge((current) => ({
+          ...current,
+          expiresAt: otpResponse.expiresAt,
+          cooldownEndsAt: otpResponse.cooldownEndsAt,
+        }));
+        setInfo(otpResponse.message);
+        setError('');
+      } catch (otpError) {
+        setError(otpError.message);
+        setInfo('Password confirmed. Send a fresh login code to finish signing in.');
+      }
+    } catch (authError) {
+      setError(authError.message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleSendCustomerLoginOtp = async () => {
+    if (!customerLoginChallenge.email) {
+      return;
+    }
+
+    if (loginResendSecondsRemaining > 0) {
+      setInfo(`Please wait ${formatOtpDuration(loginResendSecondsRemaining)} before requesting another code.`);
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const response = await api.requestLoginOtp({
+        email: customerLoginChallenge.email,
+      });
+      setCustomerLoginChallenge((current) => ({
+        ...current,
+        expiresAt: response.expiresAt,
+        cooldownEndsAt: response.cooldownEndsAt,
+      }));
+      setInfo(response.message);
+      setError('');
+    } catch (authError) {
+      setError(authError.message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleVerifyCustomerLogin = async () => {
+    if (hasCustomerLoginOtpExpired) {
+      setError('Your login code expired. Send a new code to continue.');
+      return;
+    }
+
+    if (String(loginOtp || '').trim().length < 6) {
+      setError('Enter the full verification code from your email.');
+      return;
+    }
+
+    if (!customerLoginChallenge.pendingSession) {
+      setError('Start the login again to continue.');
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      await api.verifyLoginOtp({
+        email: customerLoginChallenge.email,
+        otp: loginOtp,
+      });
+      const user = acceptAuthSession(customerLoginChallenge.pendingSession);
+      resetCustomerLoginStage();
       navigate(redirectPath || getFallbackRoute(user));
     } catch (authError) {
       setError(authError.message);
@@ -224,6 +349,16 @@ export const AuthPage = () => {
 
     try {
       if (mode === 'login') {
+        if (isCustomerLoginOtpStage) {
+          if (!customerLoginChallenge.expiresAt || hasCustomerLoginOtpExpired) {
+            await handleSendCustomerLoginOtp();
+            return;
+          }
+
+          await handleVerifyCustomerLogin();
+          return;
+        }
+
         await handleLogin();
         return;
       }
@@ -256,9 +391,7 @@ export const AuthPage = () => {
 
         <p className="eyebrow">Secure access</p>
         <h1>{heading}</h1>
-        <p className="auth-intro-copy">
-          Create an account once, save addresses, and move through checkout faster on your next order.
-        </p>
+        <p className="auth-intro-copy">{introCopy}</p>
 
         <div className="tab-switch">
           <button className={mode === 'login' ? 'active' : ''} onClick={() => switchMode('login')} type="button">
@@ -273,84 +406,145 @@ export const AuthPage = () => {
           </button>
         </div>
 
-        <div className="form-grid">
-          {mode === 'register' ? (
-            <>
+        {!isCustomerLoginOtpStage ? (
+          <div className="form-grid">
+            {mode === 'register' ? (
+              <>
+                <label>
+                  Full name
+                  <input
+                    onChange={(event) =>
+                      setFormState((current) => ({ ...current, name: event.target.value }))
+                    }
+                    value={formState.name}
+                  />
+                </label>
+                <label>
+                  Phone number
+                  <input
+                    onChange={(event) =>
+                      setFormState((current) => ({
+                        ...current,
+                        phoneNumber: event.target.value,
+                      }))
+                    }
+                    placeholder="For delivery updates and WhatsApp fallback"
+                    value={formState.phoneNumber}
+                  />
+                </label>
+              </>
+            ) : null}
+            <label className="full-width">
+              Email
+              <input
+                onChange={(event) =>
+                  setFormState((current) => ({ ...current, email: event.target.value }))
+                }
+                type="email"
+                value={formState.email}
+              />
+            </label>
+            <label className={mode === 'register' ? '' : 'full-width'}>
+              Password
+              <input
+                onChange={(event) =>
+                  setFormState((current) => ({ ...current, password: event.target.value }))
+                }
+                type="password"
+                value={formState.password}
+              />
+            </label>
+            {mode === 'register' ? (
               <label>
-                Full name
-                <input
-                  onChange={(event) =>
-                    setFormState((current) => ({ ...current, name: event.target.value }))
-                  }
-                  value={formState.name}
-                />
-              </label>
-              <label>
-                Phone number
+                Confirm password
                 <input
                   onChange={(event) =>
                     setFormState((current) => ({
                       ...current,
-                      phoneNumber: event.target.value,
+                      confirmPassword: event.target.value,
                     }))
                   }
-                  placeholder="For delivery updates and WhatsApp fallback"
-                  value={formState.phoneNumber}
+                  type="password"
+                  value={formState.confirmPassword}
                 />
               </label>
-            </>
-          ) : null}
-          <label className="full-width">
-            Email
-            <input
-              onChange={(event) =>
-                setFormState((current) => ({ ...current, email: event.target.value }))
-              }
-              type="email"
-              value={formState.email}
-            />
-          </label>
-          <label className={mode === 'register' ? '' : 'full-width'}>
-            Password
-            <input
-              onChange={(event) =>
-                setFormState((current) => ({ ...current, password: event.target.value }))
-              }
-              type="password"
-              value={formState.password}
-            />
-          </label>
-          {mode === 'register' ? (
-            <label>
-              Confirm password
-              <input
-                onChange={(event) =>
-                  setFormState((current) => ({
-                    ...current,
-                    confirmPassword: event.target.value,
-                  }))
-                }
-                type="password"
-                value={formState.confirmPassword}
-              />
-            </label>
-          ) : null}
-          {mode === 'register' ? (
-            <label className="full-width">
-              Referral code
-              <input
-                onChange={(event) =>
-                  setFormState((current) => ({
-                    ...current,
-                    referralCode: event.target.value,
-                  }))
-                }
-                placeholder="Optional referral code"
-                value={formState.referralCode}
-              />
-            </label>
-          ) : null}
-        </div>
+            ) : null}
+            {mode === 'register' ? (
+              <label className="full-width">
+                Referral code
+                <input
+                  onChange={(event) =>
+                    setFormState((current) => ({
+                      ...current,
+                      referralCode: event.target.value,
+                    }))
+                  }
+                  placeholder="Optional referral code"
+                  value={formState.referralCode}
+                />
+              </label>
+            ) : null}
+          </div>
+        ) : null}
+
+        {isCustomerLoginOtpStage ? (
+          <div className="otp-panel">
+            <div className="space-between">
+              <div>
+                <p className="eyebrow">Customer login verification</p>
+                <h3>Enter the 6-digit code from your email</h3>
+              </div>
+              <MailCheck size={18} />
+            </div>
+
+            <p>
+              We sent a one-time login code to <strong>{customerLoginChallenge.email}</strong>.
+              Customer accounts need this extra step before checkout, while admin and delivery
+              accounts continue directly after password login.
+            </p>
+
+            <OtpCodeInput autoFocus disabled={submitting} onChange={setLoginOtp} value={loginOtp} />
+
+            <div className="otp-status-row">
+              <span>
+                <Clock3 size={15} />
+                {hasCustomerLoginOtpExpired
+                  ? 'Code expired'
+                  : customerLoginChallenge.expiresAt
+                    ? `Expires in ${formatOtpDuration(loginOtpSecondsRemaining)}`
+                    : 'Send a login code to continue'}
+              </span>
+              <button
+                className="text-button"
+                disabled={submitting || loginResendSecondsRemaining > 0}
+                onClick={handleSendCustomerLoginOtp}
+                type="button"
+              >
+                {loginResendSecondsRemaining > 0
+                  ? `Resend in ${formatOtpDuration(loginResendSecondsRemaining)}`
+                  : customerLoginChallenge.expiresAt
+                    ? 'Send new code'
+                    : 'Send login code'}
+              </button>
+            </div>
+
+            <div className="helper-note">
+              <ShieldCheck size={16} />
+              <span>Use a different account if you entered the wrong customer email or password.</span>
+            </div>
+
+            <button
+              className="text-button"
+              onClick={() => {
+                resetCustomerLoginStage();
+                resetMessages();
+              }}
+              type="button"
+            >
+              Use different account
+            </button>
+          </div>
+        ) : null}
 
         {mode === 'register' ? (
           <div className="otp-panel">
@@ -417,7 +611,13 @@ export const AuthPage = () => {
           {submitting
             ? 'Please wait...'
             : mode === 'login'
-              ? 'Login'
+              ? isCustomerLoginOtpStage
+                ? !customerLoginChallenge.expiresAt
+                  ? 'Send login code'
+                  : hasCustomerLoginOtpExpired
+                    ? 'Send new login code'
+                    : 'Verify and continue'
+                : 'Login'
               : isOtpStage && !hasOtpExpired
                 ? 'Verify and create account'
                 : 'Send verification code'}
