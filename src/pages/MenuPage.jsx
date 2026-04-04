@@ -11,7 +11,6 @@ import { useAppData } from '../contexts/AppDataContext';
 import { useCart } from '../contexts/CartContext';
 import { formatCurrency } from '../utils/format';
 import { getCartOfferState } from '../utils/pricing';
-import { SPECIAL_OFFER_TITLE } from '../utils/storefront';
 import { useStoreDistance } from '../hooks/useStoreDistance';
 
 const priceFilters = [
@@ -29,6 +28,7 @@ export const MenuPage = () => {
   const [activeCategory, setActiveCategory] = useState('All');
   const [priceFilter, setPriceFilter] = useState('all');
   const deferredSearch = useDeferredValue(search);
+  const offersConfig = appConfig.offers || {};
 
   const filteredProducts = useMemo(() => {
     return products.filter((product) => {
@@ -129,9 +129,12 @@ export const MenuPage = () => {
 
             <PromoBanner
               className="menu-offer-banner"
-              description="₹299 = Free Delivery (≤5km) | ₹499 = Free Delivery + FREE Mango Juice 🥭"
-              eyebrow="Offer of the day"
-              title={SPECIAL_OFFER_TITLE}
+              description={
+                offersConfig.bannerDescription ||
+                '₹299 = Free Delivery (≤5km) | ₹499 = Free Delivery + FREE Mango Juice 🥭'
+              }
+              eyebrow={offersConfig.bannerEyebrow || 'Offer of the day'}
+              title={offersConfig.bannerTitle || appConfig.hero.offerText}
               tone="accent"
             />
 

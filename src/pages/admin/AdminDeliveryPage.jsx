@@ -69,8 +69,8 @@ export const AdminDeliveryPage = () => {
   };
 
   return (
-    <section className="admin-two-column">
-      <div className="panel-card">
+    <section className="admin-page-grid">
+      <article className="panel-card admin-card-section">
         <div className="section-heading compact">
           <div>
             <p className="eyebrow">Delivery accounts</p>
@@ -78,7 +78,7 @@ export const AdminDeliveryPage = () => {
           </div>
         </div>
 
-        <div className="form-grid">
+        <div className="admin-form-stack">
           <label>
             Full name
             <input
@@ -97,7 +97,7 @@ export const AdminDeliveryPage = () => {
               value={formState.phoneNumber}
             />
           </label>
-          <label className="full-width">
+          <label>
             Email
             <input
               onChange={(event) =>
@@ -107,7 +107,7 @@ export const AdminDeliveryPage = () => {
               value={formState.email}
             />
           </label>
-          <label className="full-width">
+          <label>
             Temporary password
             <input
               onChange={(event) =>
@@ -119,7 +119,7 @@ export const AdminDeliveryPage = () => {
           </label>
         </div>
 
-        <div className="row-actions">
+        <div className="admin-button-stack">
           <button
             className="btn btn-primary"
             disabled={creatingDelivery}
@@ -154,9 +154,9 @@ export const AdminDeliveryPage = () => {
             <p>Password: {createdCredentials.password}</p>
           </div>
         ) : null}
-      </div>
+      </article>
 
-      <div className="panel-card">
+      <article className="panel-card admin-card-section">
         <div className="section-heading compact">
           <div>
             <p className="eyebrow">Delivery team</p>
@@ -166,7 +166,7 @@ export const AdminDeliveryPage = () => {
 
         <div className="stack-list admin-list-scroll">
           {deliveryStats.map((deliveryUser) => (
-            <div className="delivery-stats-row" key={deliveryUser.id}>
+            <div className="admin-list-card delivery-stats-row" key={deliveryUser.id}>
               <div>
                 <strong>{deliveryUser.name}</strong>
                 <p>{deliveryUser.email}</p>
@@ -186,7 +186,7 @@ export const AdminDeliveryPage = () => {
             </div>
           ))}
         </div>
-      </div>
+      </article>
     </section>
   );
 };

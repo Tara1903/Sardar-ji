@@ -95,7 +95,7 @@ export const ProductForm = ({
         onSubmit(formState);
       }}
     >
-      <div className="space-between">
+      <div className="section-heading compact">
         <div>
           <p className="eyebrow">Product manager</p>
           <h3>{initialProduct ? 'Edit menu item' : 'Add new menu item'}</h3>
@@ -107,15 +107,17 @@ export const ProductForm = ({
         ) : null}
       </div>
 
-      <div className="form-grid">
+      <div className="admin-form-stack">
         <label>
           Item name
           <input name="name" onChange={handleChange} required value={formState.name} />
         </label>
+
         <label>
           Price
           <input min="1" name="price" onChange={handleChange} required type="number" value={formState.price} />
         </label>
+
         <label>
           Category
           <select name="category" onChange={handleChange} value={formState.category}>
@@ -126,26 +128,33 @@ export const ProductForm = ({
             ))}
           </select>
         </label>
+
         <label>
           Badge
           <input name="badge" onChange={handleChange} placeholder="Best Seller / Popular / New" value={formState.badge} />
         </label>
-        <label className="full-width">
+
+        <label>
           Description
           <textarea name="description" onChange={handleChange} required rows="3" value={formState.description} />
         </label>
+
         <label>
           Product image
           <input accept="image/*" name="imageFile" onChange={handleChange} type="file" />
         </label>
-        <label className="availability-toggle">
+
+        <label className="availability-toggle admin-toggle-row">
           <input checked={Boolean(formState.isAvailable)} name="isAvailable" onChange={handleChange} type="checkbox" />
-          Available for ordering
+          <span>Available for ordering</span>
         </label>
       </div>
 
-      <div className="image-preview">
+      <div className="image-preview admin-preview-frame">
         <img alt={formState.name || 'Preview'} src={previewImage || getFallbackImage(formState.category)} />
+      </div>
+
+      <div className="admin-button-stack">
         <button
           className="btn btn-secondary"
           onClick={() => {
@@ -160,11 +169,10 @@ export const ProductForm = ({
         >
           Remove image
         </button>
+        <button className="btn btn-primary" disabled={saving} type="submit">
+          {saving ? 'Saving...' : initialProduct ? 'Update product' : 'Create product'}
+        </button>
       </div>
-
-      <button className="btn btn-primary" disabled={saving} type="submit">
-        {saving ? 'Saving...' : initialProduct ? 'Update product' : 'Create product'}
-      </button>
     </form>
   );
 };

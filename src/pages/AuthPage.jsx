@@ -7,7 +7,7 @@ import { OtpCodeInput } from '../components/auth/OtpCodeInput';
 import { OtpSuccessPopup } from '../components/auth/OtpSuccessPopup';
 import { useAuth } from '../contexts/AuthContext';
 import { useCountdown } from '../hooks/useCountdown';
-import { formatOtpDuration, getOtpRequestState } from '../utils/otpState';
+import { formatOtpDuration } from '../utils/otpState';
 import {
   isStrongPassword,
   isValidEmail,
@@ -23,13 +23,6 @@ const emptyRegisterState = {
   phoneNumber: '',
   referralCode: '',
   otp: '',
-};
-
-const emptyCustomerLoginChallenge = {
-  email: '',
-  pendingSession: null,
-  expiresAt: '',
-  cooldownEndsAt: '',
 };
 
 const emptyOtpPopup = {
@@ -48,8 +41,6 @@ export const AuthPage = () => {
   const { acceptAuthSession, authenticateCredentials } = useAuth();
   const [mode, setMode] = useState('login');
   const [formState, setFormState] = useState(emptyRegisterState);
-  const [customerLoginChallenge, setCustomerLoginChallenge] = useState(emptyCustomerLoginChallenge);
-  const [loginOtp, setLoginOtp] = useState('');
   const [otpExpiresAt, setOtpExpiresAt] = useState('');
   const [cooldownEndsAt, setCooldownEndsAt] = useState('');
   const [info, setInfo] = useState('');
@@ -58,21 +49,12 @@ export const AuthPage = () => {
   const [submitting, setSubmitting] = useState(false);
   const actionLockRef = useRef(false);
 
-  const isCustomerLoginOtpStage = mode === 'login' && Boolean(customerLoginChallenge.pendingSession);
   const isOtpStage = mode === 'register' && Boolean(otpExpiresAt);
-  const loginOtpSecondsRemaining = useCountdown(customerLoginChallenge.expiresAt);
-  const loginResendSecondsRemaining = useCountdown(customerLoginChallenge.cooldownEndsAt);
   const otpSecondsRemaining = useCountdown(otpExpiresAt);
   const resendSecondsRemaining = useCountdown(cooldownEndsAt);
-  const hasCustomerLoginOtpExpired =
-    Boolean(customerLoginChallenge.expiresAt) && loginOtpSecondsRemaining <= 0;
   const hasOtpExpired = Boolean(otpExpiresAt) && otpSecondsRemaining <= 0;
 
   const heading = useMemo(() => {
-    if (isCustomerLoginOtpStage) {
-      return 'Verify your customer login';
-    }
-
     if (mode === 'login') {
       return 'Login to continue ordering';
     }
@@ -82,19 +64,15 @@ export const AuthPage = () => {
     }
 
     return 'Create your customer account';
-  }, [isCustomerLoginOtpStage, isOtpStage, mode]);
+  }, [isOtpStage, mode]);
 
   const introCopy = useMemo(() => {
-    if (isCustomerLoginOtpStage) {
-      return 'Tap Send login code once, check your inbox, and finish signing in. Admin and delivery accounts continue after password login without this extra step.';
-    }
-
     if (mode === 'login') {
       return 'Log in to your customer, admin, or delivery account and pick up right where you left off.';
     }
 
     return 'Create an account once, save addresses, and move through checkout faster on your next order.';
-  }, [isCustomerLoginOtpStage, mode]);
+  }, [mode]);
 
   const resetMessages = () => {
     setError('');
@@ -115,12 +93,7 @@ export const AuthPage = () => {
 
   useEffect(() => {
     closeOtpPopup();
-  }, [closeOtpPopup, mode, isCustomerLoginOtpStage]);
-
-  const resetCustomerLoginStage = () => {
-    setCustomerLoginChallenge(emptyCustomerLoginChallenge);
-    setLoginOtp('');
-  };
+  }, [closeOtpPopup, mode]);
 
   const resetRegistrationStage = () => {
     setOtpExpiresAt('');
@@ -131,7 +104,6 @@ export const AuthPage = () => {
   const switchMode = (nextMode) => {
     setMode(nextMode);
     resetMessages();
-    resetCustomerLoginStage();
 
     if (nextMode === 'login') {
       resetRegistrationStage();
@@ -192,109 +164,7 @@ export const AuthPage = () => {
         email: normalizedEmail,
         password: formState.password,
       });
-
-      if (response.user.role !== 'customer') {
-        const user = acceptAuthSession(response);
-        navigate(redirectPath || getFallbackRoute(user));
-        return;
-      }
-
-      const existingLoginOtp = getOtpRequestState('login', response.user.email);
-      setCustomerLoginChallenge({
-        email: response.user.email,
-        pendingSession: response,
-        expiresAt: existingLoginOtp?.expiresAt || '',
-        cooldownEndsAt: existingLoginOtp?.cooldownEndsAt || '',
-      });
-      setLoginOtp('');
-      try {
-        const otpResponse = await api.requestLoginOtp({ email: response.user.email });
-        setCustomerLoginChallenge((current) => ({
-          ...current,
-          expiresAt: otpResponse.expiresAt,
-          cooldownEndsAt: otpResponse.cooldownEndsAt,
-        }));
-        setInfo(
-          otpResponse.reused
-            ? otpResponse.message
-            : `Verification code sent automatically to ${response.user.email}.`,
-        );
-        showOtpPopup(
-          otpResponse.reused ? 'Code already active' : 'OTP sent successfully',
-          otpResponse.reused
-            ? otpResponse.message
-            : `A verification code has been sent to ${response.user.email}.`,
-        );
-        setError('');
-      } catch (otpError) {
-        setError(otpError.message);
-        setInfo(
-          existingLoginOtp
-            ? `A valid login code is already active for ${response.user.email}.`
-            : 'Password confirmed. Send a login code if the automatic email does not arrive.',
-        );
-      }
-    } catch (authError) {
-      setError(authError.message);
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const handleSendCustomerLoginOtp = async () => {
-    if (!customerLoginChallenge.email) {
-      return;
-    }
-
-    if (loginResendSecondsRemaining > 0) {
-      setInfo(`Please wait ${formatOtpDuration(loginResendSecondsRemaining)} before requesting another code.`);
-      return;
-    }
-
-    setSubmitting(true);
-    try {
-      const response = await api.requestLoginOtp({
-        email: customerLoginChallenge.email,
-      });
-      setCustomerLoginChallenge((current) => ({
-        ...current,
-        expiresAt: response.expiresAt,
-        cooldownEndsAt: response.cooldownEndsAt,
-      }));
-      setInfo(response.message);
-      showOtpPopup(response.reused ? 'Code already active' : 'OTP sent successfully', response.message);
-      setError('');
-    } catch (authError) {
-      setError(authError.message);
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const handleVerifyCustomerLogin = async () => {
-    if (hasCustomerLoginOtpExpired) {
-      setError('Your login code expired. Send a new code to continue.');
-      return;
-    }
-
-    if (String(loginOtp || '').trim().length < 6) {
-      setError('Enter the full verification code from your email.');
-      return;
-    }
-
-    if (!customerLoginChallenge.pendingSession) {
-      setError('Start the login again to continue.');
-      return;
-    }
-
-    setSubmitting(true);
-    try {
-      await api.verifyLoginOtp({
-        email: customerLoginChallenge.email,
-        otp: loginOtp,
-      });
-      const user = acceptAuthSession(customerLoginChallenge.pendingSession);
-      resetCustomerLoginStage();
+      const user = acceptAuthSession(response);
       navigate(redirectPath || getFallbackRoute(user));
     } catch (authError) {
       setError(authError.message);
@@ -390,16 +260,6 @@ export const AuthPage = () => {
 
     try {
       if (mode === 'login') {
-        if (isCustomerLoginOtpStage) {
-          if (!customerLoginChallenge.expiresAt || hasCustomerLoginOtpExpired) {
-            await handleSendCustomerLoginOtp();
-            return;
-          }
-
-          await handleVerifyCustomerLogin();
-          return;
-        }
-
         await handleLogin();
         return;
       }
@@ -453,145 +313,84 @@ export const AuthPage = () => {
           </button>
         </div>
 
-        {!isCustomerLoginOtpStage ? (
-          <div className="form-grid">
-            {mode === 'register' ? (
-              <>
-                <label>
-                  Full name
-                  <input
-                    onChange={(event) =>
-                      setFormState((current) => ({ ...current, name: event.target.value }))
-                    }
-                    value={formState.name}
-                  />
-                </label>
-                <label>
-                  Phone number
-                  <input
-                    onChange={(event) =>
-                      setFormState((current) => ({
-                        ...current,
-                        phoneNumber: event.target.value,
-                      }))
-                    }
-                    placeholder="For delivery updates and WhatsApp fallback"
-                    value={formState.phoneNumber}
-                  />
-                </label>
-              </>
-            ) : null}
-            <label className="full-width">
-              Email
+        <div className="form-grid">
+          {mode === 'register' ? (
+            <>
+              <label>
+                Full name
+                <input
+                  onChange={(event) =>
+                    setFormState((current) => ({ ...current, name: event.target.value }))
+                  }
+                  value={formState.name}
+                />
+              </label>
+              <label>
+                Phone number
+                <input
+                  onChange={(event) =>
+                    setFormState((current) => ({
+                      ...current,
+                      phoneNumber: event.target.value,
+                    }))
+                  }
+                  placeholder="For delivery updates and WhatsApp fallback"
+                  value={formState.phoneNumber}
+                />
+              </label>
+            </>
+          ) : null}
+          <label className="full-width">
+            Email
+            <input
+              onChange={(event) =>
+                setFormState((current) => ({ ...current, email: event.target.value }))
+              }
+              type="email"
+              value={formState.email}
+            />
+          </label>
+          <label className={mode === 'register' ? '' : 'full-width'}>
+            Password
+            <input
+              onChange={(event) =>
+                setFormState((current) => ({ ...current, password: event.target.value }))
+              }
+              type="password"
+              value={formState.password}
+            />
+          </label>
+          {mode === 'register' ? (
+            <label>
+              Confirm password
               <input
                 onChange={(event) =>
-                  setFormState((current) => ({ ...current, email: event.target.value }))
-                }
-                type="email"
-                value={formState.email}
-              />
-            </label>
-            <label className={mode === 'register' ? '' : 'full-width'}>
-              Password
-              <input
-                onChange={(event) =>
-                  setFormState((current) => ({ ...current, password: event.target.value }))
+                  setFormState((current) => ({
+                    ...current,
+                    confirmPassword: event.target.value,
+                  }))
                 }
                 type="password"
-                value={formState.password}
+                value={formState.confirmPassword}
               />
             </label>
-            {mode === 'register' ? (
-              <label>
-                Confirm password
-                <input
-                  onChange={(event) =>
-                    setFormState((current) => ({
-                      ...current,
-                      confirmPassword: event.target.value,
-                    }))
-                  }
-                  type="password"
-                  value={formState.confirmPassword}
-                />
-              </label>
-            ) : null}
-            {mode === 'register' ? (
-              <label className="full-width">
-                Referral code
-                <input
-                  onChange={(event) =>
-                    setFormState((current) => ({
-                      ...current,
-                      referralCode: event.target.value,
-                    }))
-                  }
-                  placeholder="Optional referral code"
-                  value={formState.referralCode}
-                />
-              </label>
-            ) : null}
-          </div>
-        ) : null}
-
-        {isCustomerLoginOtpStage ? (
-          <div className="otp-panel">
-            <div className="space-between">
-              <div>
-                <p className="eyebrow">Customer login verification</p>
-                <h3>Enter the 6-digit code from your email</h3>
-              </div>
-              <MailCheck size={18} />
-            </div>
-
-            <p>
-              We sent a one-time login code to <strong>{customerLoginChallenge.email}</strong>.
-              Customer accounts need this extra step before checkout, while admin and delivery
-              accounts continue directly after password login.
-            </p>
-
-            <OtpCodeInput autoFocus disabled={submitting} onChange={setLoginOtp} value={loginOtp} />
-
-            <div className="otp-status-row">
-              <span>
-                <Clock3 size={15} />
-                {hasCustomerLoginOtpExpired
-                  ? 'Code expired'
-                  : customerLoginChallenge.expiresAt
-                    ? `Expires in ${formatOtpDuration(loginOtpSecondsRemaining)}`
-                    : 'Send a login code to continue'}
-              </span>
-              <button
-                className="text-button"
-                disabled={submitting || loginResendSecondsRemaining > 0}
-                onClick={handleSendCustomerLoginOtp}
-                type="button"
-              >
-                {loginResendSecondsRemaining > 0
-                  ? `Resend in ${formatOtpDuration(loginResendSecondsRemaining)}`
-                  : customerLoginChallenge.expiresAt
-                    ? 'Send new code'
-                    : 'Send login code'}
-              </button>
-            </div>
-
-            <div className="helper-note">
-              <ShieldCheck size={16} />
-              <span>Use a different account if you entered the wrong customer email or password.</span>
-            </div>
-
-            <button
-              className="text-button"
-              onClick={() => {
-                resetCustomerLoginStage();
-                resetMessages();
-              }}
-              type="button"
-            >
-              Use different account
-            </button>
-          </div>
-        ) : null}
+          ) : null}
+          {mode === 'register' ? (
+            <label className="full-width">
+              Referral code
+              <input
+                onChange={(event) =>
+                  setFormState((current) => ({
+                    ...current,
+                    referralCode: event.target.value,
+                  }))
+                }
+                placeholder="Optional referral code"
+                value={formState.referralCode}
+              />
+            </label>
+          ) : null}
+        </div>
 
         {mode === 'register' ? (
           <div className="otp-panel">
@@ -658,13 +457,7 @@ export const AuthPage = () => {
           {submitting
             ? 'Please wait...'
             : mode === 'login'
-              ? isCustomerLoginOtpStage
-                ? !customerLoginChallenge.expiresAt
-                  ? 'Send login code'
-                  : hasCustomerLoginOtpExpired
-                    ? 'Send new login code'
-                    : 'Verify and continue'
-                : 'Login'
+              ? 'Login'
               : isOtpStage && !hasOtpExpired
                 ? 'Verify and create account'
                 : 'Send verification code'}

@@ -1,4 +1,5 @@
 import { getFallbackImage } from '../data/fallbackImages';
+import { DEFAULT_OFFERS, SPECIAL_OFFER_SUBTITLE, SPECIAL_OFFER_TITLE } from '../utils/storefront';
 
 export const designTokens = {
   colors: {
@@ -46,6 +47,29 @@ export const defaultPopupConfig = {
   note: 'Stay above the threshold that fits your order and we apply the best reward automatically.',
   primaryCta: 'Order Now',
   secondaryCta: 'Maybe Later',
+  delayMs: 5000,
+};
+
+export const defaultOffersConfig = {
+  spotlightEyebrow: 'Today’s highlights',
+  spotlightTitle: 'Offers and quick reassurance that help people order faster',
+  bannerEyebrow: 'Offer of the day',
+  bannerTitle: SPECIAL_OFFER_TITLE,
+  bannerDescription: SPECIAL_OFFER_SUBTITLE,
+  cardTitle299: '₹299 = Free Delivery (≤5km)',
+  cardDescription299: 'Stay above ₹299 and we waive delivery charges within 5 km of the store.',
+  cardTitle499: '₹499 = Free Delivery + FREE Mango Juice 🥭',
+  cardDescription499:
+    'Cross ₹499 and your order unlocks both free delivery and a complimentary mango juice.',
+  deliveryMessage: 'Delivery pricing updates automatically with distance and cart value.',
+};
+
+export const defaultSectionVisibility = {
+  hero: true,
+  categories: true,
+  reviews: true,
+  popup: true,
+  visit: true,
 };
 
 export const defaultReviews = [
@@ -74,8 +98,10 @@ export const defaultStorefrontConfig = {
     ...designTokens.colors,
   },
   hero: defaultHeroConfig,
+  offers: defaultOffersConfig,
   popup: defaultPopupConfig,
   reviews: defaultReviews,
+  sections: defaultSectionVisibility,
   categoryImages: {},
 };
 
@@ -147,6 +173,10 @@ export const mergeStorefrontConfig = (storefront = {}) => {
       ...defaultHeroConfig,
       ...(storefront.hero || {}),
     },
+    offers: {
+      ...defaultOffersConfig,
+      ...(storefront.offers || {}),
+    },
     popup: {
       ...defaultPopupConfig,
       ...(storefront.popup || {}),
@@ -160,6 +190,10 @@ export const mergeStorefrontConfig = (storefront = {}) => {
             rating: Number(review.rating || 5),
           }))
         : defaultReviews,
+    sections: {
+      ...defaultSectionVisibility,
+      ...(storefront.sections || {}),
+    },
     categoryImages: storefront.categoryImages || {},
   };
 };
@@ -217,10 +251,35 @@ export const getCategoryImage = (category, storefront = defaultStorefrontConfig)
 
 export const createAppConfig = ({ categories = [], products = [], settings = null }) => {
   const storefront = mergeStorefrontConfig(settings?.storefront);
+  const cards =
+    settings?.offers?.length
+      ? settings.offers
+      : [
+          {
+            id: 'offer-delivery-299',
+            title: storefront.offers.cardTitle299,
+            description: storefront.offers.cardDescription299,
+          },
+          {
+            id: 'offer-delivery-499',
+            title: storefront.offers.cardTitle499,
+            description: storefront.offers.cardDescription499,
+          },
+          {
+            id: 'offer-delivery-note',
+            title: 'Delivery updates',
+            description: storefront.offers.deliveryMessage,
+          },
+          ...DEFAULT_OFFERS.slice(2),
+        ];
 
   return {
     theme: storefront.theme,
     hero: storefront.hero,
+    offers: {
+      ...storefront.offers,
+      cards,
+    },
     categories: categories.map((category) => ({
       ...category,
       image: getCategoryImage(category, storefront),
@@ -228,6 +287,7 @@ export const createAppConfig = ({ categories = [], products = [], settings = nul
     menu: products,
     popup: storefront.popup,
     reviews: storefront.reviews,
+    sections: storefront.sections,
   };
 };
 

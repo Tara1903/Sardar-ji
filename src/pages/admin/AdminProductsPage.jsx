@@ -51,7 +51,7 @@ export const AdminProductsPage = () => {
   };
 
   return (
-    <section className="admin-two-column">
+    <section className="admin-page-grid">
       <ProductForm
         categories={categories}
         initialProduct={editingProduct}
@@ -78,51 +78,41 @@ export const AdminProductsPage = () => {
           />
         </label>
 
-        <div className="chip-row">
-          <button
-            className={`filter-chip ${selectedCategory === 'All' ? 'active' : ''}`}
-            onClick={() => setSelectedCategory('All')}
-            type="button"
-          >
-            All categories
-          </button>
-          {categories.map((category) => (
-            <button
-              className={`filter-chip ${selectedCategory === category.name ? 'active' : ''}`}
-              key={category.id}
-              onClick={() => setSelectedCategory(category.name)}
-              type="button"
-            >
-              {category.name}
-            </button>
-          ))}
-        </div>
+        <div className="admin-form-stack">
+          <label>
+            Category filter
+            <select onChange={(event) => setSelectedCategory(event.target.value)} value={selectedCategory}>
+              <option value="All">All categories</option>
+              {categories.map((category) => (
+                <option key={category.id} value={category.name}>
+                  {category.name}
+                </option>
+              ))}
+            </select>
+          </label>
 
-        <div className="chip-row">
-          {['all', 'available', 'unavailable'].map((option) => (
-            <button
-              className={`filter-chip ${availabilityFilter === option ? 'active' : ''}`}
-              key={option}
-              onClick={() => setAvailabilityFilter(option)}
-              type="button"
-            >
-              {option}
-            </button>
-          ))}
+          <label>
+            Availability filter
+            <select onChange={(event) => setAvailabilityFilter(event.target.value)} value={availabilityFilter}>
+              <option value="all">All</option>
+              <option value="available">Available</option>
+              <option value="unavailable">Unavailable</option>
+            </select>
+          </label>
         </div>
 
         <div className="stack-list admin-list-scroll">
           {filteredProducts.map((product) => (
-            <div className="admin-product-row" key={product.id}>
+            <div className="admin-list-card admin-product-card" key={product.id}>
               <SmartImage alt={product.name} className="admin-product-image" src={product.image} />
-              <div>
+              <div className="admin-card-copy">
                 <strong>{product.name}</strong>
                 <p>
                   {product.category} • {formatCurrency(product.price)}
                 </p>
                 <span>{product.isAvailable ? 'Available' : 'Unavailable'}</span>
               </div>
-              <div className="row-actions">
+              <div className="admin-button-stack">
                 <button
                   className="btn btn-secondary"
                   onClick={() => setEditingProduct(product)}

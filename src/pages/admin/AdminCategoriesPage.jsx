@@ -121,7 +121,7 @@ export const AdminCategoriesPage = () => {
   };
 
   return (
-    <section className="admin-two-column">
+    <section className="admin-page-grid">
       <div className="admin-column-stack">
         <div className="panel-card">
           <div className="section-heading compact">
@@ -131,7 +131,7 @@ export const AdminCategoriesPage = () => {
             </div>
           </div>
 
-          <div className="form-grid">
+          <div className="admin-form-stack">
             <label>
               Category name
               <input
@@ -141,7 +141,7 @@ export const AdminCategoriesPage = () => {
                 value={categoryDraft.name}
               />
             </label>
-            <label className="full-width">
+            <label>
               Description
               <textarea
                 onChange={(event) =>
@@ -156,14 +156,16 @@ export const AdminCategoriesPage = () => {
             </label>
           </div>
 
-          <button
-            className="btn btn-primary"
-            disabled={creatingCategory}
-            onClick={handleCreateCategory}
-            type="button"
-          >
-            {creatingCategory ? 'Creating...' : 'Create category'}
-          </button>
+          <div className="admin-button-stack">
+            <button
+              className="btn btn-primary"
+              disabled={creatingCategory}
+              onClick={handleCreateCategory}
+              type="button"
+            >
+              {creatingCategory ? 'Creating...' : 'Create category'}
+            </button>
+          </div>
         </div>
 
         <div className="panel-card">
@@ -214,7 +216,7 @@ export const AdminCategoriesPage = () => {
 
         {editingCategory.id ? (
           <>
-            <div className="form-grid">
+            <div className="admin-form-stack">
               <label>
                 Category name
                 <input
@@ -224,7 +226,7 @@ export const AdminCategoriesPage = () => {
                   value={editingCategory.name}
                 />
               </label>
-              <label className="full-width">
+              <label>
                 Description
                 <textarea
                   onChange={(event) =>
@@ -237,14 +239,14 @@ export const AdminCategoriesPage = () => {
                   value={editingCategory.description}
                 />
               </label>
-              <label className="full-width">
+              <label>
                 Category image URL
                 <input
                   onChange={(event) => updateCategoryImageDraft(event.target.value)}
                   value={editingCategory.image}
                 />
               </label>
-              <label className="full-width">
+              <label>
                 Upload circular image
                 <input
                   accept="image/*"
@@ -263,11 +265,11 @@ export const AdminCategoriesPage = () => {
               </label>
             </div>
 
-            <div className="image-preview circle">
+            <div className="image-preview circle admin-preview-frame">
               <img alt={editingCategory.name} src={editingCategory.image} />
             </div>
 
-            <div className="row-actions">
+            <div className="admin-button-stack">
               <button
                 className="btn btn-primary"
                 disabled={savingEdit}

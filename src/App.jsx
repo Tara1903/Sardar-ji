@@ -41,8 +41,26 @@ const AdminDashboardPage = lazy(() =>
     default: module.AdminDashboardPage,
   })),
 );
+const AdminHeroPage = lazy(() =>
+  import('./pages/admin/AdminHeroPage').then((module) => ({ default: module.AdminHeroPage })),
+);
+const AdminOffersPage = lazy(() =>
+  import('./pages/admin/AdminOffersPage').then((module) => ({ default: module.AdminOffersPage })),
+);
 const AdminProductsPage = lazy(() =>
   import('./pages/admin/AdminProductsPage').then((module) => ({ default: module.AdminProductsPage })),
+);
+const AdminPopupPage = lazy(() =>
+  import('./pages/admin/AdminPopupPage').then((module) => ({ default: module.AdminPopupPage })),
+);
+const AdminReviewsPage = lazy(() =>
+  import('./pages/admin/AdminReviewsPage').then((module) => ({ default: module.AdminReviewsPage })),
+);
+const AdminThemePage = lazy(() =>
+  import('./pages/admin/AdminThemePage').then((module) => ({ default: module.AdminThemePage })),
+);
+const AdminSectionsPage = lazy(() =>
+  import('./pages/admin/AdminSectionsPage').then((module) => ({ default: module.AdminSectionsPage })),
 );
 const AdminOrdersPage = lazy(() =>
   import('./pages/admin/AdminOrdersPage').then((module) => ({ default: module.AdminOrdersPage })),
@@ -79,7 +97,7 @@ const CustomerLayout = () => {
       <MobileNav />
       <SpecialOfferPopup
         config={appConfig.popup}
-        enabled={location.pathname === '/'}
+        enabled={location.pathname === '/' && appConfig.sections?.popup !== false}
         phoneNumber={settings?.whatsappNumber}
       />
       <WhatsAppFab phoneNumber={settings?.whatsappNumber} />
@@ -136,7 +154,13 @@ const AnimatedRoutes = () => {
           >
             <Route index element={<AdminIndexRedirect />} />
             <Route path="dashboard" element={<AdminDashboardPage />} />
+            <Route path="hero" element={<AdminHeroPage />} />
+            <Route path="offers" element={<AdminOffersPage />} />
             <Route path="products" element={<AdminProductsPage />} />
+            <Route path="popup" element={<AdminPopupPage />} />
+            <Route path="reviews" element={<AdminReviewsPage />} />
+            <Route path="theme" element={<AdminThemePage />} />
+            <Route path="sections" element={<AdminSectionsPage />} />
             <Route path="orders" element={<AdminOrdersPage />} />
             <Route path="categories" element={<AdminCategoriesPage />} />
             <Route path="delivery" element={<AdminDeliveryPage />} />

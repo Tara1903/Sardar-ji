@@ -37,6 +37,12 @@ export const HomePage = () => {
   const [activeCategory, setActiveCategory] = useState('All');
   const deferredSearch = useDeferredValue(search);
   const liveCartState = getCartOfferState(items, products, settings?.deliveryRules);
+  const sections = appConfig.sections || {};
+  const showHero = sections.hero !== false;
+  const showCategories = sections.categories !== false;
+  const showReviews = sections.reviews !== false;
+  const showVisit = sections.visit !== false;
+  const offerCards = appConfig.offers?.cards || settings?.offers || [];
 
   const filteredProducts = useMemo(() => {
     const searchable = sortFeaturedProducts(products.filter((product) => product.isAvailable));
@@ -65,99 +71,103 @@ export const HomePage = () => {
 
   return (
     <PageTransition>
-      <section
-        className="landing-stage premium-home-hero first-section"
-        style={{
-          backgroundImage: `linear-gradient(120deg, rgba(17, 24, 39, 0.82), rgba(17, 24, 39, 0.42)), url('${heroConfig.backgroundImage}')`,
-        }}
-      >
-        <div className="container premium-home-grid">
-          <motion.div
-            animate={{ opacity: 1, y: 0 }}
-            className="premium-home-copy"
-            initial={{ opacity: 0, y: 16 }}
-            transition={{ duration: 0.36 }}
-          >
-            <div className="store-proof-row">
-              <span className="store-proof-pill">
-                <MapPin size={14} />
-                {STORE_CITY}
-              </span>
-              <span className="store-proof-pill">
-                <Star fill="currentColor" size={14} />
-                {STORE_AVERAGE_RATING.toFixed(1)} | {STORE_ORDER_SOCIAL_PROOF}
-              </span>
-            </div>
+      {showHero ? (
+        <section
+          className="landing-stage premium-home-hero first-section"
+          style={{
+            backgroundImage: `linear-gradient(120deg, rgba(17, 24, 39, 0.82), rgba(17, 24, 39, 0.42)), url('${heroConfig.backgroundImage}')`,
+          }}
+        >
+          <div className="container premium-home-grid">
+            <motion.div
+              animate={{ opacity: 1, y: 0 }}
+              className="premium-home-copy"
+              initial={{ opacity: 0, y: 16 }}
+              transition={{ duration: 0.36 }}
+            >
+              <div className="store-proof-row">
+                <span className="store-proof-pill">
+                  <MapPin size={14} />
+                  {STORE_CITY}
+                </span>
+                <span className="store-proof-pill">
+                  <Star fill="currentColor" size={14} />
+                  {STORE_AVERAGE_RATING.toFixed(1)} | {STORE_ORDER_SOCIAL_PROOF}
+                </span>
+              </div>
 
-            <span className="offer-badge">{heroConfig.offerText}</span>
-            <h1 className="premium-home-title">{heroConfig.headline}</h1>
-            <p className="premium-home-subtitle">{heroConfig.subtext}</p>
+              <span className="offer-badge">{heroConfig.offerText}</span>
+              <h1 className="premium-home-title">{heroConfig.headline}</h1>
+              <p className="premium-home-subtitle">{heroConfig.subtext}</p>
 
-            <label className="search-bar landing-search-bar premium-search-bar">
-              <Search size={18} />
-              <input
-                onChange={(event) => startTransition(() => setSearch(event.target.value))}
-                placeholder="Search Paneer, Thali..."
-                value={search}
-              />
-            </label>
+              <label className="search-bar landing-search-bar premium-search-bar">
+                <Search size={18} />
+                <input
+                  onChange={(event) => startTransition(() => setSearch(event.target.value))}
+                  placeholder="Search Paneer, Thali..."
+                  value={search}
+                />
+              </label>
 
-            <p className="landing-dynamic-line">{dynamicHeroLine}</p>
+              <p className="landing-dynamic-line">{dynamicHeroLine}</p>
 
-            <div className="landing-actions">
-              <button className="btn btn-primary" onClick={scrollToCatalog} type="button">
-                <ShoppingBag size={16} />
-                {heroConfig.primaryCta}
-              </button>
-              <Link className="btn btn-secondary" to="/menu">
-                {heroConfig.secondaryCta}
-                <ArrowRight size={16} />
-              </Link>
-            </div>
-          </motion.div>
+              <div className="landing-actions">
+                <button className="btn btn-primary" onClick={scrollToCatalog} type="button">
+                  <ShoppingBag size={16} />
+                  {heroConfig.primaryCta}
+                </button>
+                <Link className="btn btn-secondary" to="/menu">
+                  {heroConfig.secondaryCta}
+                  <ArrowRight size={16} />
+                </Link>
+              </div>
+            </motion.div>
 
-          <motion.div
-            animate={{ opacity: 1, y: 0 }}
-            className="premium-home-sidecar"
-            initial={{ opacity: 0, y: 24 }}
-            transition={{ delay: 0.08, duration: 0.34 }}
-          >
-            <div className="premium-home-sidecar-card">
-              <p className="eyebrow">Trending right now</p>
-              <strong>{settings?.businessName || 'Sardar Ji Food Corner'}</strong>
-              <p>Order homestyle thalis, parathas, chaat, snacks, and beverages in a few taps.</p>
-              <a
-                className="btn btn-secondary full-width"
-                href={createWhatsAppLink(settings?.whatsappNumber, createGeneralOrderMessage())}
-                rel="noreferrer"
-                target="_blank"
-              >
-                <MessageCircleMore size={16} />
-                Order on WhatsApp
-              </a>
-            </div>
-          </motion.div>
-        </div>
-      </section>
-
-      <section className="section category-section">
-        <div className="container">
-          <div className="section-heading compact">
-            <div>
-              <p className="eyebrow">Browse by category</p>
-              <h2>Pick the mood, then order fast</h2>
-            </div>
+            <motion.div
+              animate={{ opacity: 1, y: 0 }}
+              className="premium-home-sidecar"
+              initial={{ opacity: 0, y: 24 }}
+              transition={{ delay: 0.08, duration: 0.34 }}
+            >
+              <div className="premium-home-sidecar-card">
+                <p className="eyebrow">Trending right now</p>
+                <strong>{settings?.businessName || 'Sardar Ji Food Corner'}</strong>
+                <p>Order homestyle thalis, parathas, chaat, snacks, and beverages in a few taps.</p>
+                <a
+                  className="btn btn-secondary full-width"
+                  href={createWhatsAppLink(settings?.whatsappNumber, createGeneralOrderMessage())}
+                  rel="noreferrer"
+                  target="_blank"
+                >
+                  <MessageCircleMore size={16} />
+                  Order on WhatsApp
+                </a>
+              </div>
+            </motion.div>
           </div>
+        </section>
+      ) : null}
 
-          <CategoryShowcase
-            activeCategory={activeCategory}
-            categories={appConfig.categories}
-            onSelectCategory={setActiveCategory}
-          />
-        </div>
-      </section>
+      {showCategories ? (
+        <section className={`section category-section ${showHero ? '' : 'first-section'}`.trim()}>
+          <div className="container">
+            <div className="section-heading compact">
+              <div>
+                <p className="eyebrow">Browse by category</p>
+                <h2>Pick the mood, then order fast</h2>
+              </div>
+            </div>
 
-      <section className="section top-picks-section">
+            <CategoryShowcase
+              activeCategory={activeCategory}
+              categories={appConfig.categories}
+              onSelectCategory={setActiveCategory}
+            />
+          </div>
+        </section>
+      ) : null}
+
+      <section className={`section top-picks-section ${!showHero && !showCategories ? 'first-section' : ''}`.trim()}>
         <div className="container">
           <div className="section-heading compact">
             <div>
@@ -188,10 +198,10 @@ export const HomePage = () => {
         <div className="container storefront-layout">
           <aside className="storefront-sidebar">
             <div className="panel-card storefront-sidebar-card">
-              <p className="eyebrow">Today’s highlights</p>
-              <h3>Offers and quick reassurance that help people order faster</h3>
+              <p className="eyebrow">{appConfig.offers?.spotlightEyebrow || 'Today’s highlights'}</p>
+              <h3>{appConfig.offers?.spotlightTitle || 'Offers and quick reassurance that help people order faster'}</h3>
               <div className="storefront-offer-stack">
-                {(settings?.offers || []).map((offer) => (
+                {offerCards.map((offer) => (
                   <div className="storefront-offer-row" key={offer.id}>
                     <strong>{offer.title}</strong>
                     <span>{offer.description}</span>
@@ -259,8 +269,8 @@ export const HomePage = () => {
         </div>
       </section>
 
-      <ReviewsSection />
-      <VisitUsSection />
+      {showReviews ? <ReviewsSection /> : null}
+      {showVisit ? <VisitUsSection /> : null}
 
       <div className="home-primary-cta">
         <button className="btn btn-primary home-primary-cta-button" onClick={scrollToCatalog} type="button">

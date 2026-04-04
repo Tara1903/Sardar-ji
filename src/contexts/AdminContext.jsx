@@ -270,6 +270,36 @@ export const AdminProvider = ({ children }) => {
     }
   };
 
+  const updateSettingsDraftValue = useCallback((updater) => {
+    setSettingsDraft((current) => (typeof updater === 'function' ? updater(current) : updater));
+  }, []);
+
+  const updateStorefrontSection = useCallback((section, updater) => {
+    setSettingsDraft((current) => ({
+      ...current,
+      storefront: {
+        ...(current?.storefront || {}),
+        [section]:
+          typeof updater === 'function'
+            ? updater(current?.storefront?.[section] || {})
+            : updater,
+      },
+    }));
+  }, []);
+
+  const updateStorefrontReviewList = useCallback((updater) => {
+    setSettingsDraft((current) => ({
+      ...current,
+      storefront: {
+        ...(current?.storefront || {}),
+        reviews:
+          typeof updater === 'function'
+            ? updater(current?.storefront?.reviews || [])
+            : updater,
+      },
+    }));
+  }, []);
+
   const uploadAsset = async (file) => api.uploadImage(file, token);
 
   const value = useMemo(
@@ -300,6 +330,9 @@ export const AdminProvider = ({ children }) => {
       settingsDraft,
       setError,
       setSettingsDraft,
+      updateSettingsDraftValue,
+      updateStorefrontReviewList,
+      updateStorefrontSection,
       unseenOrderCount,
       updateCategory,
       updatingOrderId,
@@ -331,6 +364,9 @@ export const AdminProvider = ({ children }) => {
       savingProduct,
       savingSettings,
       settingsDraft,
+      updateSettingsDraftValue,
+      updateStorefrontReviewList,
+      updateStorefrontSection,
       unseenOrderCount,
       updateCategory,
       updatingOrderId,

@@ -51,8 +51,8 @@ export const AdminUsersPage = () => {
   const userOrders = orders.filter((order) => order.userId === selectedUser?.id).slice(0, 5);
 
   return (
-    <section className="admin-two-column">
-      <div className="panel-card">
+    <section className="admin-page-grid">
+      <article className="panel-card admin-card-section">
         <div className="section-heading compact">
           <div>
             <p className="eyebrow">User management</p>
@@ -69,23 +69,22 @@ export const AdminUsersPage = () => {
           />
         </label>
 
-        <div className="chip-row">
-          {['all', 'admin', 'customer', 'delivery'].map((role) => (
-            <button
-              className={`filter-chip ${roleFilter === role ? 'active' : ''}`}
-              key={role}
-              onClick={() => setRoleFilter(role)}
-              type="button"
-            >
-              {role}
-            </button>
-          ))}
+        <div className="admin-form-stack">
+          <label>
+            Role filter
+            <select onChange={(event) => setRoleFilter(event.target.value)} value={roleFilter}>
+              <option value="all">All roles</option>
+              <option value="admin">Admin</option>
+              <option value="customer">Customer</option>
+              <option value="delivery">Delivery</option>
+            </select>
+          </label>
         </div>
 
         <div className="stack-list admin-list-scroll">
           {filteredUsers.map((user) => (
             <button
-              className={`user-row-card ${selectedUserId === user.id ? 'active' : ''}`}
+              className={`user-row-card ${selectedUserId === user.id ? 'active' : ''}`.trim()}
               key={user.id}
               onClick={() => setSelectedUserId(user.id)}
               type="button"
@@ -101,9 +100,9 @@ export const AdminUsersPage = () => {
             </button>
           ))}
         </div>
-      </div>
+      </article>
 
-      <div className="panel-card">
+      <article className="panel-card admin-card-section">
         {selectedUser ? (
           <>
             <div className="section-heading compact">
@@ -145,7 +144,7 @@ export const AdminUsersPage = () => {
               <div className="stack-list">
                 {userOrders.length ? (
                   userOrders.map((order) => (
-                    <div className="order-row" key={order.id}>
+                    <div className="admin-list-card" key={order.id}>
                       <div>
                         <strong>{order.orderNumber}</strong>
                         <p>{formatDateTime(order.createdAt)}</p>
@@ -165,7 +164,7 @@ export const AdminUsersPage = () => {
         ) : (
           <p>Select a user to view more details.</p>
         )}
-      </div>
+      </article>
     </section>
   );
 };

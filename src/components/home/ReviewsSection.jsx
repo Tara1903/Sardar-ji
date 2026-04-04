@@ -6,6 +6,10 @@ export const ReviewsSection = () => {
   const { appConfig } = useAppData();
   const reviews = appConfig.reviews || [];
 
+  if (!reviews.length) {
+    return null;
+  }
+
   return (
     <section className="section reviews-section">
       <div className="container">

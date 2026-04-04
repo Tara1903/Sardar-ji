@@ -1,89 +1,182 @@
 import {
   Bell,
   Bike,
+  Brush,
   ClipboardList,
   LayoutDashboard,
+  LayoutTemplate,
   LogOut,
+  MessageSquareQuote,
   PackageSearch,
+  PanelTop,
   Shapes,
+  Sparkles,
   Users,
 } from 'lucide-react';
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { NavLink, Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { BrandLockup } from '../components/brand/BrandLockup';
 import { Loader } from '../components/common/Loader';
 import { AdminProvider, useAdmin } from '../contexts/AdminContext';
 import { useAuth } from '../contexts/AuthContext';
 
-const navItems = [
+const navGroups = [
   {
-    to: '/admin/dashboard',
-    label: 'Dashboard',
-    icon: LayoutDashboard,
-    description: 'Overview and settings',
+    label: 'Overview',
+    items: [
+      {
+        to: '/admin/dashboard',
+        label: 'Dashboard',
+        icon: LayoutDashboard,
+        description: 'Overview and business details',
+      },
+    ],
   },
   {
-    to: '/admin/products',
-    label: 'Products',
-    icon: PackageSearch,
-    description: 'Menu items and images',
+    label: 'Storefront',
+    items: [
+      {
+        to: '/admin/hero',
+        label: 'Hero Section',
+        icon: PanelTop,
+        description: 'Headline, CTAs, and hero image',
+      },
+      {
+        to: '/admin/offers',
+        label: 'Offers',
+        icon: Sparkles,
+        description: 'Banner copy and offer cards',
+      },
+      {
+        to: '/admin/popup',
+        label: 'Popup',
+        icon: Bell,
+        description: 'Popup visibility, content, and delay',
+      },
+      {
+        to: '/admin/reviews',
+        label: 'Reviews',
+        icon: MessageSquareQuote,
+        description: 'Customer quotes and ratings',
+      },
+      {
+        to: '/admin/theme',
+        label: 'Theme Settings',
+        icon: Brush,
+        description: 'Colors applied across the website',
+      },
+      {
+        to: '/admin/sections',
+        label: 'Section Visibility',
+        icon: LayoutTemplate,
+        description: 'Show or hide major homepage sections',
+      },
+    ],
   },
   {
-    to: '/admin/orders',
-    label: 'Orders',
-    icon: ClipboardList,
-    description: 'Status and assignments',
+    label: 'Catalog',
+    items: [
+      {
+        to: '/admin/categories',
+        label: 'Categories',
+        icon: Shapes,
+        description: 'Category names, images, and structure',
+      },
+      {
+        to: '/admin/products',
+        label: 'Menu Items',
+        icon: PackageSearch,
+        description: 'Menu cards, pricing, and availability',
+      },
+    ],
   },
   {
-    to: '/admin/categories',
-    label: 'Categories',
-    icon: Shapes,
-    description: 'Menu sections',
-  },
-  {
-    to: '/admin/delivery',
-    label: 'Delivery',
-    icon: Bike,
-    description: 'Partner accounts',
-  },
-  {
-    to: '/admin/users',
-    label: 'Users',
-    icon: Users,
-    description: 'Customer and role lookup',
+    label: 'Operations',
+    items: [
+      {
+        to: '/admin/orders',
+        label: 'Orders',
+        icon: ClipboardList,
+        description: 'Statuses and delivery assignment',
+      },
+      {
+        to: '/admin/delivery',
+        label: 'Delivery',
+        icon: Bike,
+        description: 'Delivery partner accounts',
+      },
+      {
+        to: '/admin/users',
+        label: 'Users',
+        icon: Users,
+        description: 'Customers and role management',
+      },
+    ],
   },
 ];
+
+const navItems = navGroups.flatMap((group) => group.items);
 
 const routeMeta = {
   '/admin/dashboard': {
     eyebrow: 'Admin control room',
     title: 'Business snapshot',
-    description: 'Monitor operations, offers, and storefront settings in one place.',
+    description: 'Keep the storefront, catalog, and operations aligned from one clean panel.',
+  },
+  '/admin/hero': {
+    eyebrow: 'Storefront editing',
+    title: 'Hero section control',
+    description: 'Update the first screen customers see without touching code.',
+  },
+  '/admin/offers': {
+    eyebrow: 'Storefront editing',
+    title: 'Offer messaging',
+    description: 'Manage homepage and menu offer copy in one place.',
+  },
+  '/admin/popup': {
+    eyebrow: 'Storefront editing',
+    title: 'Popup control',
+    description: 'Choose if the popup shows, what it says, and how long it waits.',
+  },
+  '/admin/reviews': {
+    eyebrow: 'Storefront editing',
+    title: 'Reviews and trust',
+    description: 'Add, edit, or remove review cards shown to customers.',
+  },
+  '/admin/theme': {
+    eyebrow: 'Storefront editing',
+    title: 'Theme settings',
+    description: 'Adjust the website color palette with instant visual consistency.',
+  },
+  '/admin/sections': {
+    eyebrow: 'Storefront editing',
+    title: 'Section visibility',
+    description: 'Turn major homepage sections on or off without breaking the layout.',
   },
   '/admin/products': {
-    eyebrow: 'Menu management',
+    eyebrow: 'Catalog management',
     title: 'Products and availability',
-    description: 'Create, edit, and publish food items without breaking the live menu.',
+    description: 'Create, edit, and publish menu items in a mobile-friendly workflow.',
   },
   '/admin/orders': {
-    eyebrow: 'Fulfillment',
+    eyebrow: 'Operations',
     title: 'Orders and delivery assignment',
-    description: 'Move orders through the timeline and keep delivery tracking accurate.',
+    description: 'Move orders forward quickly and keep delivery tracking accurate.',
   },
   '/admin/categories': {
-    eyebrow: 'Catalog structure',
+    eyebrow: 'Catalog management',
     title: 'Categories and organization',
-    description: 'Keep the menu easy to browse across categories and price points.',
+    description: 'Keep menu sections easy to scan with clean names and images.',
   },
   '/admin/delivery': {
-    eyebrow: 'Delivery management',
+    eyebrow: 'Operations',
     title: 'Delivery partner accounts',
-    description: 'Create delivery logins and monitor their workload at a glance.',
+    description: 'Create delivery logins and review current delivery workload.',
   },
   '/admin/users': {
-    eyebrow: 'User directory',
+    eyebrow: 'Operations',
     title: 'Customers and roles',
-    description: 'Search registered users, review activity, and inspect account details.',
+    description: 'Search registered users, filter by role, and inspect account details.',
   },
 };
 
@@ -93,6 +186,12 @@ const AdminShell = () => {
   const { logout } = useAuth();
   const { error, loading, markOrdersSeen, newOrders, unseenOrderCount } = useAdmin();
   const meta = routeMeta[location.pathname] || routeMeta['/admin/dashboard'];
+
+  const activeGroup = useMemo(
+    () =>
+      navGroups.find((group) => group.items.some((item) => item.to === location.pathname)) || navGroups[0],
+    [location.pathname],
+  );
 
   useEffect(() => {
     if (location.pathname === '/admin/orders') {
@@ -107,82 +206,80 @@ const AdminShell = () => {
   return (
     <div className="panel-page">
       <div className="admin-shell">
-        <aside className="panel-card admin-sidebar">
-          <BrandLockup className="admin-brand" linkTo="/admin/dashboard" />
-          <nav className="admin-sidebar-nav">
-            {navItems.map((item) => {
-              const Icon = item.icon;
-
-              return (
-                <NavLink className="admin-sidebar-link" key={item.to} to={item.to}>
-                  <Icon size={18} />
-                  <div>
-                    <div className="admin-nav-label-row">
-                      <strong>{item.label}</strong>
-                      {item.to === '/admin/orders' && unseenOrderCount ? (
-                        <span className="admin-notification-badge">{unseenOrderCount}</span>
-                      ) : null}
-                    </div>
-                    <span>{item.description}</span>
-                  </div>
-                </NavLink>
-              );
-            })}
-          </nav>
-        </aside>
-
         <div className="admin-main">
           <header className="panel-card admin-topbar">
-            <div>
-              <p className="eyebrow">{meta.eyebrow}</p>
-              <h1>{meta.title}</h1>
-              <p>{meta.description}</p>
-            </div>
+            <div className="admin-topbar-head">
+              <div className="admin-topbar-copy">
+                <BrandLockup className="admin-brand" compact={false} linkTo="/admin/dashboard" />
+                <p className="eyebrow">{meta.eyebrow}</p>
+                <h1>{meta.title}</h1>
+                <p>{meta.description}</p>
+              </div>
 
-            <div className="admin-topbar-actions">
-              {unseenOrderCount ? (
-                <button
-                  className="admin-notice-pill"
-                  onClick={() => {
-                    markOrdersSeen();
-                    navigate('/admin/orders');
-                  }}
-                  type="button"
-                >
-                  <Bell size={16} />
-                  {unseenOrderCount} new {unseenOrderCount === 1 ? 'order' : 'orders'}
+              <div className="admin-topbar-actions">
+                {unseenOrderCount ? (
+                  <button
+                    className="admin-notice-pill"
+                    onClick={() => {
+                      markOrdersSeen();
+                      navigate('/admin/orders');
+                    }}
+                    type="button"
+                  >
+                    <Bell size={16} />
+                    {unseenOrderCount} new {unseenOrderCount === 1 ? 'order' : 'orders'}
+                  </button>
+                ) : null}
+                <button className="btn btn-secondary" onClick={logout} type="button">
+                  <LogOut size={16} />
+                  Logout
                 </button>
-              ) : null}
-              <BrandLockup compact linkTo="/admin/dashboard" showTagline={false} />
-              <button className="btn btn-secondary" onClick={logout} type="button">
-                <LogOut size={16} />
-                Logout
-              </button>
+              </div>
             </div>
 
             <div className="admin-topbar-toolbar">
-              <nav className="admin-quick-nav" aria-label="Admin sections">
-                {navItems.map((item) => (
-                  <NavLink className="admin-quick-nav-link" key={item.to} to={item.to}>
-                    <span>{item.label}</span>
-                    {item.to === '/admin/orders' && unseenOrderCount ? (
-                      <span className="admin-notification-badge">{unseenOrderCount}</span>
-                    ) : null}
-                  </NavLink>
-                ))}
-              </nav>
-
               <label className="admin-route-select">
                 <span>Jump to section</span>
                 <select onChange={(event) => navigate(event.target.value)} value={location.pathname}>
-                  {navItems.map((item) => (
-                    <option key={item.to} value={item.to}>
-                      {item.label}
-                      {item.to === '/admin/orders' && unseenOrderCount ? ` (${unseenOrderCount} new)` : ''}
-                    </option>
+                  {navGroups.map((group) => (
+                    <optgroup key={group.label} label={group.label}>
+                      {group.items.map((item) => (
+                        <option key={item.to} value={item.to}>
+                          {item.label}
+                          {item.to === '/admin/orders' && unseenOrderCount
+                            ? ` (${unseenOrderCount} new)`
+                            : ''}
+                        </option>
+                      ))}
+                    </optgroup>
                   ))}
                 </select>
               </label>
+
+              <div className="admin-nav-group-label" aria-hidden="true">
+                {activeGroup.label}
+              </div>
+
+              <nav className="admin-quick-nav" aria-label="Admin sections">
+                {navItems.map((item) => {
+                  const Icon = item.icon;
+
+                  return (
+                    <NavLink className="admin-quick-nav-link" key={item.to} to={item.to}>
+                      <span className="admin-quick-nav-icon">
+                        <Icon size={16} />
+                      </span>
+                      <span className="admin-quick-nav-copy">
+                        <strong>{item.label}</strong>
+                        <small>{item.description}</small>
+                      </span>
+                      {item.to === '/admin/orders' && unseenOrderCount ? (
+                        <span className="admin-notification-badge">{unseenOrderCount}</span>
+                      ) : null}
+                    </NavLink>
+                  );
+                })}
+              </nav>
             </div>
           </header>
 
@@ -195,7 +292,7 @@ const AdminShell = () => {
                   {newOrders[0]?.customerName || 'A customer'} just placed{' '}
                   {newOrders[0]?.orderNumber ? `order ${newOrders[0].orderNumber}` : 'a new order'}.
                 </strong>
-                <p>Open Orders to assign the kitchen status and delivery partner quickly.</p>
+                <p>Open Orders to update the kitchen status and assign delivery quickly.</p>
               </div>
               <button
                 className="btn btn-primary"

@@ -3472,3 +3472,515 @@ body {
     align-items: flex-start;
   }
 }
+
+/* Admin panel mobile-first refresh */
+.panel-page {
+  padding: 1rem 0 2.5rem;
+}
+
+.admin-shell {
+  width: min(1240px, 100%);
+  margin: 0 auto;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1rem;
+}
+
+.admin-sidebar {
+  display: none;
+}
+
+.admin-main {
+  min-width: 0;
+  gap: 1rem;
+}
+
+.admin-topbar {
+  display: grid;
+  gap: 1rem;
+  padding: 1.15rem;
+}
+
+.admin-topbar-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.admin-topbar-copy {
+  display: grid;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.admin-topbar-copy h1,
+.admin-topbar-copy p {
+  margin: 0;
+}
+
+.admin-topbar-copy h1 {
+  max-width: 18ch;
+  font-size: clamp(1.85rem, 4vw, 2.8rem);
+  line-height: 1.02;
+}
+
+.admin-topbar-copy p:not(.eyebrow) {
+  max-width: 64ch;
+  color: var(--muted);
+}
+
+.admin-topbar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  width: 100%;
+}
+
+.admin-topbar-actions > * {
+  flex: 1 1 220px;
+}
+
+.admin-topbar-toolbar {
+  gap: 0.85rem;
+  margin-top: 0;
+}
+
+.admin-nav-group-label {
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.admin-route-select {
+  display: none;
+  gap: 0.45rem;
+}
+
+.admin-route-select span {
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: var(--muted);
+}
+
+.admin-route-select select {
+  min-height: 3rem;
+}
+
+.admin-quick-nav {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 0.75rem;
+}
+
+.admin-quick-nav-link {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 0.8rem;
+  min-width: 0;
+  padding: 0.95rem 1rem;
+  border-radius: 20px;
+}
+
+.admin-quick-nav-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.35rem;
+  height: 2.35rem;
+  border-radius: 999px;
+  color: var(--brand);
+  background: rgba(226, 55, 68, 0.08);
+}
+
+.admin-quick-nav-copy {
+  display: grid;
+  gap: 0.18rem;
+  min-width: 0;
+}
+
+.admin-quick-nav-copy strong,
+.admin-quick-nav-copy small {
+  display: block;
+}
+
+.admin-quick-nav-copy small {
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.admin-page-grid,
+.admin-dashboard-stack {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.admin-card-section {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.admin-metrics-grid {
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+}
+
+.admin-stat-card {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.admin-stat-card strong {
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.admin-stat-card span {
+  color: var(--muted);
+}
+
+.admin-form-stack {
+  display: grid;
+  gap: 1rem;
+}
+
+.admin-form-stack label {
+  display: grid;
+  gap: 0.45rem;
+  min-width: 0;
+  font-weight: 700;
+}
+
+.admin-form-stack label > input,
+.admin-form-stack label > select,
+.admin-form-stack label > textarea {
+  width: 100%;
+}
+
+.admin-button-stack {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.admin-button-stack .btn {
+  width: 100%;
+}
+
+.admin-inline-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.admin-inline-actions > * {
+  flex: 1 1 180px;
+}
+
+.admin-list-scroll {
+  max-height: none;
+  overflow: visible;
+}
+
+.admin-list-card {
+  display: grid;
+  gap: 0.8rem;
+  min-width: 0;
+  padding: 1rem;
+  border-radius: 20px;
+  border: 1px solid rgba(17, 24, 39, 0.06);
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: var(--shadow-soft);
+}
+
+.admin-card-copy,
+.admin-preview-copy {
+  display: grid;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.admin-card-copy p,
+.admin-card-copy span,
+.admin-card-section p,
+.admin-card-section small,
+.admin-list-card p,
+.admin-list-card small,
+.credentials-card p {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.admin-card-copy p,
+.admin-card-copy span,
+.admin-list-card small,
+.admin-preview-copy p,
+.admin-preview-copy small {
+  color: var(--muted);
+}
+
+.admin-order-summary,
+.admin-status-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+}
+
+.admin-status-row {
+  padding: 0.95rem 1rem;
+  border-radius: 18px;
+  background: rgba(17, 24, 39, 0.03);
+}
+
+.admin-product-card {
+  grid-template-columns: 88px minmax(0, 1fr);
+}
+
+.admin-product-image {
+  width: 88px;
+  height: 88px;
+  border-radius: 18px;
+  object-fit: cover;
+}
+
+.admin-product-card .admin-button-stack {
+  grid-column: 1 / -1;
+}
+
+.admin-order-card .btn {
+  width: 100%;
+}
+
+.admin-toggle-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.95rem 1rem;
+  border-radius: 18px;
+  background: rgba(17, 24, 39, 0.03);
+}
+
+.admin-toggle-row input {
+  width: auto;
+  margin: 0;
+}
+
+.admin-preview-frame {
+  overflow: hidden;
+  border-radius: 22px;
+  border: 1px dashed rgba(17, 24, 39, 0.12);
+  background: rgba(17, 24, 39, 0.03);
+}
+
+.admin-preview-frame img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.admin-preview-copy.is-compact {
+  padding: 1rem;
+  border-radius: 20px;
+  background: rgba(17, 24, 39, 0.03);
+}
+
+.admin-color-input {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr);
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.admin-color-input input[type='color'] {
+  padding: 0;
+  min-height: 3rem;
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.admin-theme-preview {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.admin-theme-chip {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  padding: 0.95rem 1rem;
+  border-radius: 18px;
+  background: rgba(17, 24, 39, 0.03);
+}
+
+.admin-theme-chip p {
+  margin: 0.2rem 0 0;
+  color: var(--muted);
+}
+
+.admin-theme-swatch {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  border: 1px solid rgba(17, 24, 39, 0.08);
+  flex: 0 0 auto;
+}
+
+.credentials-card {
+  display: grid;
+  gap: 0.55rem;
+  padding: 1rem;
+  border-radius: 20px;
+  border: 1px solid rgba(22, 163, 74, 0.14);
+  background: rgba(22, 163, 74, 0.08);
+}
+
+.delivery-stats-row {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.delivery-stats-meta {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.delivery-stats-meta span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.user-row-card {
+  width: 100%;
+  display: grid;
+  gap: 0.75rem;
+  text-align: left;
+}
+
+.user-row-card.active {
+  border-color: rgba(226, 55, 68, 0.18);
+  background: rgba(226, 55, 68, 0.05);
+}
+
+.user-detail-grid {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.75rem;
+}
+
+.user-detail-grid > div {
+  min-width: 0;
+  padding: 1rem;
+  border-radius: 18px;
+  background: rgba(17, 24, 39, 0.03);
+}
+
+.user-detail-grid strong {
+  overflow-wrap: anywhere;
+}
+
+.admin-category-row {
+  width: 100%;
+  text-align: left;
+  grid-template-columns: 64px minmax(0, 1fr);
+  gap: 0.85rem;
+}
+
+.admin-category-row > :last-child {
+  grid-column: 2;
+}
+
+.admin-category-row p,
+.admin-category-row strong {
+  margin: 0;
+}
+
+.admin-category-image {
+  width: 64px;
+  height: 64px;
+}
+
+.admin-banner {
+  overflow-wrap: anywhere;
+}
+
+.admin-live-notice {
+  display: grid;
+  gap: 0.95rem;
+}
+
+.admin-live-notice .btn {
+  width: 100%;
+}
+
+@media (min-width: 720px) {
+  .admin-topbar-actions {
+    width: auto;
+    justify-content: flex-end;
+  }
+
+  .admin-topbar-actions > * {
+    flex: 0 0 auto;
+  }
+
+  .admin-page-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .admin-dashboard-stack > .admin-page-grid,
+  .admin-dashboard-stack > .panel-card,
+  .admin-page-grid > .panel-card {
+    min-width: 0;
+  }
+
+  .admin-product-card {
+    grid-template-columns: 88px minmax(0, 1fr) 180px;
+    align-items: start;
+  }
+
+  .admin-product-card .admin-button-stack {
+    grid-column: auto;
+  }
+
+  .delivery-stats-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
+  }
+
+  .user-row-card {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
+  }
+
+  .user-detail-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .admin-category-row {
+    grid-template-columns: 72px minmax(0, 1fr) auto;
+    align-items: center;
+  }
+
+  .admin-category-row > :last-child {
+    grid-column: auto;
+  }
+}
+
+@media (max-width: 860px) {
+  .admin-topbar {
+    padding: 1rem;
+  }
+
+  .admin-quick-nav {
+    display: none;
+  }
+
+  .admin-route-select {
+    display: grid;
+  }
+}

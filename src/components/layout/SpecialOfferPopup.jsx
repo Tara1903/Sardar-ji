@@ -20,10 +20,10 @@ export const SpecialOfferPopup = ({ config, enabled = false, phoneNumber }) => {
 
     const timerId = window.setTimeout(() => {
       setIsOpen(true);
-    }, 5000);
+    }, Number(popupConfig.delayMs) > 0 ? Number(popupConfig.delayMs) : 5000);
 
     return () => window.clearTimeout(timerId);
-  }, [enabled, popupConfig.enabled, popupStorageKey]);
+  }, [enabled, popupConfig.delayMs, popupConfig.enabled, popupStorageKey]);
 
   const closePopup = () => {
     if (typeof window !== 'undefined') {

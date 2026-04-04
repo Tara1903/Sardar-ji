@@ -9,6 +9,7 @@ import {
 
 export const VisitUsSection = () => {
   const { settings } = useAppData();
+  const businessName = settings?.businessName || 'Sardar Ji Food Corner';
 
   return (
     <section className="section visit-section">
@@ -23,7 +24,7 @@ export const VisitUsSection = () => {
           <div className="visit-address-card">
             <MapPin size={18} />
             <div>
-              <strong>Sardar Ji Food Corner</strong>
+              <strong>{businessName}</strong>
               <p>{STORE_ADDRESS_SHORT}</p>
               <small>{STORE_ADDRESS}</small>
             </div>
@@ -41,7 +42,7 @@ export const VisitUsSection = () => {
             loading="lazy"
             referrerPolicy="no-referrer-when-downgrade"
             src={settings?.mapsEmbedUrl || STORE_MAP_EMBED_URL}
-            title="Visit Sardar Ji Food Corner"
+            title={`Visit ${businessName}`}
           />
         </div>
       </div>

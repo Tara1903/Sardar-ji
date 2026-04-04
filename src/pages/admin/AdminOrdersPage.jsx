@@ -68,47 +68,56 @@ export const AdminOrdersPage = () => {
           };
 
           return (
-            <div className="admin-order-row" key={order.id}>
-              <div>
+            <div className="admin-list-card admin-order-card" key={order.id}>
+              <div className="admin-order-summary">
                 <strong>{order.orderNumber}</strong>
+                <span>{formatCurrency(order.total)}</span>
+              </div>
+              <div className="admin-card-copy">
                 <p>
                   {order.customerName} • {formatDateTime(order.createdAt)}
                 </p>
+                <span>{order.address.fullAddress}</span>
               </div>
-              <div>
-                <strong>{formatCurrency(order.total)}</strong>
-                <p>{order.address.fullAddress}</p>
+              <div className="admin-form-stack">
+                <label>
+                  Order status
+                  <select
+                    onChange={(event) => updateOrderDraft(order.id, 'status', event.target.value)}
+                    value={draft.status}
+                  >
+                    {ORDER_STATUSES.map((status) => (
+                      <option key={status} value={status}>
+                        {status}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                <label>
+                  Delivery partner
+                  <select
+                    onChange={(event) =>
+                      updateOrderDraft(order.id, 'assignedDeliveryBoyId', event.target.value)
+                    }
+                    value={draft.assignedDeliveryBoyId}
+                  >
+                    <option value="">Assign delivery boy</option>
+                    {deliveryUsers.map((deliveryUser) => (
+                      <option key={deliveryUser.id} value={deliveryUser.id}>
+                        {deliveryUser.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
               </div>
-              <select
-                onChange={(event) => updateOrderDraft(order.id, 'status', event.target.value)}
-                value={draft.status}
-              >
-                {ORDER_STATUSES.map((status) => (
-                  <option key={status} value={status}>
-                    {status}
-                  </option>
-                ))}
-              </select>
-              <select
-                onChange={(event) =>
-                  updateOrderDraft(order.id, 'assignedDeliveryBoyId', event.target.value)
-                }
-                value={draft.assignedDeliveryBoyId}
-              >
-                <option value="">Assign delivery boy</option>
-                {deliveryUsers.map((deliveryUser) => (
-                  <option key={deliveryUser.id} value={deliveryUser.id}>
-                    {deliveryUser.name}
-                  </option>
-                ))}
-              </select>
               <button
-                className="btn btn-secondary"
+                className="btn btn-primary"
                 disabled={updatingOrderId === order.id}
                 onClick={() => saveOrderUpdate(order.id, draft)}
                 type="button"
               >
-                {updatingOrderId === order.id ? 'Saving...' : 'Save'}
+                {updatingOrderId === order.id ? 'Saving...' : 'Save order update'}
               </button>
             </div>
           );
