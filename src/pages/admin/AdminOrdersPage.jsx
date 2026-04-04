@@ -37,7 +37,7 @@ export const AdminOrdersPage = () => {
   );
 
   return (
-    <section className="panel-card">
+    <section className="panel-card admin-orders-page">
       <div className="section-heading compact">
         <div>
           <p className="eyebrow">Order management</p>

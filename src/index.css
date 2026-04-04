@@ -3833,6 +3833,18 @@ body {
   width: 100%;
 }
 
+@media (min-width: 1181px) {
+  .admin-orders-page .orders-list {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    align-items: start;
+  }
+
+  .admin-orders-page .admin-order-card {
+    height: 100%;
+    align-content: start;
+  }
+}
+
 .admin-toggle-row {
   display: flex;
   align-items: center;
