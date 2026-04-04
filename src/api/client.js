@@ -821,7 +821,23 @@ const direct = {
     });
 
     if (isDuplicateAuthResponse(signUpResponse)) {
-      throw new Error('An account with this email already exists. Please log in instead.');
+      const resendResponse = await supabase.auth.resend({
+        email,
+        type: 'signup',
+      });
+
+      if (resendResponse.error) {
+        throw createOtpRequestError(
+          resendResponse.error,
+          'An account with this email already exists. Please log in instead.',
+        );
+      }
+
+      return buildFreshOtpResponse(
+        'registration',
+        email,
+        `Verification code sent to ${email}. It expires in 5 minutes.`,
+      );
     }
 
     if (signUpResponse.error || !signUpResponse.data.user) {
