@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { PromoBanner } from '../components/common/PromoBanner';
 import { PageTransition } from '../components/common/PageTransition';
+import { OrderPlacedPopup } from '../components/order/OrderPlacedPopup';
 import { useCart } from '../contexts/CartContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useAppData } from '../contexts/AppDataContext';
@@ -37,7 +38,9 @@ export const CheckoutPage = () => {
   const [paymentMethod, setPaymentMethod] = useState('COD');
   const [placingOrder, setPlacingOrder] = useState(false);
   const [error, setError] = useState('');
+  const [placedOrder, setPlacedOrder] = useState(null);
   const placeOrderLockRef = useRef(false);
+  const redirectTimeoutRef = useRef(null);
 
   useEffect(() => {
     if (user?.addresses?.length && selectedAddressId !== 'new') {
@@ -47,6 +50,15 @@ export const CheckoutPage = () => {
       }
     }
   }, [selectedAddressId, user]);
+
+  useEffect(
+    () => () => {
+      if (redirectTimeoutRef.current) {
+        window.clearTimeout(redirectTimeoutRef.current);
+      }
+    },
+    [],
+  );
 
   const cartOfferState = getCartOfferState(items, products, settings?.deliveryRules, 0, distanceKm);
   const chosenAddress = useMemo(
@@ -92,6 +104,20 @@ export const CheckoutPage = () => {
     return '';
   };
 
+  const openTracking = (order) => {
+    if (!order?.id) {
+      return;
+    }
+
+    navigate(`/track/${order.id}`, {
+      replace: true,
+      state: {
+        justPlaced: true,
+        orderNumber: order.orderNumber,
+      },
+    });
+  };
+
   const handlePlaceOrder = async () => {
     if (placeOrderLockRef.current) {
       return;
@@ -124,9 +150,16 @@ export const CheckoutPage = () => {
         },
         token,
       );
+      setError('');
+      setPlacedOrder(order);
       clearCart();
-      await refreshUser();
-      navigate(`/order-success/${order.id}`);
+      refreshUser().catch(() => {});
+      if (redirectTimeoutRef.current) {
+        window.clearTimeout(redirectTimeoutRef.current);
+      }
+      redirectTimeoutRef.current = window.setTimeout(() => {
+        openTracking(order);
+      }, 1800);
     } catch (placeError) {
       setError(placeError.message);
     } finally {
@@ -138,6 +171,12 @@ export const CheckoutPage = () => {
   return (
     <PageTransition>
       <section className="section first-section">
+        <OrderPlacedPopup
+          onTrackNow={() => openTracking(placedOrder)}
+          open={Boolean(placedOrder)}
+          orderNumber={placedOrder?.orderNumber}
+          totalLabel={placedOrder ? formatCurrency(placedOrder.total) : ''}
+        />
         <div className="container checkout-layout">
           <div className="checkout-main">
             <PromoBanner
@@ -357,7 +396,7 @@ export const CheckoutPage = () => {
             {error ? <p className="error-text">{error}</p> : null}
             <button
               className="btn btn-primary full-width"
-              disabled={placingOrder || cartOfferState.notDeliverable}
+              disabled={placingOrder || cartOfferState.notDeliverable || Boolean(placedOrder)}
               onClick={handlePlaceOrder}
               type="button"
             >
