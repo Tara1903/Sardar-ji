@@ -2,20 +2,19 @@ import { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { MessageCircleMore, X } from 'lucide-react';
 import { createWhatsAppLink, createGeneralOrderMessage } from '../../utils/whatsapp';
-import {
-  SPECIAL_OFFER_POPUP_STORAGE_KEY,
-  SPECIAL_OFFER_TITLE,
-} from '../../utils/storefront';
+import { createPopupStorageKey } from '../../theme/theme';
 
-export const SpecialOfferPopup = ({ enabled = false, phoneNumber }) => {
+export const SpecialOfferPopup = ({ config, enabled = false, phoneNumber }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const popupConfig = config || {};
+  const popupStorageKey = createPopupStorageKey(popupConfig);
 
   useEffect(() => {
-    if (!enabled || typeof window === 'undefined') {
+    if (!enabled || popupConfig.enabled === false || typeof window === 'undefined') {
       return undefined;
     }
 
-    if (window.localStorage.getItem(SPECIAL_OFFER_POPUP_STORAGE_KEY)) {
+    if (window.localStorage.getItem(popupStorageKey)) {
       return undefined;
     }
 
@@ -24,11 +23,11 @@ export const SpecialOfferPopup = ({ enabled = false, phoneNumber }) => {
     }, 5000);
 
     return () => window.clearTimeout(timerId);
-  }, [enabled]);
+  }, [enabled, popupConfig.enabled, popupStorageKey]);
 
   const closePopup = () => {
     if (typeof window !== 'undefined') {
-      window.localStorage.setItem(SPECIAL_OFFER_POPUP_STORAGE_KEY, 'seen');
+      window.localStorage.setItem(popupStorageKey, 'seen');
     }
 
     setIsOpen(false);
@@ -61,13 +60,12 @@ export const SpecialOfferPopup = ({ enabled = false, phoneNumber }) => {
               <X size={18} />
             </button>
 
-            <p className="eyebrow">🔥 Special Offer</p>
-            <h3>₹299 = Free Delivery (≤5km)</h3>
-            <p>
-              ₹499 = FREE Delivery + FREE Mango Juice 🥭
-            </p>
+            <p className="eyebrow">{popupConfig.title || '🔥 Special Offer'}</p>
+            <h3>{popupConfig.subtitle || '₹299 = Free Delivery (≤5km)'}</h3>
+            <p>{popupConfig.body || '₹499 = FREE Delivery + FREE Mango Juice 🥭'}</p>
             <p className="spaced">
-              Stay above the threshold that fits your order and we apply the best reward automatically.
+              {popupConfig.note ||
+                'Stay above the threshold that fits your order and we apply the best reward automatically.'}
             </p>
 
             <div className="offer-popup-actions">
@@ -79,14 +77,14 @@ export const SpecialOfferPopup = ({ enabled = false, phoneNumber }) => {
                 target="_blank"
               >
                 <MessageCircleMore size={16} />
-                Order Now
+                {popupConfig.primaryCta || 'Order Now'}
               </a>
               <button className="btn btn-secondary" onClick={closePopup} type="button">
-                Maybe Later
+                {popupConfig.secondaryCta || 'Maybe Later'}
               </button>
             </div>
 
-            <small>{SPECIAL_OFFER_TITLE}</small>
+            <small>{popupConfig.body || '₹499 = FREE Delivery + FREE Mango Juice 🥭'}</small>
           </motion.aside>
         </motion.div>
       ) : null}

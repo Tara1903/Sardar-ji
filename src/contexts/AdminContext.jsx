@@ -7,7 +7,7 @@ const AdminContext = createContext(null);
 
 export const AdminProvider = ({ children }) => {
   const { token } = useAuth();
-  const { products, categories, settings, refreshCatalog, refreshSettings } = useAppData();
+  const { products, categories, settings, refreshCatalog, setSettings } = useAppData();
   const [orders, setOrders] = useState([]);
   const [users, setUsers] = useState([]);
   const [settingsDraft, setSettingsDraft] = useState(null);
@@ -120,12 +120,41 @@ export const AdminProvider = ({ children }) => {
     }
   };
 
+  const updateCategory = async (categoryId, payload) => {
+    setCreatingCategory(true);
+    try {
+      await api.updateCategory(categoryId, payload, token);
+      await refreshCatalog();
+      setError('');
+    } catch (categoryError) {
+      setError(categoryError.message);
+      throw categoryError;
+    } finally {
+      setCreatingCategory(false);
+    }
+  };
+
+  const deleteCategory = async (categoryId) => {
+    setCreatingCategory(true);
+    try {
+      await api.deleteCategory(categoryId, token);
+      await refreshCatalog();
+      setError('');
+    } catch (categoryError) {
+      setError(categoryError.message);
+      throw categoryError;
+    } finally {
+      setCreatingCategory(false);
+    }
+  };
+
   const saveSettings = async (nextSettingsDraft) => {
     setSavingSettings(true);
     try {
-      await api.updateSettings(nextSettingsDraft, token);
-      await refreshSettings();
+      const nextSettings = await api.updateSettings(nextSettingsDraft, token);
+      setSettings(nextSettings);
       setError('');
+      return nextSettings;
     } catch (settingsError) {
       setError(settingsError.message);
       throw settingsError;
@@ -163,6 +192,8 @@ export const AdminProvider = ({ children }) => {
     }
   };
 
+  const uploadAsset = async (file) => api.uploadImage(file, token);
+
   const value = useMemo(
     () => ({
       admins,
@@ -170,6 +201,7 @@ export const AdminProvider = ({ children }) => {
       creatingCategory,
       creatingDelivery,
       customers,
+      deleteCategory,
       deliveryUsers,
       error,
       loading,
@@ -188,7 +220,9 @@ export const AdminProvider = ({ children }) => {
       settingsDraft,
       setError,
       setSettingsDraft,
+      updateCategory,
       updatingOrderId,
+      uploadAsset,
       users,
     }),
     [
@@ -197,6 +231,7 @@ export const AdminProvider = ({ children }) => {
       creatingCategory,
       creatingDelivery,
       customers,
+      deleteCategory,
       deliveryUsers,
       error,
       loading,
@@ -206,7 +241,9 @@ export const AdminProvider = ({ children }) => {
       savingProduct,
       savingSettings,
       settingsDraft,
+      updateCategory,
       updatingOrderId,
+      uploadAsset,
       users,
     ],
   );

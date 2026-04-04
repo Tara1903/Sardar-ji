@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { api } from '../api/client';
+import { applyThemeToDocument, createAppConfig } from '../theme/theme';
 
 const AppDataContext = createContext(null);
 
@@ -33,15 +34,24 @@ export const AppDataProvider = ({ children }) => {
     loadAppData();
   }, []);
 
+  useEffect(() => {
+    applyThemeToDocument(settings?.storefront?.theme);
+  }, [settings]);
+
   const value = useMemo(
     () => ({
+      appConfig: createAppConfig({ categories, products, settings }),
       products,
       categories,
       settings,
       loading,
       error,
       refreshCatalog: loadAppData,
-      refreshSettings: async () => setSettings(await api.getSettings()),
+      refreshSettings: async () => {
+        const nextSettings = await api.getSettings();
+        setSettings(nextSettings);
+        return nextSettings;
+      },
       setProducts,
       setCategories,
       setSettings,

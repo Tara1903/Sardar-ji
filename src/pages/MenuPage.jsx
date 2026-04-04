@@ -5,6 +5,7 @@ import { PromoBanner } from '../components/common/PromoBanner';
 import { PageTransition } from '../components/common/PageTransition';
 import { EmptyState } from '../components/common/EmptyState';
 import { SkeletonGrid } from '../components/common/Loader';
+import { CategoryShowcase } from '../components/home/CategoryShowcase';
 import { ProductCard } from '../components/menu/ProductCard';
 import { useAppData } from '../contexts/AppDataContext';
 import { useCart } from '../contexts/CartContext';
@@ -21,7 +22,7 @@ const priceFilters = [
 ];
 
 export const MenuPage = () => {
-  const { products, categories, settings, loading } = useAppData();
+  const { appConfig, products, categories, settings, loading } = useAppData();
   const { itemCount, items } = useCart();
   const { distanceKm, locationStatus, isLocating } = useStoreDistance();
   const [search, setSearch] = useState('');
@@ -64,7 +65,7 @@ export const MenuPage = () => {
 
   return (
     <PageTransition>
-      <section className="section first-section">
+      <section className="section first-section menu-page-shell">
         <div className="container menu-experience-layout">
           <aside className="panel-card menu-sidebar">
             <div className="section-heading compact">
@@ -85,25 +86,11 @@ export const MenuPage = () => {
 
             <div className="menu-filter-block">
               <strong>Categories</strong>
-              <div className="menu-sidebar-list">
-                <button
-                  className={`category-scroll-chip ${activeCategory === 'All' ? 'active' : ''}`}
-                  onClick={() => setActiveCategory('All')}
-                  type="button"
-                >
-                  All
-                </button>
-                {categories.map((category) => (
-                  <button
-                    className={`category-scroll-chip ${activeCategory === category.name ? 'active' : ''}`}
-                    key={category.id}
-                    onClick={() => setActiveCategory(category.name)}
-                    type="button"
-                  >
-                    {category.name}
-                  </button>
-                ))}
-              </div>
+              <CategoryShowcase
+                activeCategory={activeCategory}
+                categories={appConfig.categories}
+                onSelectCategory={setActiveCategory}
+              />
             </div>
 
             <div className="menu-filter-block">
@@ -135,7 +122,7 @@ export const MenuPage = () => {
             <div className="section-heading">
               <div>
                 <p className="eyebrow">Browse the full menu</p>
-                <h1>Order above ₹499 & get FREE Delivery + FREE Mango Juice 🥭</h1>
+                <h1>{appConfig.hero.offerText}</h1>
               </div>
               <span className="hero-chip">Veg only</span>
             </div>

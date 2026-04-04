@@ -1,0 +1,241 @@
+import { getFallbackImage } from '../data/fallbackImages';
+
+export const designTokens = {
+  colors: {
+    primary: '#e23744',
+    secondary: '#16a34a',
+    background: '#f8fafc',
+    card: '#ffffff',
+    textPrimary: '#111827',
+    textSecondary: '#6b7280',
+    highlight: '#facc15',
+  },
+  typography: {
+    heading: "'Inter', system-ui, sans-serif",
+    body: "'Inter', system-ui, sans-serif",
+  },
+  radii: {
+    sm: '16px',
+    md: '18px',
+    lg: '20px',
+    xl: '28px',
+    pill: '999px',
+  },
+  spacing: 8,
+  shadows: {
+    soft: '0 18px 45px rgba(15, 23, 42, 0.08)',
+    medium: '0 22px 50px rgba(15, 23, 42, 0.12)',
+  },
+};
+
+export const defaultHeroConfig = {
+  headline: 'Hot, Fresh & Delicious Food Delivered Fast',
+  subtext: 'Enjoy premium taste from Sardar Ji Food Corner',
+  offerText: '₹299 = Free Delivery | ₹499 = Free Delivery + Free 🥭',
+  backgroundImage:
+    'https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=1800&q=80',
+  primaryCta: 'Order Now',
+  secondaryCta: 'View Menu',
+};
+
+export const defaultPopupConfig = {
+  enabled: true,
+  title: '🔥 Special Offer',
+  subtitle: '₹299 = Free Delivery (≤5km)',
+  body: '₹499 = Free Delivery + FREE Mango Juice 🥭',
+  note: 'Stay above the threshold that fits your order and we apply the best reward automatically.',
+  primaryCta: 'Order Now',
+  secondaryCta: 'Maybe Later',
+};
+
+export const defaultReviews = [
+  {
+    id: 'review-fast',
+    author: 'Neha S.',
+    quote: 'Amazing food and fast delivery!',
+    rating: 5,
+  },
+  {
+    id: 'review-taste',
+    author: 'Amit R.',
+    quote: 'Best taste in town!',
+    rating: 5,
+  },
+  {
+    id: 'review-offer',
+    author: 'Pooja M.',
+    quote: 'Loved the mango juice offer!',
+    rating: 5,
+  },
+];
+
+export const defaultStorefrontConfig = {
+  theme: {
+    ...designTokens.colors,
+  },
+  hero: defaultHeroConfig,
+  popup: defaultPopupConfig,
+  reviews: defaultReviews,
+  categoryImages: {},
+};
+
+const clamp = (value) => Math.max(0, Math.min(255, value));
+
+const hexToRgb = (hex = '') => {
+  const normalized = String(hex).trim().replace('#', '');
+
+  if (![3, 6].includes(normalized.length)) {
+    return null;
+  }
+
+  const expanded =
+    normalized.length === 3
+      ? normalized
+          .split('')
+          .map((character) => `${character}${character}`)
+          .join('')
+      : normalized;
+
+  const parsed = Number.parseInt(expanded, 16);
+
+  if (!Number.isFinite(parsed)) {
+    return null;
+  }
+
+  return {
+    r: (parsed >> 16) & 255,
+    g: (parsed >> 8) & 255,
+    b: parsed & 255,
+  };
+};
+
+const rgba = (hex, alpha) => {
+  const rgb = hexToRgb(hex);
+
+  if (!rgb) {
+    return `rgba(17, 24, 39, ${alpha})`;
+  }
+
+  return `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${alpha})`;
+};
+
+const darkenHex = (hex, factor = 0.14) => {
+  const rgb = hexToRgb(hex);
+
+  if (!rgb) {
+    return hex;
+  }
+
+  const channel = (value) => clamp(Math.round(value * (1 - factor)));
+
+  return `#${[channel(rgb.r), channel(rgb.g), channel(rgb.b)]
+    .map((value) => value.toString(16).padStart(2, '0'))
+    .join('')}`;
+};
+
+export const mergeTheme = (theme = {}) => ({
+  ...designTokens.colors,
+  ...(theme || {}),
+});
+
+export const mergeStorefrontConfig = (storefront = {}) => {
+  const mergedTheme = mergeTheme(storefront.theme);
+
+  return {
+    theme: mergedTheme,
+    hero: {
+      ...defaultHeroConfig,
+      ...(storefront.hero || {}),
+    },
+    popup: {
+      ...defaultPopupConfig,
+      ...(storefront.popup || {}),
+    },
+    reviews:
+      storefront.reviews?.length
+        ? storefront.reviews.map((review, index) => ({
+            id: review.id || `review-${index + 1}`,
+            author: review.author || `Customer ${index + 1}`,
+            quote: review.quote || '',
+            rating: Number(review.rating || 5),
+          }))
+        : defaultReviews,
+    categoryImages: storefront.categoryImages || {},
+  };
+};
+
+export const getThemeCssVariables = (theme = designTokens.colors) => {
+  const mergedTheme = mergeTheme(theme);
+
+  return {
+    '--bg': mergedTheme.background,
+    '--surface': mergedTheme.card,
+    '--surface-muted': rgba(mergedTheme.primary, 0.06),
+    '--surface-strong': mergedTheme.textPrimary,
+    '--text': mergedTheme.textPrimary,
+    '--muted': mergedTheme.textSecondary,
+    '--line': rgba(mergedTheme.textPrimary, 0.08),
+    '--brand': mergedTheme.primary,
+    '--brand-strong': darkenHex(mergedTheme.primary),
+    '--brand-secondary': mergedTheme.secondary,
+    '--accent': mergedTheme.highlight,
+    '--accent-soft': rgba(mergedTheme.highlight, 0.18),
+    '--danger': '#b91c1c',
+    '--shadow': designTokens.shadows.medium,
+    '--shadow-soft': designTokens.shadows.soft,
+    '--radius-xl': designTokens.radii.xl,
+    '--radius-lg': designTokens.radii.lg,
+    '--radius-md': designTokens.radii.md,
+    '--radius-sm': designTokens.radii.sm,
+    '--font-heading': designTokens.typography.heading,
+    '--font-body': designTokens.typography.body,
+  };
+};
+
+export const applyThemeToDocument = (theme = designTokens.colors) => {
+  if (typeof document === 'undefined') {
+    return;
+  }
+
+  const root = document.documentElement;
+  const variables = getThemeCssVariables(theme);
+
+  Object.entries(variables).forEach(([key, value]) => {
+    root.style.setProperty(key, value);
+  });
+};
+
+export const getCategoryImage = (category, storefront = defaultStorefrontConfig) => {
+  const lookupKeys = [category?.id, category?.slug, category?.name]
+    .map((value) => String(value || '').trim())
+    .filter(Boolean);
+
+  const matchedKey = lookupKeys.find((key) => storefront.categoryImages?.[key]);
+
+  return storefront.categoryImages?.[matchedKey] || getFallbackImage(category?.name);
+};
+
+export const createAppConfig = ({ categories = [], products = [], settings = null }) => {
+  const storefront = mergeStorefrontConfig(settings?.storefront);
+
+  return {
+    theme: storefront.theme,
+    hero: storefront.hero,
+    categories: categories.map((category) => ({
+      ...category,
+      image: getCategoryImage(category, storefront),
+    })),
+    menu: products,
+    popup: storefront.popup,
+    reviews: storefront.reviews,
+  };
+};
+
+export const createPopupStorageKey = (popup = defaultPopupConfig) => {
+  const seed = `${popup.title || ''}-${popup.subtitle || ''}-${popup.body || ''}`
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+
+  return `sjfc-popup-${seed || 'default'}`;
+};

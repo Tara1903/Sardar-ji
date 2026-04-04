@@ -9,9 +9,17 @@ export const Footer = ({ settings }) => (
   <footer className="site-footer">
     <div className="container footer-grid">
       <div className="footer-branding">
-        <BrandLockup className="footer-brand" linkTo="/" />
+        <BrandLockup
+          className="footer-brand"
+          linkTo="/"
+          tagline={settings?.tagline || 'Swad Bhi, Budget Bhi'}
+          title={settings?.businessName || 'Sardar Ji Food Corner'}
+        />
         <p>{settings?.tagline || 'Swad Bhi, Budget Bhi'}</p>
-        <p>Fresh veg meals, quick WhatsApp ordering, and a premium local food experience built for repeat customers.</p>
+        <p>
+          Fresh veg meals, quick WhatsApp ordering, and a premium local food experience built for
+          repeat customers.
+        </p>
       </div>
 
       <div>

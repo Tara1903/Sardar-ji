@@ -19,6 +19,7 @@ import {
   DEFAULT_TRUST_POINTS,
   STORE_MAP_EMBED_URL,
 } from '../utils/storefront';
+import { mergeStorefrontConfig } from '../theme/theme';
 import { normalizeEmail } from '../utils/validation';
 
 const API_URL = publicEnv.apiUrl.trim();
@@ -213,23 +214,30 @@ const normalizeProduct = (row) => {
   };
 };
 
-const normalizeSettings = (row = {}) => ({
-  id: 'business-settings',
-  businessName: row.business_name || 'Sardar Ji Food Corner',
-  tagline: row.tagline || 'Swad Bhi, Budget Bhi',
-  whatsappNumber: normalizeWhatsappNumber(row.whatsapp_number || DEFAULT_WHATSAPP_NUMBER),
-  phoneNumber: normalizePhoneDisplay(row.phone_number || DEFAULT_PHONE_NUMBER),
-  timings: row.timings || 'Morning to Night',
-  mapsEmbedUrl: row.maps_embed_url || STORE_MAP_EMBED_URL,
-  trustPoints: row.trust_points?.length ? row.trust_points : DEFAULT_TRUST_POINTS,
-  deliveryRules: {
-    ...defaultDeliveryRules,
-    ...(row.delivery_rules || {}),
-  },
-  offers: row.offers?.length ? row.offers : DEFAULT_OFFERS,
-  createdAt: row.created_at,
-  updatedAt: row.updated_at,
-});
+const normalizeSettings = (row = {}) => {
+  const rawDeliveryRules = row.delivery_rules || {};
+  const storefront = mergeStorefrontConfig(rawDeliveryRules.storefront);
+  const { storefront: _ignoredStorefront, ...cleanDeliveryRules } = rawDeliveryRules;
+
+  return {
+    id: 'business-settings',
+    businessName: row.business_name || 'Sardar Ji Food Corner',
+    tagline: row.tagline || 'Swad Bhi, Budget Bhi',
+    whatsappNumber: normalizeWhatsappNumber(row.whatsapp_number || DEFAULT_WHATSAPP_NUMBER),
+    phoneNumber: normalizePhoneDisplay(row.phone_number || DEFAULT_PHONE_NUMBER),
+    timings: row.timings || 'Morning to Night',
+    mapsEmbedUrl: row.maps_embed_url || STORE_MAP_EMBED_URL,
+    trustPoints: row.trust_points?.length ? row.trust_points : DEFAULT_TRUST_POINTS,
+    deliveryRules: {
+      ...defaultDeliveryRules,
+      ...(cleanDeliveryRules || {}),
+    },
+    offers: row.offers?.length ? row.offers : DEFAULT_OFFERS,
+    storefront,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+};
 
 const normalizeUser = (row) => ({
   id: row.id,
@@ -432,6 +440,7 @@ const direct = {
   updateSettings: async (payload) => {
     const supabase = await getSupabase();
     const current = await direct.getSettings();
+    const storefront = mergeStorefrontConfig(payload.storefront || current.storefront);
     const merged = {
       ...current,
       ...payload,
@@ -443,6 +452,7 @@ const direct = {
       },
       offers: payload.offers || current.offers,
       trustPoints: payload.trustPoints || current.trustPoints,
+      storefront,
     };
 
     const { data, error } = await supabase
@@ -455,7 +465,10 @@ const direct = {
         timings: merged.timings,
         maps_embed_url: merged.mapsEmbedUrl || '',
         trust_points: merged.trustPoints || [],
-        delivery_rules: merged.deliveryRules || {},
+        delivery_rules: {
+          ...(merged.deliveryRules || {}),
+          storefront: merged.storefront,
+        },
         offers: merged.offers || [],
       })
       .eq('id', 1)
@@ -643,6 +656,61 @@ const direct = {
     }
 
     return normalizeCategory(data);
+  },
+
+  updateCategory: async (id, payload) => {
+    const supabase = await getSupabase();
+    const update = {};
+
+    if (payload.name !== undefined) {
+      update.name = payload.name;
+      update.slug = createSlug(payload.name);
+    }
+
+    if (payload.description !== undefined) {
+      update.description = payload.description;
+    }
+
+    if (payload.isActive !== undefined) {
+      update.is_active = Boolean(payload.isActive);
+    }
+
+    const { data, error } = await supabase
+      .from('categories')
+      .update(update)
+      .eq('id', id)
+      .select('*')
+      .single();
+
+    if (error) {
+      throw createError(error, 'Unable to update the category.');
+    }
+
+    return normalizeCategory(data);
+  },
+
+  deleteCategory: async (id) => {
+    const supabase = await getSupabase();
+    const { count, error: countError } = await supabase
+      .from('products')
+      .select('id', { count: 'exact', head: true })
+      .eq('category_id', id);
+
+    if (countError) {
+      throw createError(countError, 'Unable to verify linked menu items.');
+    }
+
+    if (count) {
+      throw new Error('Move or delete linked products before removing this category.');
+    }
+
+    const { error } = await supabase.from('categories').delete().eq('id', id);
+
+    if (error) {
+      throw createError(error, 'Unable to delete the category.');
+    }
+
+    return null;
   },
 
   login: async (payload) => {
@@ -1214,6 +1282,8 @@ export const api = {
     USE_API_SERVER
       ? request('/categories', { method: 'POST', body: payload, token })
       : direct.createCategory(payload, token),
+  updateCategory: (id, payload, token) => direct.updateCategory(id, payload, token),
+  deleteCategory: (id, token) => direct.deleteCategory(id, token),
   login: (payload) =>
     USE_API_SERVER ? request('/auth/login', { method: 'POST', body: payload }) : direct.login(payload),
   requestLoginOtp: (payload) => direct.requestLoginOtp(payload),

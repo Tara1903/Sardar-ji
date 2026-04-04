@@ -66,7 +66,7 @@ const NotFoundPage = lazy(() =>
 );
 
 const CustomerLayout = () => {
-  const { settings } = useAppData();
+  const { appConfig, settings } = useAppData();
   const location = useLocation();
 
   return (
@@ -78,6 +78,7 @@ const CustomerLayout = () => {
       <Footer settings={settings} />
       <MobileNav />
       <SpecialOfferPopup
+        config={appConfig.popup}
         enabled={location.pathname === '/'}
         phoneNumber={settings?.whatsappNumber}
       />
