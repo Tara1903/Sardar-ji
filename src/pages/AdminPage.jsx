@@ -1,4 +1,5 @@
 import {
+  Bell,
   Bike,
   ClipboardList,
   LayoutDashboard,
@@ -7,7 +8,8 @@ import {
   Shapes,
   Users,
 } from 'lucide-react';
-import { NavLink, Navigate, Outlet, useLocation } from 'react-router-dom';
+import { useEffect } from 'react';
+import { NavLink, Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { BrandLockup } from '../components/brand/BrandLockup';
 import { Loader } from '../components/common/Loader';
 import { AdminProvider, useAdmin } from '../contexts/AdminContext';
@@ -87,9 +89,16 @@ const routeMeta = {
 
 const AdminShell = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const { logout } = useAuth();
-  const { error, loading } = useAdmin();
+  const { error, loading, markOrdersSeen, newOrders, unseenOrderCount } = useAdmin();
   const meta = routeMeta[location.pathname] || routeMeta['/admin/dashboard'];
+
+  useEffect(() => {
+    if (location.pathname === '/admin/orders') {
+      markOrdersSeen();
+    }
+  }, [location.pathname, markOrdersSeen]);
 
   if (loading) {
     return <Loader message="Loading admin control room..." />;
@@ -108,7 +117,12 @@ const AdminShell = () => {
                 <NavLink className="admin-sidebar-link" key={item.to} to={item.to}>
                   <Icon size={18} />
                   <div>
-                    <strong>{item.label}</strong>
+                    <div className="admin-nav-label-row">
+                      <strong>{item.label}</strong>
+                      {item.to === '/admin/orders' && unseenOrderCount ? (
+                        <span className="admin-notification-badge">{unseenOrderCount}</span>
+                      ) : null}
+                    </div>
                     <span>{item.description}</span>
                   </div>
                 </NavLink>
@@ -126,15 +140,75 @@ const AdminShell = () => {
             </div>
 
             <div className="admin-topbar-actions">
+              {unseenOrderCount ? (
+                <button
+                  className="admin-notice-pill"
+                  onClick={() => {
+                    markOrdersSeen();
+                    navigate('/admin/orders');
+                  }}
+                  type="button"
+                >
+                  <Bell size={16} />
+                  {unseenOrderCount} new {unseenOrderCount === 1 ? 'order' : 'orders'}
+                </button>
+              ) : null}
               <BrandLockup compact linkTo="/admin/dashboard" showTagline={false} />
               <button className="btn btn-secondary" onClick={logout} type="button">
                 <LogOut size={16} />
                 Logout
               </button>
             </div>
+
+            <div className="admin-topbar-toolbar">
+              <nav className="admin-quick-nav" aria-label="Admin sections">
+                {navItems.map((item) => (
+                  <NavLink className="admin-quick-nav-link" key={item.to} to={item.to}>
+                    <span>{item.label}</span>
+                    {item.to === '/admin/orders' && unseenOrderCount ? (
+                      <span className="admin-notification-badge">{unseenOrderCount}</span>
+                    ) : null}
+                  </NavLink>
+                ))}
+              </nav>
+
+              <label className="admin-route-select">
+                <span>Jump to section</span>
+                <select onChange={(event) => navigate(event.target.value)} value={location.pathname}>
+                  {navItems.map((item) => (
+                    <option key={item.to} value={item.to}>
+                      {item.label}
+                      {item.to === '/admin/orders' && unseenOrderCount ? ` (${unseenOrderCount} new)` : ''}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
           </header>
 
           {error ? <p className="error-text admin-banner">{error}</p> : null}
+          {unseenOrderCount && location.pathname !== '/admin/orders' ? (
+            <div className="panel-card admin-live-notice">
+              <div>
+                <p className="eyebrow">New order alert</p>
+                <strong>
+                  {newOrders[0]?.customerName || 'A customer'} just placed{' '}
+                  {newOrders[0]?.orderNumber ? `order ${newOrders[0].orderNumber}` : 'a new order'}.
+                </strong>
+                <p>Open Orders to assign the kitchen status and delivery partner quickly.</p>
+              </div>
+              <button
+                className="btn btn-primary"
+                onClick={() => {
+                  markOrdersSeen();
+                  navigate('/admin/orders');
+                }}
+                type="button"
+              >
+                View orders
+              </button>
+            </div>
+          ) : null}
 
           <Outlet />
         </div>

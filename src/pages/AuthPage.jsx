@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, Clock3, MailCheck, ShieldCheck } from 'lucide-react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { api } from '../api/client';
@@ -6,7 +6,8 @@ import { BrandLockup } from '../components/brand/BrandLockup';
 import { OtpCodeInput } from '../components/auth/OtpCodeInput';
 import { useAuth } from '../contexts/AuthContext';
 import { useCountdown } from '../hooks/useCountdown';
-import { formatOtpDuration } from '../utils/otpState';
+import { formatOtpDuration, getOtpRequestState } from '../utils/otpState';
+import { getFallbackRoute, normalizePanel } from '../utils/panelLinks';
 import {
   isStrongPassword,
   isValidEmail,
@@ -31,13 +32,12 @@ const emptyCustomerLoginChallenge = {
   cooldownEndsAt: '',
 };
 
-const getFallbackRoute = (user) =>
-  user.role === 'admin' ? '/admin/dashboard' : user.role === 'delivery' ? '/delivery' : '/';
-
 export const AuthPage = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const redirectPath = searchParams.get('redirect');
+  const requestedPanel = normalizePanel(searchParams.get('panel'));
+  const isRoleSpecificLogin = requestedPanel === 'admin' || requestedPanel === 'delivery';
   const { acceptAuthSession, authenticateCredentials } = useAuth();
   const [mode, setMode] = useState('login');
   const [formState, setFormState] = useState(emptyRegisterState);
@@ -60,9 +60,23 @@ export const AuthPage = () => {
     Boolean(customerLoginChallenge.expiresAt) && loginOtpSecondsRemaining <= 0;
   const hasOtpExpired = Boolean(otpExpiresAt) && otpSecondsRemaining <= 0;
 
+  useEffect(() => {
+    if (isRoleSpecificLogin) {
+      setMode('login');
+    }
+  }, [isRoleSpecificLogin]);
+
   const heading = useMemo(() => {
     if (isCustomerLoginOtpStage) {
       return 'Verify your customer login';
+    }
+
+    if (requestedPanel === 'admin') {
+      return 'Login to the admin panel';
+    }
+
+    if (requestedPanel === 'delivery') {
+      return 'Login to the delivery panel';
     }
 
     if (mode === 'login') {
@@ -78,7 +92,15 @@ export const AuthPage = () => {
 
   const introCopy = useMemo(() => {
     if (isCustomerLoginOtpStage) {
-      return 'One quick email code keeps customer accounts secure before checkout. Admin and delivery accounts continue without this step.';
+      return 'Tap Send login code once, check your inbox, and finish signing in. Admin and delivery accounts continue after password login without this extra step.';
+    }
+
+    if (requestedPanel === 'admin') {
+      return 'Use your admin credentials to manage products, orders, customers, and storefront settings.';
+    }
+
+    if (requestedPanel === 'delivery') {
+      return 'Use your delivery partner credentials to view assigned orders, update status, and share live location.';
     }
 
     if (mode === 'login') {
@@ -169,33 +191,37 @@ export const AuthPage = () => {
         password: formState.password,
       });
 
+      if (requestedPanel && response.user.role !== requestedPanel) {
+        const panelLabel =
+          requestedPanel === 'admin'
+            ? 'admin'
+            : requestedPanel === 'delivery'
+              ? 'delivery partner'
+              : 'customer';
+        setError(`This email does not have ${panelLabel} access. Use the correct panel link instead.`);
+        return;
+      }
+
       if (response.user.role !== 'customer') {
         const user = acceptAuthSession(response);
         navigate(redirectPath || getFallbackRoute(user));
         return;
       }
 
+      const existingLoginOtp = getOtpRequestState('login', response.user.email);
       setCustomerLoginChallenge({
         email: response.user.email,
         pendingSession: response,
-        expiresAt: '',
-        cooldownEndsAt: '',
+        expiresAt: existingLoginOtp?.expiresAt || '',
+        cooldownEndsAt: existingLoginOtp?.cooldownEndsAt || '',
       });
       setLoginOtp('');
-
-      try {
-        const otpResponse = await api.requestLoginOtp({ email: response.user.email });
-        setCustomerLoginChallenge((current) => ({
-          ...current,
-          expiresAt: otpResponse.expiresAt,
-          cooldownEndsAt: otpResponse.cooldownEndsAt,
-        }));
-        setInfo(otpResponse.message);
-        setError('');
-      } catch (otpError) {
-        setError(otpError.message);
-        setInfo('Password confirmed. Send a fresh login code to finish signing in.');
-      }
+      setInfo(
+        existingLoginOtp
+          ? `A valid login code is already active for ${response.user.email}.`
+          : 'Password confirmed. Tap Send login code once to finish signing in.',
+      );
+      setError('');
     } catch (authError) {
       setError(authError.message);
     } finally {
@@ -393,18 +419,29 @@ export const AuthPage = () => {
         <h1>{heading}</h1>
         <p className="auth-intro-copy">{introCopy}</p>
 
-        <div className="tab-switch">
-          <button className={mode === 'login' ? 'active' : ''} onClick={() => switchMode('login')} type="button">
-            Login
-          </button>
-          <button
-            className={mode === 'register' ? 'active' : ''}
-            onClick={() => switchMode('register')}
-            type="button"
-          >
-            Register
-          </button>
-        </div>
+        {!isRoleSpecificLogin ? (
+          <div className="tab-switch">
+            <button className={mode === 'login' ? 'active' : ''} onClick={() => switchMode('login')} type="button">
+              Login
+            </button>
+            <button
+              className={mode === 'register' ? 'active' : ''}
+              onClick={() => switchMode('register')}
+              type="button"
+            >
+              Register
+            </button>
+          </div>
+        ) : (
+          <div className="helper-note auth-panel-note">
+            <ShieldCheck size={16} />
+            <span>
+              {requestedPanel === 'admin'
+                ? 'Admin sign-in uses password only.'
+                : 'Delivery partner sign-in uses password only.'}
+            </span>
+          </div>
+        )}
 
         {!isCustomerLoginOtpStage ? (
           <div className="form-grid">

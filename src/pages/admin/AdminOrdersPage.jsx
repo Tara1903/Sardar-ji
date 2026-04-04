@@ -1,14 +1,18 @@
 import { Search } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useAdmin } from '../../contexts/AdminContext';
 import { formatCurrency, formatDateTime } from '../../utils/format';
 
 const ORDER_STATUSES = ['Order Placed', 'Preparing', 'Out for Delivery', 'Delivered'];
 
 export const AdminOrdersPage = () => {
-  const { deliveryUsers, orders, saveOrderUpdate, updatingOrderId } = useAdmin();
+  const { deliveryUsers, markOrdersSeen, newOrders, orders, saveOrderUpdate, updatingOrderId } = useAdmin();
   const [orderSearch, setOrderSearch] = useState('');
   const [orderDrafts, setOrderDrafts] = useState({});
+
+  useEffect(() => {
+    markOrdersSeen();
+  }, [markOrdersSeen]);
 
   const updateOrderDraft = (orderId, key, value) => {
     setOrderDrafts((current) => {
@@ -40,6 +44,12 @@ export const AdminOrdersPage = () => {
           <h2>Update status and assign delivery partners</h2>
         </div>
       </div>
+
+      {newOrders.length ? (
+        <p className="success-text admin-inline-alert">
+          {newOrders.length} new customer {newOrders.length === 1 ? 'order has' : 'orders have'} just arrived.
+        </p>
+      ) : null}
 
       <label className="search-bar compact">
         <Search size={16} />

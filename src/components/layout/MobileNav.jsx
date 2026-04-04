@@ -2,17 +2,12 @@ import { House, Search, ShoppingBag, UserRound } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import { useCart } from '../../contexts/CartContext';
 import { useAuth } from '../../contexts/AuthContext';
+import { getAccountLink } from '../../utils/panelLinks';
 
 export const MobileNav = () => {
   const { itemCount } = useCart();
   const { user } = useAuth();
-  const accountLink = user
-    ? user.role === 'admin'
-      ? '/admin/dashboard'
-      : user.role === 'delivery'
-        ? '/delivery'
-        : '/profile'
-    : '/auth';
+  const accountLink = getAccountLink(user);
 
   return (
     <nav className="mobile-nav">
@@ -31,7 +26,7 @@ export const MobileNav = () => {
       </NavLink>
       <NavLink className="mobile-nav-link" to={accountLink}>
         <UserRound size={18} />
-        {user ? 'Profile' : 'Login'}
+        {user ? (user.role === 'customer' ? 'Profile' : 'Panel') : 'Login'}
       </NavLink>
     </nav>
   );

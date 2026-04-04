@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { CheckCircle2, Clock3, MapPinned } from 'lucide-react';
-import { Link, useParams } from 'react-router-dom';
+import { CheckCircle2, Clock3, MapPinned, Radar } from 'lucide-react';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { api } from '../api/client';
 import { PageTransition } from '../components/common/PageTransition';
 import { EmptyState } from '../components/common/EmptyState';
@@ -10,9 +10,11 @@ import { formatCurrency, formatDateTime, formatEtaLabel } from '../utils/format'
 
 export const OrderSuccessPage = () => {
   const { orderId } = useParams();
+  const navigate = useNavigate();
   const { token } = useAuth();
   const [order, setOrder] = useState(null);
   const [error, setError] = useState('');
+  const [redirectSeconds, setRedirectSeconds] = useState(4);
 
   useEffect(() => {
     const loadOrder = async () => {
@@ -27,6 +29,31 @@ export const OrderSuccessPage = () => {
 
     loadOrder();
   }, [orderId, token]);
+
+  useEffect(() => {
+    if (!order?.id) {
+      return undefined;
+    }
+
+    setRedirectSeconds(4);
+    const intervalId = window.setInterval(() => {
+      setRedirectSeconds((current) => (current > 1 ? current - 1 : current));
+    }, 1000);
+    const timeoutId = window.setTimeout(() => {
+      navigate(`/track/${order.id}`, {
+        replace: true,
+        state: {
+          justPlaced: true,
+          orderNumber: order.orderNumber,
+        },
+      });
+    }, 3600);
+
+    return () => {
+      window.clearInterval(intervalId);
+      window.clearTimeout(timeoutId);
+    };
+  }, [navigate, order]);
 
   if (error) {
     return (
@@ -48,6 +75,31 @@ export const OrderSuccessPage = () => {
     <PageTransition>
       <section className="section first-section">
         <div className="container center-stack success-shell">
+          <div className="success-popup">
+            <div className="success-popup-icon">
+              <Radar size={18} />
+            </div>
+            <div>
+              <strong>Order placed successfully</strong>
+              <p>Opening live tracking automatically in {redirectSeconds} seconds.</p>
+            </div>
+            <button
+              className="btn btn-primary"
+              onClick={() =>
+                navigate(`/track/${order.id}`, {
+                  replace: true,
+                  state: {
+                    justPlaced: true,
+                    orderNumber: order.orderNumber,
+                  },
+                })
+              }
+              type="button"
+            >
+              Track now
+            </button>
+          </div>
+
           <div className="success-mark">
             <CheckCircle2 size={72} />
           </div>

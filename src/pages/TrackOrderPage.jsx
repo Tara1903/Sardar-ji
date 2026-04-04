@@ -1,16 +1,18 @@
 import { useEffect, useState } from 'react';
 import { Clock3, MapPinned } from 'lucide-react';
-import { useParams } from 'react-router-dom';
+import { useLocation, useParams } from 'react-router-dom';
 import { api } from '../api/client';
 import { PageTransition } from '../components/common/PageTransition';
 import { EmptyState } from '../components/common/EmptyState';
 import { Loader } from '../components/common/Loader';
+import { PromoBanner } from '../components/common/PromoBanner';
 import { OrderTimeline } from '../components/order/OrderTimeline';
 import { TrackingMap } from '../components/order/TrackingMap';
 import { formatDateTime, formatEtaLabel } from '../utils/format';
 
 export const TrackOrderPage = () => {
   const { orderId } = useParams();
+  const location = useLocation();
   const [order, setOrder] = useState(null);
   const [error, setError] = useState('');
 
@@ -51,6 +53,15 @@ export const TrackOrderPage = () => {
       <section className="section first-section">
         <div className="container tracking-layout">
           <div className="panel-card">
+            {location.state?.justPlaced ? (
+              <PromoBanner
+                className="tracking-success-banner"
+                description={`Order ${location.state.orderNumber || ''} is now being tracked live.`.trim()}
+                eyebrow="Order live"
+                title="Your order has been placed successfully"
+                tone="success"
+              />
+            ) : null}
             <p className="eyebrow">Tracking #{order.orderNumber}</p>
             <h1>{order.status}</h1>
             <div className="order-meta-grid">

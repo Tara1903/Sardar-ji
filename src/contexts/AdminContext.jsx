@@ -1,15 +1,37 @@
-import { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { api } from '../api/client';
 import { useAppData } from './AppDataContext';
 import { useAuth } from './AuthContext';
 
 const AdminContext = createContext(null);
+const ADMIN_LAST_SEEN_ORDER_KEY = 'sjfc-admin-last-seen-order-at';
+
+const canUseStorage = () =>
+  typeof window !== 'undefined' && typeof window.localStorage !== 'undefined';
+
+const readLastSeenOrderAt = () => {
+  if (!canUseStorage()) {
+    return '';
+  }
+
+  return window.localStorage.getItem(ADMIN_LAST_SEEN_ORDER_KEY) || '';
+};
+
+const writeLastSeenOrderAt = (value) => {
+  if (!canUseStorage()) {
+    return;
+  }
+
+  window.localStorage.setItem(ADMIN_LAST_SEEN_ORDER_KEY, value || '');
+};
 
 export const AdminProvider = ({ children }) => {
   const { token } = useAuth();
   const { products, categories, settings, refreshCatalog, setSettings } = useAppData();
   const [orders, setOrders] = useState([]);
   const [users, setUsers] = useState([]);
+  const [newOrders, setNewOrders] = useState([]);
+  const [lastSeenOrderAt, setLastSeenOrderAt] = useState(() => readLastSeenOrderAt());
   const [settingsDraft, setSettingsDraft] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -19,8 +41,15 @@ export const AdminProvider = ({ children }) => {
   const [updatingOrderId, setUpdatingOrderId] = useState('');
   const [creatingDelivery, setCreatingDelivery] = useState(false);
 
-  const refreshAdminData = async () => {
-    setLoading(true);
+  const refreshAdminData = useCallback(async ({ silent = false } = {}) => {
+    if (!token) {
+      return;
+    }
+
+    if (!silent) {
+      setLoading(true);
+    }
+
     try {
       const [ordersResponse, usersResponse] = await Promise.all([
         api.getOrders(token),
@@ -32,17 +61,32 @@ export const AdminProvider = ({ children }) => {
     } catch (loadError) {
       setError(loadError.message);
     } finally {
-      setLoading(false);
+      if (!silent) {
+        setLoading(false);
+      }
     }
-  };
+  }, [token]);
 
   useEffect(() => {
     if (!token) {
+      setLoading(false);
       return;
     }
 
     refreshAdminData();
-  }, [token]);
+  }, [refreshAdminData, token]);
+
+  useEffect(() => {
+    if (!token) {
+      return undefined;
+    }
+
+    const intervalId = window.setInterval(() => {
+      refreshAdminData({ silent: true });
+    }, 15000);
+
+    return () => window.clearInterval(intervalId);
+  }, [refreshAdminData, token]);
 
   useEffect(() => {
     if (settings) {
@@ -50,9 +94,43 @@ export const AdminProvider = ({ children }) => {
     }
   }, [settings]);
 
+  useEffect(() => {
+    if (!orders.length) {
+      setNewOrders([]);
+      return;
+    }
+
+    const latestOrderCreatedAt = orders[0]?.createdAt || '';
+
+    if (!lastSeenOrderAt) {
+      setLastSeenOrderAt(latestOrderCreatedAt);
+      writeLastSeenOrderAt(latestOrderCreatedAt);
+      setNewOrders([]);
+      return;
+    }
+
+    const lastSeenTimestamp = new Date(lastSeenOrderAt).getTime();
+    const unseenOrders = orders.filter((order) => {
+      const createdAt = new Date(order.createdAt || '').getTime();
+      return Number.isFinite(createdAt) && createdAt > lastSeenTimestamp;
+    });
+
+    setNewOrders(unseenOrders);
+  }, [lastSeenOrderAt, orders]);
+
   const deliveryUsers = useMemo(() => users.filter((user) => user.role === 'delivery'), [users]);
   const customers = useMemo(() => users.filter((user) => user.role === 'customer'), [users]);
   const admins = useMemo(() => users.filter((user) => user.role === 'admin'), [users]);
+  const unseenOrderCount = newOrders.length;
+
+  const markOrdersSeen = useCallback(
+    (seenAt = orders[0]?.createdAt || new Date().toISOString()) => {
+      setLastSeenOrderAt(seenAt);
+      writeLastSeenOrderAt(seenAt);
+      setNewOrders([]);
+    },
+    [orders],
+  );
 
   const metrics = useMemo(
     () => ({
@@ -167,7 +245,7 @@ export const AdminProvider = ({ children }) => {
     setUpdatingOrderId(orderId);
     try {
       await api.updateOrderStatus(orderId, payload, token);
-      await refreshAdminData();
+      await refreshAdminData({ silent: true });
       setError('');
     } catch (orderError) {
       setError(orderError.message);
@@ -181,7 +259,7 @@ export const AdminProvider = ({ children }) => {
     setCreatingDelivery(true);
     try {
       const response = await api.createDeliveryPartner(payload, token);
-      await refreshAdminData();
+      await refreshAdminData({ silent: true });
       setError('');
       return response;
     } catch (deliveryError) {
@@ -205,7 +283,9 @@ export const AdminProvider = ({ children }) => {
       deliveryUsers,
       error,
       loading,
+      markOrdersSeen,
       metrics,
+      newOrders,
       orders,
       products,
       refreshAdminData,
@@ -220,6 +300,7 @@ export const AdminProvider = ({ children }) => {
       settingsDraft,
       setError,
       setSettingsDraft,
+      unseenOrderCount,
       updateCategory,
       updatingOrderId,
       uploadAsset,
@@ -235,12 +316,22 @@ export const AdminProvider = ({ children }) => {
       deliveryUsers,
       error,
       loading,
+      markOrdersSeen,
       metrics,
+      newOrders,
       orders,
       products,
+      refreshAdminData,
+      removeProduct,
+      saveCategory,
+      saveDeliveryPartner,
+      saveOrderUpdate,
+      saveProduct,
+      saveSettings,
       savingProduct,
       savingSettings,
       settingsDraft,
+      unseenOrderCount,
       updateCategory,
       updatingOrderId,
       uploadAsset,

@@ -102,7 +102,10 @@ const delay = (ms) =>
 const createError = (error, fallback) => new Error(error?.message || fallback);
 
 const isOtpRateLimitError = (error) =>
-  /rate limit|too many requests|security purposes/i.test(error?.message || '');
+  error?.status === 429 ||
+  /rate limit|too many requests|security purposes|over_email_send_rate_limit/i.test(
+    `${error?.message || ''} ${error?.code || ''} ${error?.error_code || ''}`,
+  );
 
 const buildOtpResponse = ({ email, expiresAt, cooldownEndsAt, message, reused = false }) => ({
   email,
@@ -151,7 +154,9 @@ const buildFreshOtpResponse = (scope, email, message) => {
 
 const createOtpRequestError = (error, fallback) => {
   if (isOtpRateLimitError(error)) {
-    return new Error('Please wait 60 seconds before requesting another OTP.');
+    return new Error(
+      'Too many email codes were requested recently. Please wait a minute, then tap Send login code only once.',
+    );
   }
 
   return createError(error, fallback);
