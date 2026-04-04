@@ -41,3 +41,18 @@ export const createTransientSupabaseClient = () => {
     },
   });
 };
+
+export const createTokenSupabaseClient = (token) => {
+  if (!publicEnvFlags.hasSupabaseBrowserConfig || !token) {
+    return null;
+  }
+
+  return createClient(publicEnv.supabaseUrl, publicEnv.supabaseAnonKey, {
+    auth: transientAuthOptions,
+    global: {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    },
+  });
+};

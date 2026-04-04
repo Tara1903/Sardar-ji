@@ -1,6 +1,10 @@
 import { getFallbackImage } from '../data/fallbackImages';
 import { publicEnv, publicEnvFlags } from '../lib/env';
-import { createTransientSupabaseClient, getSupabaseBrowserClient } from '../lib/supabase';
+import {
+  createTokenSupabaseClient,
+  createTransientSupabaseClient,
+  getSupabaseBrowserClient,
+} from '../lib/supabase';
 import {
   DEFAULT_PHONE_NUMBER,
   DEFAULT_WHATSAPP_NUMBER,
@@ -84,6 +88,22 @@ const getSupabase = async () => {
 
 const getTransientSupabase = () => {
   const client = createTransientSupabaseClient();
+
+  if (!client) {
+    throw new Error(
+      'This deployment needs either VITE_API_URL or both VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.',
+    );
+  }
+
+  return client;
+};
+
+const getSupabaseForToken = async (token) => {
+  if (!token) {
+    throw new Error('Authentication required.');
+  }
+
+  const client = createTokenSupabaseClient(token);
 
   if (!client) {
     throw new Error(
@@ -442,8 +462,8 @@ const direct = {
     return normalizeSettings(data);
   },
 
-  updateSettings: async (payload) => {
-    const supabase = await getSupabase();
+  updateSettings: async (payload, token) => {
+    const supabase = await getSupabaseForToken(token);
     const current = await direct.getSettings();
     const storefront = mergeStorefrontConfig(payload.storefront || current.storefront);
     const merged = {
@@ -539,8 +559,8 @@ const direct = {
     return normalizeProduct(data);
   },
 
-  createProduct: async (payload) => {
-    const supabase = await getSupabase();
+  createProduct: async (payload, token) => {
+    const supabase = await getSupabaseForToken(token);
     const category = await getCategoryRecord(supabase, payload.category);
     const { data, error } = await supabase
       .from('products')
@@ -565,8 +585,8 @@ const direct = {
     return normalizeProduct(data);
   },
 
-  updateProduct: async (id, payload) => {
-    const supabase = await getSupabase();
+  updateProduct: async (id, payload, token) => {
+    const supabase = await getSupabaseForToken(token);
     const update = {};
 
     if (payload.name !== undefined) {
@@ -617,8 +637,8 @@ const direct = {
     return normalizeProduct(data);
   },
 
-  deleteProduct: async (id) => {
-    const supabase = await getSupabase();
+  deleteProduct: async (id, token) => {
+    const supabase = await getSupabaseForToken(token);
     const { error } = await supabase.from('products').delete().eq('id', id);
 
     if (error) {
@@ -642,8 +662,8 @@ const direct = {
     return data.map(normalizeCategory);
   },
 
-  createCategory: async (payload) => {
-    const supabase = await getSupabase();
+  createCategory: async (payload, token) => {
+    const supabase = await getSupabaseForToken(token);
     const { data, error } = await supabase
       .from('categories')
       .insert({
@@ -663,8 +683,8 @@ const direct = {
     return normalizeCategory(data);
   },
 
-  updateCategory: async (id, payload) => {
-    const supabase = await getSupabase();
+  updateCategory: async (id, payload, token) => {
+    const supabase = await getSupabaseForToken(token);
     const update = {};
 
     if (payload.name !== undefined) {
@@ -694,8 +714,8 @@ const direct = {
     return normalizeCategory(data);
   },
 
-  deleteCategory: async (id) => {
-    const supabase = await getSupabase();
+  deleteCategory: async (id, token) => {
+    const supabase = await getSupabaseForToken(token);
     const { count, error: countError } = await supabase
       .from('products')
       .select('id', { count: 'exact', head: true })
@@ -869,7 +889,7 @@ const direct = {
     if (payload.referralCode?.trim()) {
       try {
         await direct.applyReferral(payload.referralCode.trim(), response.token);
-        const mainSupabase = await getSupabase();
+        const mainSupabase = await getSupabaseForToken(response.token);
         response.user = await getProfile(mainSupabase, response.user.id);
       } catch {
         // Keep registration successful even if the referral code is invalid or already used.
@@ -934,7 +954,7 @@ const direct = {
   },
 
   createDeliveryPartner: async (payload, token) => {
-    const supabase = await getSupabase();
+    const supabase = await getSupabaseForToken(token);
     await ensureAdmin(supabase, token);
 
     const transientSupabase = getTransientSupabase();
@@ -971,7 +991,7 @@ const direct = {
   },
 
   me: async (token) => {
-    const supabase = await getSupabase();
+    const supabase = await getSupabaseForToken(token);
     const authUser = await getCurrentUser(supabase, token);
     const user = await getProfile(supabase, authUser.id);
 
@@ -979,7 +999,7 @@ const direct = {
   },
 
   updateAddresses: async (addresses, token) => {
-    const supabase = await getSupabase();
+    const supabase = await getSupabaseForToken(token);
     const authUser = await getCurrentUser(supabase, token);
     const { data, error } = await supabase
       .from('users')
@@ -996,7 +1016,7 @@ const direct = {
   },
 
   getUsers: async (role, token) => {
-    const supabase = await getSupabase();
+    const supabase = await getSupabaseForToken(token);
     await getCurrentUser(supabase, token);
 
     let query = supabase.from('users').select('*').order('created_at', { ascending: false });
@@ -1015,7 +1035,7 @@ const direct = {
   },
 
   getOrders: async (token, search = '') => {
-    const supabase = await getSupabase();
+    const supabase = await getSupabaseForToken(token);
     await getCurrentUser(supabase, token);
     const { data, error } = await supabase
       .from('orders')
@@ -1039,13 +1059,13 @@ const direct = {
   },
 
   getOrder: async (id, token) => {
-    const supabase = await getSupabase();
+    const supabase = await getSupabaseForToken(token);
     await getCurrentUser(supabase, token);
     return getOrderRecord(supabase, id);
   },
 
   placeOrder: async (payload, token) => {
-    const supabase = await getSupabase();
+    const supabase = await getSupabaseForToken(token);
     const authUser = await getCurrentUser(supabase, token);
     const user = await getProfile(supabase, authUser.id);
 
@@ -1107,7 +1127,7 @@ const direct = {
   },
 
   updateOrderStatus: async (id, payload, token) => {
-    const supabase = await getSupabase();
+    const supabase = await getSupabaseForToken(token);
     const authUser = await getCurrentUser(supabase, token);
     const { error } = await supabase.rpc('update_order_status', {
       p_order_id: id,
@@ -1137,7 +1157,7 @@ const direct = {
   },
 
   getReferralProgress: async (token) => {
-    const supabase = await getSupabase();
+    const supabase = await getSupabaseForToken(token);
     const authUser = await getCurrentUser(supabase, token);
     const user = await getProfile(supabase, authUser.id);
 
@@ -1145,7 +1165,7 @@ const direct = {
   },
 
   applyReferral: async (referralCode, token) => {
-    const supabase = await getSupabase();
+    const supabase = await getSupabaseForToken(token);
     const authUser = await getCurrentUser(supabase, token);
     const { error } = await supabase.rpc('apply_referral_code', {
       p_user_id: authUser.id,
@@ -1161,7 +1181,7 @@ const direct = {
   },
 
   uploadImage: async (file, token) => {
-    const supabase = await getSupabase();
+    const supabase = await getSupabaseForToken(token);
     await getCurrentUser(supabase, token);
 
     if (!file) {
@@ -1236,7 +1256,7 @@ const direct = {
   },
 
   updateDeliveryLocation: async (payload, token) => {
-    const supabase = await getSupabase();
+    const supabase = await getSupabaseForToken(token);
     const authUser = await getCurrentUser(supabase, token);
     const { error } = await supabase.rpc('track_delivery', {
       p_order_id: payload.orderId,
