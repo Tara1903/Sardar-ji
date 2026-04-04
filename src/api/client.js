@@ -319,11 +319,13 @@ const normalizeTracking = (row) => ({
   },
 });
 
-const buildReferralProgress = (user) => {
-  const referralCount = user.successfulReferrals?.length || 0;
+const buildReferralProgress = (user, explicitReferralCount = null) => {
+  const referralCount =
+    typeof explicitReferralCount === 'number' ? explicitReferralCount : user.successfulReferrals?.length || 0;
 
   return {
     referralCode: user.referralCode,
+    appliedReferralCode: user.referralApplied || '',
     successfulReferralCount: referralCount,
     milestones: [
       {
@@ -378,6 +380,20 @@ const getProfile = async (supabase, userId) => {
   }
 
   return normalizeUser(data);
+};
+
+const getSuccessfulReferralCount = async (supabase, userId) => {
+  const { count, error } = await supabase
+    .from('referrals')
+    .select('id', { count: 'exact', head: true })
+    .eq('referrer_user_id', userId)
+    .in('status', ['successful', 'rewarded']);
+
+  if (error) {
+    throw createError(error, 'Unable to load referral progress.');
+  }
+
+  return count || 0;
 };
 
 const ensureAdmin = async (supabase, token) => {
@@ -1147,9 +1163,12 @@ const direct = {
   getReferralProgress: async (token) => {
     const supabase = await getSupabaseForToken(token);
     const authUser = await getCurrentUser(supabase, token);
-    const user = await getProfile(supabase, authUser.id);
+    const [user, successfulReferralCount] = await Promise.all([
+      getProfile(supabase, authUser.id),
+      getSuccessfulReferralCount(supabase, authUser.id),
+    ]);
 
-    return buildReferralProgress(user);
+    return buildReferralProgress(user, successfulReferralCount);
   },
 
   applyReferral: async (referralCode, token) => {
@@ -1165,7 +1184,9 @@ const direct = {
     }
 
     const user = await getProfile(supabase, authUser.id);
-    return buildReferralProgress(user);
+    const successfulReferralCount = await getSuccessfulReferralCount(supabase, authUser.id);
+
+    return buildReferralProgress(user, successfulReferralCount);
   },
 
   uploadImage: async (file, token) => {

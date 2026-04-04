@@ -14,6 +14,7 @@ export const ReferralProgress = ({ progress }) => {
       </div>
 
       <p>{progress.successfulReferralCount} successful joins so far.</p>
+      {progress.appliedReferralCode ? <p>Applied friend code: {progress.appliedReferralCode}</p> : null}
 
       <div className="milestone-list">
         {progress.milestones.map((milestone) => (
