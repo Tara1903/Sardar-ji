@@ -103,7 +103,10 @@ export const CheckoutPage = () => {
       setInfo(response.message);
       setError('');
     } catch (otpError) {
-      setError(otpError.message);
+      setError('');
+      setInfo(
+        `${otpError.message} You can still place the order directly because you are already logged in.`,
+      );
     } finally {
       otpRequestLockRef.current = false;
       setSendingOtp(false);
@@ -162,10 +165,6 @@ export const CheckoutPage = () => {
 
     if (cartOfferState.notDeliverable) {
       return 'This address is outside our current 10 km delivery zone.';
-    }
-
-    if (!otpStillTrusted) {
-      return 'Verify the checkout code before placing the order, or continue with WhatsApp order.';
     }
 
     return '';
@@ -378,14 +377,16 @@ export const CheckoutPage = () => {
             <div className="panel-card">
               <div className="section-heading compact">
                 <div>
-                  <p className="eyebrow">Verification</p>
-                  <h2>Confirm this checkout with OTP</h2>
+                  <p className="eyebrow">Optional email confirmation</p>
+                  <h2>Place your order directly or verify by email</h2>
                 </div>
                 <MailCheck size={18} />
               </div>
 
               <p>
-                We send a secure 5-minute code to <strong>{user.email}</strong> before final order placement.
+                Your account is already signed in, so checkout is no longer blocked by email OTP.
+                If you want an extra confirmation code before placing the order, we can still send one to{' '}
+                <strong>{user.email}</strong>.
               </p>
 
               <OtpCodeInput
@@ -404,7 +405,7 @@ export const CheckoutPage = () => {
                       ? otpExpired
                         ? 'Code expired'
                         : `Expires in ${formatOtpDuration(otpSecondsRemaining)}`
-                      : 'Send a code to continue'}
+                      : 'Email code is optional'}
                 </span>
                 <button
                   className="text-button"
@@ -418,7 +419,7 @@ export const CheckoutPage = () => {
                       ? `Resend in ${formatOtpDuration(resendSecondsRemaining)}`
                       : otpExpiresAt
                         ? 'Send new code'
-                        : 'Send OTP'}
+                        : 'Send email code'}
                 </button>
               </div>
 
@@ -440,7 +441,7 @@ export const CheckoutPage = () => {
               <div className="helper-note">
                 <ShieldCheck size={16} />
                 <span>
-                  No dead ends here: if your code is delayed, continue on WhatsApp with the same cart details.
+                  No dead ends here: place the order directly, or use WhatsApp if you want a manual fallback.
                 </span>
               </div>
             </div>
