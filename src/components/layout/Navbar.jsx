@@ -1,47 +1,28 @@
-import { Bike, ChevronDown, LayoutDashboard, MapPin, Menu, ShoppingBag, Star, User, UserRound } from 'lucide-react';
-import { Link, NavLink, useLocation } from 'react-router-dom';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { MapPin, Menu, ShoppingBag, Star, User } from 'lucide-react';
+import { Link, NavLink } from 'react-router-dom';
+import { useState } from 'react';
 import { BrandLockup } from '../brand/BrandLockup';
 import { useCart } from '../../contexts/CartContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { STORE_AVERAGE_RATING, STORE_CITY, STORE_ORDER_SOCIAL_PROOF } from '../../utils/catalog';
-import { getAccountLink, getPanelLinks } from '../../utils/panelLinks';
 
 export const Navbar = ({ businessName }) => {
   const [open, setOpen] = useState(false);
-  const [panelMenuOpen, setPanelMenuOpen] = useState(false);
   const { itemCount } = useCart();
   const { user, logout } = useAuth();
-  const location = useLocation();
-  const panelMenuRef = useRef(null);
-  const accountLink = getAccountLink(user);
-  const panelLinks = useMemo(() => getPanelLinks(user), [user]);
+  const accountLink = user
+    ? user.role === 'admin'
+      ? '/admin/dashboard'
+      : user.role === 'delivery'
+        ? '/delivery'
+        : '/profile'
+    : '/auth';
 
   const navItems = [
     { to: '/', label: 'Home' },
     { to: '/menu', label: 'Menu' },
     { to: '/track', label: 'Track order' },
   ];
-
-  useEffect(() => {
-    setOpen(false);
-    setPanelMenuOpen(false);
-  }, [location.pathname]);
-
-  useEffect(() => {
-    if (!panelMenuOpen) {
-      return undefined;
-    }
-
-    const handlePointerDown = (event) => {
-      if (!panelMenuRef.current?.contains(event.target)) {
-        setPanelMenuOpen(false);
-      }
-    };
-
-    window.addEventListener('pointerdown', handlePointerDown);
-    return () => window.removeEventListener('pointerdown', handlePointerDown);
-  }, [panelMenuOpen]);
 
   return (
     <header className="site-header">
@@ -73,47 +54,6 @@ export const Navbar = ({ businessName }) => {
         </nav>
 
         <div className="nav-actions">
-          <div className="panel-menu desktop-only" ref={panelMenuRef}>
-            <button
-              aria-expanded={panelMenuOpen}
-              className="btn btn-secondary panel-menu-trigger"
-              onClick={() => setPanelMenuOpen((current) => !current)}
-              type="button"
-            >
-              <UserRound size={16} />
-              Panels
-              <ChevronDown size={16} />
-            </button>
-
-            {panelMenuOpen ? (
-              <div className="panel-menu-popover">
-                <p className="panel-menu-heading">Choose your panel</p>
-                {panelLinks.map((panelLink) => (
-                  <Link
-                    className="panel-menu-link"
-                    key={panelLink.key}
-                    onClick={() => setPanelMenuOpen(false)}
-                    to={panelLink.to}
-                  >
-                    <div className="panel-menu-icon">
-                      {panelLink.key === 'admin' ? (
-                        <LayoutDashboard size={16} />
-                      ) : panelLink.key === 'delivery' ? (
-                        <Bike size={16} />
-                      ) : (
-                        <User size={16} />
-                      )}
-                    </div>
-                    <div>
-                      <strong>{panelLink.label}</strong>
-                      <span>{panelLink.description}</span>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            ) : null}
-          </div>
-
           <Link className="icon-btn" to="/cart">
             <ShoppingBag size={18} />
             {itemCount ? <span className="cart-count">{itemCount}</span> : null}
@@ -126,7 +66,7 @@ export const Navbar = ({ businessName }) => {
               Logout
             </button>
           ) : (
-            <Link className="btn btn-primary desktop-only" to={accountLink}>
+            <Link className="btn btn-primary desktop-only" to="/auth">
               Login
             </Link>
           )}
@@ -149,20 +89,6 @@ export const Navbar = ({ businessName }) => {
           <NavLink className="drawer-link" onClick={() => setOpen(false)} to={accountLink}>
             {user ? 'Profile' : 'Login'}
           </NavLink>
-          <div className="drawer-group">
-            <p className="drawer-group-label">Panels</p>
-            {panelLinks.map((panelLink) => (
-              <NavLink
-                className="drawer-link drawer-link-subtle"
-                key={panelLink.key}
-                onClick={() => setOpen(false)}
-                to={panelLink.to}
-              >
-                <span>{panelLink.label}</span>
-                <small>{panelLink.description}</small>
-              </NavLink>
-            ))}
-          </div>
         </div>
       ) : null}
     </header>

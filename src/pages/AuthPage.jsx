@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { ArrowLeft, Clock3, MailCheck, ShieldCheck } from 'lucide-react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { api } from '../api/client';
@@ -7,7 +7,6 @@ import { OtpCodeInput } from '../components/auth/OtpCodeInput';
 import { useAuth } from '../contexts/AuthContext';
 import { useCountdown } from '../hooks/useCountdown';
 import { formatOtpDuration, getOtpRequestState } from '../utils/otpState';
-import { getFallbackRoute, normalizePanel } from '../utils/panelLinks';
 import {
   isStrongPassword,
   isValidEmail,
@@ -32,12 +31,13 @@ const emptyCustomerLoginChallenge = {
   cooldownEndsAt: '',
 };
 
+const getFallbackRoute = (user) =>
+  user.role === 'admin' ? '/admin/dashboard' : user.role === 'delivery' ? '/delivery' : '/';
+
 export const AuthPage = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const redirectPath = searchParams.get('redirect');
-  const requestedPanel = normalizePanel(searchParams.get('panel'));
-  const isRoleSpecificLogin = requestedPanel === 'admin' || requestedPanel === 'delivery';
   const { acceptAuthSession, authenticateCredentials } = useAuth();
   const [mode, setMode] = useState('login');
   const [formState, setFormState] = useState(emptyRegisterState);
@@ -50,15 +50,6 @@ export const AuthPage = () => {
   const [submitting, setSubmitting] = useState(false);
   const actionLockRef = useRef(false);
 
-  const goToDestination = (destination, { hardRedirect = false } = {}) => {
-    if (hardRedirect && typeof window !== 'undefined') {
-      window.location.assign(destination);
-      return;
-    }
-
-    navigate(destination);
-  };
-
   const isCustomerLoginOtpStage = mode === 'login' && Boolean(customerLoginChallenge.pendingSession);
   const isOtpStage = mode === 'register' && Boolean(otpExpiresAt);
   const loginOtpSecondsRemaining = useCountdown(customerLoginChallenge.expiresAt);
@@ -69,23 +60,9 @@ export const AuthPage = () => {
     Boolean(customerLoginChallenge.expiresAt) && loginOtpSecondsRemaining <= 0;
   const hasOtpExpired = Boolean(otpExpiresAt) && otpSecondsRemaining <= 0;
 
-  useEffect(() => {
-    if (isRoleSpecificLogin) {
-      setMode('login');
-    }
-  }, [isRoleSpecificLogin]);
-
   const heading = useMemo(() => {
     if (isCustomerLoginOtpStage) {
       return 'Verify your customer login';
-    }
-
-    if (requestedPanel === 'admin') {
-      return 'Login to the admin panel';
-    }
-
-    if (requestedPanel === 'delivery') {
-      return 'Login to the delivery panel';
     }
 
     if (mode === 'login') {
@@ -102,14 +79,6 @@ export const AuthPage = () => {
   const introCopy = useMemo(() => {
     if (isCustomerLoginOtpStage) {
       return 'Tap Send login code once, check your inbox, and finish signing in. Admin and delivery accounts continue after password login without this extra step.';
-    }
-
-    if (requestedPanel === 'admin') {
-      return 'Use your admin credentials to manage products, orders, customers, and storefront settings.';
-    }
-
-    if (requestedPanel === 'delivery') {
-      return 'Use your delivery partner credentials to view assigned orders, update status, and share live location.';
     }
 
     if (mode === 'login') {
@@ -200,20 +169,9 @@ export const AuthPage = () => {
         password: formState.password,
       });
 
-      if (requestedPanel && response.user.role !== requestedPanel) {
-        const panelLabel =
-          requestedPanel === 'admin'
-            ? 'admin'
-            : requestedPanel === 'delivery'
-              ? 'delivery partner'
-              : 'customer';
-        setError(`This email does not have ${panelLabel} access. Use the correct panel link instead.`);
-        return;
-      }
-
       if (response.user.role !== 'customer') {
         const user = acceptAuthSession(response);
-        goToDestination(redirectPath || getFallbackRoute(user), { hardRedirect: true });
+        navigate(redirectPath || getFallbackRoute(user));
         return;
       }
 
@@ -306,7 +264,7 @@ export const AuthPage = () => {
       });
       const user = acceptAuthSession(customerLoginChallenge.pendingSession);
       resetCustomerLoginStage();
-      goToDestination(redirectPath || getFallbackRoute(user));
+      navigate(redirectPath || getFallbackRoute(user));
     } catch (authError) {
       setError(authError.message);
     } finally {
@@ -381,7 +339,7 @@ export const AuthPage = () => {
       });
       const user = acceptAuthSession(response);
 
-      goToDestination(redirectPath || getFallbackRoute(user));
+      navigate(redirectPath || getFallbackRoute(user));
     } catch (authError) {
       setError(authError.message);
     } finally {
@@ -443,29 +401,18 @@ export const AuthPage = () => {
         <h1>{heading}</h1>
         <p className="auth-intro-copy">{introCopy}</p>
 
-        {!isRoleSpecificLogin ? (
-          <div className="tab-switch">
-            <button className={mode === 'login' ? 'active' : ''} onClick={() => switchMode('login')} type="button">
-              Login
-            </button>
-            <button
-              className={mode === 'register' ? 'active' : ''}
-              onClick={() => switchMode('register')}
-              type="button"
-            >
-              Register
-            </button>
-          </div>
-        ) : (
-          <div className="helper-note auth-panel-note">
-            <ShieldCheck size={16} />
-            <span>
-              {requestedPanel === 'admin'
-                ? 'Admin sign-in uses password only.'
-                : 'Delivery partner sign-in uses password only.'}
-            </span>
-          </div>
-        )}
+        <div className="tab-switch">
+          <button className={mode === 'login' ? 'active' : ''} onClick={() => switchMode('login')} type="button">
+            Login
+          </button>
+          <button
+            className={mode === 'register' ? 'active' : ''}
+            onClick={() => switchMode('register')}
+            type="button"
+          >
+            Register
+          </button>
+        </div>
 
         {!isCustomerLoginOtpStage ? (
           <div className="form-grid">
