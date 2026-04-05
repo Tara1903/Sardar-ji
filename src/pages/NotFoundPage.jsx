@@ -1,8 +1,10 @@
 import { Link } from 'react-router-dom';
 import { PageTransition } from '../components/common/PageTransition';
+import { SeoMeta } from '../components/seo/SeoMeta';
 
 export const NotFoundPage = () => (
   <PageTransition>
+    <SeoMeta noIndex title="Page Not Found" />
     <section className="section first-section">
       <div className="container center-stack">
         <p className="eyebrow">404</p>

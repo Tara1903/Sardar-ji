@@ -2319,6 +2319,65 @@ textarea {
   flex-shrink: 0;
 }
 
+.promo-banner-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.local-seo-card,
+.local-copy-card,
+.local-landing-hero,
+.local-landing-side {
+  display: grid;
+  gap: 1rem;
+}
+
+.local-seo-grid,
+.local-landing-layout {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.local-seo-points {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.local-seo-point {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+  color: var(--muted);
+}
+
+.local-seo-point svg {
+  color: var(--brand-secondary);
+  flex-shrink: 0;
+  margin-top: 0.15rem;
+}
+
+.local-seo-links,
+.local-landing-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.local-copy-section .panel-card,
+.local-seo-section .panel-card {
+  box-shadow: var(--shadow-soft);
+}
+
+@media (min-width: 900px) {
+  .local-seo-grid,
+  .local-landing-layout {
+    grid-template-columns: minmax(0, 1.6fr) minmax(280px, 0.95fr);
+    align-items: start;
+  }
+}
+
 .landing-stage {
   position: relative;
   padding: 6.55rem 0 2.2rem;

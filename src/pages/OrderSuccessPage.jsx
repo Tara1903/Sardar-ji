@@ -5,6 +5,7 @@ import { api } from '../api/client';
 import { PageTransition } from '../components/common/PageTransition';
 import { EmptyState } from '../components/common/EmptyState';
 import { Loader } from '../components/common/Loader';
+import { SeoMeta } from '../components/seo/SeoMeta';
 import { useAuth } from '../contexts/AuthContext';
 import { formatCurrency, formatDateTime, formatEtaLabel } from '../utils/format';
 
@@ -58,6 +59,7 @@ export const OrderSuccessPage = () => {
   if (error) {
     return (
       <PageTransition>
+        <SeoMeta noIndex path={`/order-success/${orderId || ''}`} title="Order Confirmation Unavailable" />
         <section className="section first-section">
           <div className="container">
             <EmptyState description={error} title="Order confirmation unavailable" />
@@ -73,6 +75,7 @@ export const OrderSuccessPage = () => {
 
   return (
     <PageTransition>
+      <SeoMeta noIndex path={`/order-success/${order.id}`} title="Order Placed Successfully" />
       <section className="section first-section">
         <div className="container center-stack success-shell">
           <div className="success-popup">

@@ -19,7 +19,11 @@ export const ProductCard = ({ product, whatsappNumber, variant = 'default' }) =>
       whileTap={{ scale: 0.99 }}
     >
       <Link className="product-image-wrap" to={`/product/${product.id}`}>
-        <SmartImage alt={product.name} className="product-image" src={product.image} />
+        <SmartImage
+          alt={`${product.name} pure veg food delivery in Indore`}
+          className="product-image"
+          src={product.image}
+        />
         {product.badge ? (
           <span className="product-badge">
             <Star size={14} />

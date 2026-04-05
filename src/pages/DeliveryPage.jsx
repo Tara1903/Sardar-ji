@@ -4,6 +4,7 @@ import { api } from '../api/client';
 import { DeliveryOrderCard } from '../components/delivery/DeliveryOrderCard';
 import { BrandLockup } from '../components/brand/BrandLockup';
 import { Loader } from '../components/common/Loader';
+import { SeoMeta } from '../components/seo/SeoMeta';
 import { useAuth } from '../contexts/AuthContext';
 import { formatDateTime } from '../utils/format';
 
@@ -108,6 +109,7 @@ export const DeliveryPage = () => {
 
   return (
     <div className="panel-page">
+      <SeoMeta noIndex path="/delivery" title="Delivery Panel" />
       <header className="panel-header">
         <div>
           <BrandLockup className="panel-brand" compact linkTo="/" showTagline={false} />

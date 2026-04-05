@@ -2,6 +2,7 @@ import { Search } from 'lucide-react';
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { PageTransition } from '../components/common/PageTransition';
+import { SeoMeta } from '../components/seo/SeoMeta';
 
 export const TrackLookupPage = () => {
   const navigate = useNavigate();
@@ -19,6 +20,7 @@ export const TrackLookupPage = () => {
 
   return (
     <PageTransition>
+      <SeoMeta noIndex path="/track" title="Track Order" />
       <section className="section first-section">
         <div className="container">
           <div className="panel-card track-lookup-card">

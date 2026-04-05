@@ -6,6 +6,7 @@ import { Loader } from '../components/common/Loader';
 import { PageTransition } from '../components/common/PageTransition';
 import { PromoBanner } from '../components/common/PromoBanner';
 import { SubscriptionActivatedPopup } from '../components/subscription/SubscriptionActivatedPopup';
+import { SeoMeta } from '../components/seo/SeoMeta';
 import { useAppData } from '../contexts/AppDataContext';
 import { formatCurrency, formatDateOnly } from '../utils/format';
 import {
@@ -17,6 +18,7 @@ import {
 } from '../utils/subscription';
 import { createSubscriptionPaymentMessage, createWhatsAppLink } from '../utils/whatsapp';
 import { useAuth } from '../contexts/AuthContext';
+import { createBreadcrumbSchema } from '../seo/siteSeo';
 
 export const SubscriptionPage = () => {
   const navigate = useNavigate();
@@ -143,6 +145,23 @@ export const SubscriptionPage = () => {
 
   return (
     <PageTransition>
+      <SeoMeta
+        description="Manage your Monthly Thali subscription in Indore, track plan status, days left, and activate your plan from Sardar Ji Food Corner."
+        includeLocalBusiness
+        keywords={[
+          'monthly thali plan Indore',
+          'thali subscription Indore',
+          'tiffin subscription Indore',
+        ]}
+        noIndex
+        path="/my-subscription"
+        schema={createBreadcrumbSchema([
+          { name: 'Home', path: '/' },
+          { name: 'My Subscription', path: '/my-subscription' },
+        ])}
+        settings={settings}
+        title="Monthly Thali Subscription Indore"
+      />
       <section className="section first-section">
         <SubscriptionActivatedPopup
           onOpenPlan={handleOpenPlan}

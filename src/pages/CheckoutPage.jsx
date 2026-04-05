@@ -9,6 +9,7 @@ import {
 import { PromoBanner } from '../components/common/PromoBanner';
 import { PageTransition } from '../components/common/PageTransition';
 import { OrderPlacedPopup } from '../components/order/OrderPlacedPopup';
+import { SeoMeta } from '../components/seo/SeoMeta';
 import { useCart } from '../contexts/CartContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useAppData } from '../contexts/AppDataContext';
@@ -273,6 +274,7 @@ export const CheckoutPage = () => {
 
   return (
     <PageTransition>
+      <SeoMeta noIndex path="/checkout" title="Checkout" />
       <section className="section first-section">
         <OrderPlacedPopup
           onTrackNow={() => openTracking(placedOrder)}

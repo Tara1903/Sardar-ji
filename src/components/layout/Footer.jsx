@@ -45,6 +45,8 @@ export const Footer = ({ settings }) => (
         <div className="footer-links">
           <Link to="/">Home</Link>
           <Link to="/menu">Menu</Link>
+          <Link to="/monthly-thali-plan-indore">Monthly Plan</Link>
+          <Link to="/tiffin-service-indore">Tiffin Service</Link>
           <Link to="/cart">Cart</Link>
         </div>
       </div>

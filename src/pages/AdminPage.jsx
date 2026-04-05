@@ -17,6 +17,7 @@ import { useEffect, useMemo } from 'react';
 import { NavLink, Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { BrandLockup } from '../components/brand/BrandLockup';
 import { Loader } from '../components/common/Loader';
+import { SeoMeta } from '../components/seo/SeoMeta';
 import { AdminProvider, useAdmin } from '../contexts/AdminContext';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -205,6 +206,7 @@ const AdminShell = () => {
 
   return (
     <div className="panel-page">
+      <SeoMeta noIndex path={location.pathname} title={`Admin - ${meta.title}`} />
       <div className="admin-shell">
         <div className="admin-main">
           <header className="panel-card admin-topbar">

@@ -5,6 +5,7 @@ import { api } from '../api/client';
 import { BrandLockup } from '../components/brand/BrandLockup';
 import { OtpCodeInput } from '../components/auth/OtpCodeInput';
 import { OtpSuccessPopup } from '../components/auth/OtpSuccessPopup';
+import { SeoMeta } from '../components/seo/SeoMeta';
 import { useAuth } from '../contexts/AuthContext';
 import { useCountdown } from '../hooks/useCountdown';
 import { formatOtpDuration } from '../utils/otpState';
@@ -282,6 +283,7 @@ export const AuthPage = () => {
 
   return (
     <section className="auth-shell">
+      <SeoMeta noIndex path="/auth" title={mode === 'login' ? 'Login' : 'Register'} />
       <OtpSuccessPopup
         message={otpPopup.message}
         onClose={closeOtpPopup}

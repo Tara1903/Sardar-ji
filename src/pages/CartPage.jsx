@@ -4,6 +4,7 @@ import { PromoBanner } from '../components/common/PromoBanner';
 import { PageTransition } from '../components/common/PageTransition';
 import { EmptyState } from '../components/common/EmptyState';
 import { SmartImage } from '../components/common/SmartImage';
+import { SeoMeta } from '../components/seo/SeoMeta';
 import { useCart } from '../contexts/CartContext';
 import { useAppData } from '../contexts/AppDataContext';
 import { getCartOfferState } from '../utils/pricing';
@@ -26,6 +27,7 @@ export const CartPage = () => {
   if (!items.length) {
     return (
       <PageTransition>
+        <SeoMeta noIndex path="/cart" title="Cart" />
         <section className="section first-section">
           <div className="container">
             <EmptyState
@@ -45,6 +47,7 @@ export const CartPage = () => {
 
   return (
     <PageTransition>
+      <SeoMeta noIndex path="/cart" title="Cart" />
       <section className="section first-section">
         <div className="container cart-layout">
           <div className="cart-list">

@@ -43,7 +43,7 @@ export const CategoryShowcase = ({
           >
             <span className="category-orb-image-wrap">
               <img
-                alt={category.name}
+                alt={`${category.name} pure veg dishes in Indore`}
                 className="category-orb-image"
                 loading="lazy"
                 src={category.image}

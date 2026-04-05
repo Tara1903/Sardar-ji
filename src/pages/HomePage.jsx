@@ -15,7 +15,9 @@ import { SkeletonGrid } from '../components/common/Loader';
 import { ReviewsSection } from '../components/home/ReviewsSection';
 import { VisitUsSection } from '../components/home/VisitUsSection';
 import { CategoryShowcase } from '../components/home/CategoryShowcase';
+import { LocalSeoSection } from '../components/home/LocalSeoSection';
 import { ProductCard } from '../components/menu/ProductCard';
+import { SeoMeta } from '../components/seo/SeoMeta';
 import { useAppData } from '../contexts/AppDataContext';
 import { useCart } from '../contexts/CartContext';
 import { formatCurrency } from '../utils/format';
@@ -32,6 +34,7 @@ import {
   STORE_ORDER_SOCIAL_PROOF,
   sortProductsByCategoryAndPrice,
 } from '../utils/catalog';
+import { createBreadcrumbSchema } from '../seo/siteSeo';
 
 const scrollToCatalog = () => {
   document.getElementById('home-catalog')?.scrollIntoView({
@@ -84,6 +87,22 @@ export const HomePage = () => {
 
   return (
     <PageTransition>
+      <SeoMeta
+        description="Affordable tiffin service in Indore with monthly thali plans, pure veg meals, and fast local food delivery from Sardar Ji Food Corner."
+        includeLocalBusiness
+        includeWebsiteSchema
+        keywords={[
+          'tiffin service in Indore',
+          'monthly thali plan Indore',
+          'food delivery in Indore',
+          'affordable tiffin near me',
+          'pure veg meals Indore',
+        ]}
+        path="/"
+        schema={createBreadcrumbSchema([{ name: 'Home', path: '/' }])}
+        settings={settings}
+        title="Tiffin Service in Indore | Monthly Thali Plan"
+      />
       {showHero ? (
         <section
           className="landing-stage premium-home-hero first-section"
@@ -320,6 +339,7 @@ export const HomePage = () => {
         </div>
       </section>
 
+      <LocalSeoSection />
       {showReviews ? <ReviewsSection /> : null}
       {showVisit ? <VisitUsSection /> : null}
 

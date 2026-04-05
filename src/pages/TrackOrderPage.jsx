@@ -8,6 +8,7 @@ import { Loader } from '../components/common/Loader';
 import { PromoBanner } from '../components/common/PromoBanner';
 import { OrderTimeline } from '../components/order/OrderTimeline';
 import { TrackingMap } from '../components/order/TrackingMap';
+import { SeoMeta } from '../components/seo/SeoMeta';
 import { formatDateTime, formatEtaLabel } from '../utils/format';
 
 export const TrackOrderPage = () => {
@@ -35,6 +36,7 @@ export const TrackOrderPage = () => {
   if (error) {
     return (
       <PageTransition>
+        <SeoMeta noIndex path={`/track/${orderId || ''}`} title="Tracking Unavailable" />
         <section className="section first-section">
           <div className="container">
             <EmptyState title="Tracking unavailable" description={error} />
@@ -50,6 +52,7 @@ export const TrackOrderPage = () => {
 
   return (
     <PageTransition>
+      <SeoMeta noIndex path={`/track/${orderId}`} title={`Track Order ${order.orderNumber}`} />
       <section className="section first-section">
         <div className="container tracking-layout">
           <div className="panel-card">

@@ -8,6 +8,7 @@ import { SpecialOfferPopup } from './components/layout/SpecialOfferPopup';
 import { WhatsAppFab } from './components/layout/WhatsAppFab';
 import { ProtectedRoute } from './components/common/ProtectedRoute';
 import { Loader } from './components/common/Loader';
+import { GoogleAnalytics } from './components/seo/GoogleAnalytics';
 import { useAppData } from './contexts/AppDataContext';
 
 const HomePage = lazy(() => import('./pages/HomePage').then((module) => ({ default: module.HomePage })));
@@ -34,6 +35,16 @@ const ProfilePage = lazy(() =>
 );
 const SubscriptionPage = lazy(() =>
   import('./pages/SubscriptionPage').then((module) => ({ default: module.SubscriptionPage })),
+);
+const MonthlyThaliPlanIndorePage = lazy(() =>
+  import('./pages/MonthlyThaliPlanIndorePage').then((module) => ({
+    default: module.MonthlyThaliPlanIndorePage,
+  })),
+);
+const TiffinServiceIndorePage = lazy(() =>
+  import('./pages/TiffinServiceIndorePage').then((module) => ({
+    default: module.TiffinServiceIndorePage,
+  })),
 );
 const AdminPage = lazy(() => import('./pages/AdminPage').then((module) => ({ default: module.AdminPage })));
 const AdminIndexRedirect = lazy(() =>
@@ -118,6 +129,8 @@ const AnimatedRoutes = () => {
           <Route element={<CustomerLayout />}>
             <Route index element={<HomePage />} />
             <Route path="/menu" element={<MenuPage />} />
+            <Route path="/monthly-thali-plan-indore" element={<MonthlyThaliPlanIndorePage />} />
+            <Route path="/tiffin-service-indore" element={<TiffinServiceIndorePage />} />
             <Route path="/product/:id" element={<ProductDetailPage />} />
             <Route path="/cart" element={<CartPage />} />
             <Route
@@ -196,6 +209,7 @@ const AnimatedRoutes = () => {
 export default function App() {
   return (
     <BrowserRouter>
+      <GoogleAnalytics />
       <AnimatedRoutes />
     </BrowserRouter>
   );

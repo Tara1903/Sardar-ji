@@ -5,6 +5,7 @@ import { api } from '../api/client';
 import { PageTransition } from '../components/common/PageTransition';
 import { Loader } from '../components/common/Loader';
 import { ReferralProgress } from '../components/referral/ReferralProgress';
+import { SeoMeta } from '../components/seo/SeoMeta';
 import { useAuth } from '../contexts/AuthContext';
 import { formatCurrency, formatDateOnly, formatDateTime, initials } from '../utils/format';
 
@@ -62,6 +63,7 @@ export const ProfilePage = () => {
 
   return (
     <PageTransition>
+      <SeoMeta noIndex path="/profile" title="Customer Profile" />
       <section className="section first-section">
         <div className="container profile-layout">
           <div className="profile-header panel-card">

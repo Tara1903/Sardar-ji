@@ -7,12 +7,14 @@ import { EmptyState } from '../components/common/EmptyState';
 import { SkeletonGrid } from '../components/common/Loader';
 import { CategoryShowcase } from '../components/home/CategoryShowcase';
 import { ProductCard } from '../components/menu/ProductCard';
+import { SeoMeta } from '../components/seo/SeoMeta';
 import { useAppData } from '../contexts/AppDataContext';
 import { useCart } from '../contexts/CartContext';
 import { sortProductsByCategoryAndPrice } from '../utils/catalog';
 import { formatCurrency } from '../utils/format';
 import { getCartOfferState } from '../utils/pricing';
 import { useStoreDistance } from '../hooks/useStoreDistance';
+import { createBreadcrumbSchema } from '../seo/siteSeo';
 
 const priceFilters = [
   { label: 'All prices', value: 'all' },
@@ -71,6 +73,23 @@ export const MenuPage = () => {
 
   return (
     <PageTransition>
+      <SeoMeta
+        description="Browse the pure veg menu from Sardar Ji Food Corner for food delivery in Indore, thalis, parathas, snacks, drinks, and quick ordering."
+        includeLocalBusiness
+        keywords={[
+          'food delivery in Indore',
+          'veg menu Indore',
+          'tiffin service menu Indore',
+          'pure veg food delivery Indore',
+        ]}
+        path="/menu"
+        schema={createBreadcrumbSchema([
+          { name: 'Home', path: '/' },
+          { name: 'Menu', path: '/menu' },
+        ])}
+        settings={settings}
+        title="Food Delivery Menu in Indore"
+      />
       <section className="section first-section menu-page-shell">
         <div className="container menu-experience-layout">
           <aside className="panel-card menu-sidebar">
@@ -135,9 +154,14 @@ export const MenuPage = () => {
 
             <PromoBanner
               actions={
-                <Link className="btn btn-primary" to="/my-subscription?checkout=1">
-                  Buy Monthly Plan
-                </Link>
+                <div className="promo-banner-actions">
+                  <Link className="btn btn-primary" to="/my-subscription?checkout=1">
+                    Buy Monthly Plan
+                  </Link>
+                  <Link className="btn btn-secondary" to="/tiffin-service-indore">
+                    Tiffin service in Indore
+                  </Link>
+                </div>
               }
               className="menu-offer-banner"
               description={

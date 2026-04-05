@@ -18,7 +18,8 @@ export const VisitUsSection = () => {
           <p className="eyebrow">Visit Us</p>
           <h2>Visit us for hot meals, quick pickup, and fresh daily cooking</h2>
           <p>
-            Find Sardar Ji Food Corner at Palm n Dine Market and stop by for thalis, parathas, snacks, and beverages.
+            Find Sardar Ji Food Corner at Palm n Dine Market and stop by for thalis, parathas, snacks,
+            beverages, and a trusted tiffin service in Indore.
           </p>
 
           <div className="visit-address-card">

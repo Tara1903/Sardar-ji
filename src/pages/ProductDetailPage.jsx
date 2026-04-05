@@ -4,10 +4,12 @@ import { PageTransition } from '../components/common/PageTransition';
 import { EmptyState } from '../components/common/EmptyState';
 import { SmartImage } from '../components/common/SmartImage';
 import { ProductCard } from '../components/menu/ProductCard';
+import { SeoMeta } from '../components/seo/SeoMeta';
 import { useAppData } from '../contexts/AppDataContext';
 import { useCart } from '../contexts/CartContext';
 import { formatCurrency } from '../utils/format';
 import { createProductOrderMessage, createWhatsAppLink } from '../utils/whatsapp';
+import { createBreadcrumbSchema } from '../seo/siteSeo';
 
 export const ProductDetailPage = () => {
   const { id } = useParams();
@@ -18,6 +20,7 @@ export const ProductDetailPage = () => {
   if (!product) {
     return (
       <PageTransition>
+        <SeoMeta noIndex path={`/product/${id || ''}`} title="Product Not Found" />
         <section className="section first-section">
           <div className="container">
             <EmptyState title="Product not found" description="This menu item may have been removed or is unavailable right now." />
@@ -33,10 +36,31 @@ export const ProductDetailPage = () => {
 
   return (
     <PageTransition>
+      <SeoMeta
+        description={`${product.name} from Sardar Ji Food Corner. Pure veg food delivery in Indore with fresh daily ordering and quick checkout.`}
+        includeLocalBusiness
+        keywords={[
+          `${product.name} Indore`,
+          `${product.category} in Indore`,
+          'pure veg food delivery Indore',
+        ]}
+        path={`/product/${product.id}`}
+        schema={createBreadcrumbSchema([
+          { name: 'Home', path: '/' },
+          { name: 'Menu', path: '/menu' },
+          { name: product.name, path: `/product/${product.id}` },
+        ])}
+        settings={settings}
+        title={`${product.name} in Indore`}
+      />
       <section className="section first-section">
         <div className="container detail-grid">
           <div className="detail-media">
-            <SmartImage alt={product.name} className="detail-media-image" src={product.image} />
+            <SmartImage
+              alt={`${product.name} home style thali and veg food in Indore`}
+              className="detail-media-image"
+              src={product.image}
+            />
           </div>
 
           <div className="detail-copy">
