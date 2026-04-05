@@ -1,16 +1,22 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { isMonthlySubscriptionProduct } from '../utils/subscription';
 
 const CartContext = createContext(null);
 const CART_KEY = 'sardar-ji-cart';
+const sanitizeCartItems = (items = []) => items.filter((item) => !isMonthlySubscriptionProduct(item));
 
 export const CartProvider = ({ children }) => {
-  const [items, setItems] = useState(() => JSON.parse(localStorage.getItem(CART_KEY) || '[]'));
+  const [items, setItems] = useState(() => sanitizeCartItems(JSON.parse(localStorage.getItem(CART_KEY) || '[]')));
 
   useEffect(() => {
-    localStorage.setItem(CART_KEY, JSON.stringify(items));
+    localStorage.setItem(CART_KEY, JSON.stringify(sanitizeCartItems(items)));
   }, [items]);
 
   const addToCart = (product) => {
+    if (isMonthlySubscriptionProduct(product)) {
+      return;
+    }
+
     setItems((current) => {
       const existing = current.find((item) => item.id === product.id);
       if (existing) {

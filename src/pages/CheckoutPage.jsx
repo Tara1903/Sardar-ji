@@ -40,6 +40,8 @@ export const CheckoutPage = () => {
   const [error, setError] = useState('');
   const [placedOrder, setPlacedOrder] = useState(null);
   const [redirectSeconds, setRedirectSeconds] = useState(4);
+  const [rewardCoupons, setRewardCoupons] = useState([]);
+  const [useRewardCoupon, setUseRewardCoupon] = useState(true);
   const placeOrderLockRef = useRef(false);
   const redirectTimeoutRef = useRef(null);
   const countdownIntervalRef = useRef(null);
@@ -65,7 +67,38 @@ export const CheckoutPage = () => {
     [],
   );
 
-  const cartOfferState = getCartOfferState(items, products, settings?.deliveryRules, 0, distanceKm);
+  useEffect(() => {
+    const loadRewardCoupons = async () => {
+      try {
+        const coupons = await api.getRewardCoupons(token);
+        setRewardCoupons(coupons);
+      } catch {
+        setRewardCoupons([]);
+      }
+    };
+
+    loadRewardCoupons();
+  }, [token]);
+
+  const activeRewardCoupons = useMemo(
+    () =>
+      rewardCoupons
+        .filter(
+          (coupon) =>
+            coupon.status === 'active' &&
+            (!coupon.expiresAt || new Date(coupon.expiresAt).getTime() > Date.now()),
+        )
+        .sort((left, right) => right.amount - left.amount),
+    [rewardCoupons],
+  );
+  const selectedRewardCoupon = useRewardCoupon ? activeRewardCoupons[0] || null : null;
+  const cartOfferState = getCartOfferState(
+    items,
+    products,
+    settings?.deliveryRules,
+    selectedRewardCoupon?.amount || 0,
+    distanceKm,
+  );
   const chosenAddress = useMemo(
     () =>
       selectedAddressId === 'new'
@@ -151,6 +184,7 @@ export const CheckoutPage = () => {
             total: cartOfferState.total,
             distanceKm: cartOfferState.distanceKm,
           },
+          couponCode: selectedRewardCoupon?.code || '',
           note: '',
         },
         token,
@@ -213,6 +247,29 @@ export const CheckoutPage = () => {
                     : 'warning'
               }
             />
+
+            {activeRewardCoupons.length ? (
+              <div className="panel-card compact-panel">
+                <div className="space-between">
+                  <div>
+                    <p className="eyebrow">Referral reward coupon</p>
+                    <h3>{selectedRewardCoupon ? `${selectedRewardCoupon.code} applied` : 'Reward coupon ready'}</h3>
+                  </div>
+                  <button
+                    className="btn btn-secondary"
+                    onClick={() => setUseRewardCoupon((current) => !current)}
+                    type="button"
+                  >
+                    {selectedRewardCoupon ? 'Remove coupon' : 'Apply best coupon'}
+                  </button>
+                </div>
+                <p>
+                  {selectedRewardCoupon
+                    ? `Best available referral coupon is reducing this order by ${formatCurrency(selectedRewardCoupon.amount)}.`
+                    : `Apply ${activeRewardCoupons[0].code} to save ${formatCurrency(activeRewardCoupons[0].amount)} on this order.`}
+                </p>
+              </div>
+            ) : null}
 
             <div className="panel-card">
               <div className="section-heading compact">
@@ -384,6 +441,12 @@ export const CheckoutPage = () => {
               <div className="summary-line summary-line-discount">
                 <span>Delivery discount</span>
                 <strong>-{formatCurrency(cartOfferState.deliveryDiscount)}</strong>
+              </div>
+            ) : null}
+            {selectedRewardCoupon ? (
+              <div className="summary-line summary-line-discount">
+                <span>Referral coupon ({selectedRewardCoupon.code})</span>
+                <strong>-{formatCurrency(cartOfferState.discount)}</strong>
               </div>
             ) : null}
             {cartOfferState.freebieItem ? (

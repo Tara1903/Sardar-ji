@@ -32,6 +32,9 @@ const AuthPage = lazy(() => import('./pages/AuthPage').then((module) => ({ defau
 const ProfilePage = lazy(() =>
   import('./pages/ProfilePage').then((module) => ({ default: module.ProfilePage })),
 );
+const SubscriptionPage = lazy(() =>
+  import('./pages/SubscriptionPage').then((module) => ({ default: module.SubscriptionPage })),
+);
 const AdminPage = lazy(() => import('./pages/AdminPage').then((module) => ({ default: module.AdminPage })));
 const AdminIndexRedirect = lazy(() =>
   import('./pages/AdminPage').then((module) => ({ default: module.AdminIndexRedirect })),
@@ -139,6 +142,14 @@ const AnimatedRoutes = () => {
               element={
                 <ProtectedRoute roles={['customer']}>
                   <ProfilePage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/my-subscription"
+              element={
+                <ProtectedRoute roles={['customer']}>
+                  <SubscriptionPage />
                 </ProtectedRoute>
               }
             />

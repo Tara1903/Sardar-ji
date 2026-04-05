@@ -1210,6 +1210,108 @@ textarea {
   font-size: 0.92rem;
 }
 
+.coupon-list,
+.subscription-benefit-list,
+.subscription-detail-list {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.coupon-row,
+.subscription-benefit-row,
+.subscription-price-row,
+.subscription-highlight-card,
+.subscription-action-row {
+  display: flex;
+  gap: 0.85rem;
+}
+
+.coupon-row,
+.subscription-price-row,
+.subscription-highlight-card {
+  align-items: center;
+  justify-content: space-between;
+}
+
+.coupon-row {
+  padding: 0.9rem 1rem;
+  border: 1px solid rgba(17, 24, 39, 0.08);
+  border-radius: 16px;
+  background: rgba(248, 250, 252, 0.88);
+}
+
+.coupon-row p,
+.subscription-highlight-card p {
+  margin: 0.2rem 0 0;
+  color: var(--text-secondary);
+}
+
+.compact-panel {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.subscription-page-layout,
+.subscription-plan-card,
+.subscription-page-main,
+.subscription-page-side {
+  display: grid;
+  gap: 1rem;
+}
+
+.subscription-price-row strong,
+.subscription-highlight-side strong {
+  font-size: 1.8rem;
+  line-height: 1;
+}
+
+.subscription-price-row span,
+.subscription-highlight-side span {
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.subscription-benefit-row {
+  align-items: center;
+  color: var(--text);
+}
+
+.subscription-benefit-row svg {
+  color: var(--brand-secondary);
+  flex-shrink: 0;
+}
+
+.subscription-action-row {
+  flex-wrap: wrap;
+}
+
+.subscription-action-row .btn {
+  flex: 1 1 220px;
+}
+
+.subscription-highlight-card {
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+
+.subscription-highlight-side {
+  display: grid;
+  gap: 0.35rem;
+  min-width: 150px;
+}
+
+.subscription-detail-card {
+  display: grid;
+  gap: 1rem;
+}
+
+@media (min-width: 900px) {
+  .subscription-page-layout {
+    grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.8fr);
+    align-items: start;
+  }
+}
+
 .milestone {
   flex: 1;
   min-width: 180px;

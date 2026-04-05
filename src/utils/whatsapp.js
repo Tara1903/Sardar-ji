@@ -29,6 +29,10 @@ export const createCartOrderMessage = (items = [], pricing) => {
     lines.push(`Delivery discount applied: -${formatCurrency(pricing.deliveryDiscount)}`);
   }
 
+  if (pricing.discount > 0) {
+    lines.push(`Referral coupon applied: -${formatCurrency(pricing.discount)}`);
+  }
+
   if (pricing.distanceKm !== null && pricing.distanceKm !== undefined) {
     lines.push(`Distance from store: ${pricing.distanceKm.toFixed(1)} km`);
   }

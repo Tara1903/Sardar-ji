@@ -23,6 +23,12 @@ import {
   DEFAULT_TRUST_POINTS,
   STORE_MAP_EMBED_URL,
 } from '../utils/storefront';
+import {
+  isMonthlySubscriptionProduct,
+  MONTHLY_SUBSCRIPTION_DURATION_DAYS,
+  MONTHLY_SUBSCRIPTION_PLAN_NAME,
+  MONTHLY_SUBSCRIPTION_PRICE,
+} from '../utils/subscription';
 import { mergeStorefrontConfig } from '../theme/theme';
 import { normalizeEmail } from '../utils/validation';
 
@@ -323,35 +329,73 @@ const normalizeReferralEntry = (row) => ({
   id: row.id,
   referralCode: row.referral_code || row.referralCode || '',
   referredUserId: row.referred_user_id || row.referredUserId || '',
-  status: row.status || 'successful',
+  status: row.status || 'pending',
+  rewardType: row.reward_type || row.rewardType || '',
+  rewardValue: Number(row.reward_value || row.rewardValue || 0),
+  rewardCouponId: row.reward_coupon_id || row.rewardCouponId || '',
   createdAt: row.created_at || row.createdAt,
+  updatedAt: row.updated_at || row.updatedAt,
 });
 
 const buildReferralProgress = (user, explicitReferralCount = null, referralEntries = []) => {
   const referralCount =
     typeof explicitReferralCount === 'number'
       ? explicitReferralCount
-      : referralEntries.length || user.successfulReferrals?.length || 0;
+      : referralEntries.filter((entry) => entry.status === 'active_plan').length ||
+        user.successfulReferrals?.length ||
+        0;
 
   return {
     referralCode: user.referralCode,
     appliedReferralCode: user.referralApplied || '',
+    activePlanReferralCount: referralCount,
     successfulReferralCount: referralCount,
     referralEntries,
     milestones: [
       {
         target: 6,
-        title: '1 Month FREE',
+        title: '6 active monthly plan referrals = 1 Month FREE',
         unlocked: referralCount >= 6,
       },
       {
         target: 12,
-        title: '1 Month FREE + Rs 1500 coupon',
+        title: '12 active monthly plan referrals = 1 Month FREE + ₹1500 coupon',
         unlocked: referralCount >= 12,
       },
     ],
   };
 };
+
+const normalizeSubscription = (row) => {
+  if (!row) {
+    return null;
+  }
+
+  return {
+    id: row.id,
+    userId: row.user_id || row.userId || '',
+    planName: row.plan_name || row.planName || MONTHLY_SUBSCRIPTION_PLAN_NAME,
+    startDate: row.start_date || row.startDate || '',
+    endDate: row.end_date || row.endDate || '',
+    status: row.status || 'expired',
+    daysLeft: Number(row.days_left ?? row.daysLeft ?? 0),
+    createdAt: row.created_at || row.createdAt || '',
+    updatedAt: row.updated_at || row.updatedAt || '',
+    price: Number(row.price || MONTHLY_SUBSCRIPTION_PRICE),
+    durationDays: Number(row.duration_days || row.durationDays || MONTHLY_SUBSCRIPTION_DURATION_DAYS),
+  };
+};
+
+const normalizeRewardCoupon = (row) => ({
+  id: row.id,
+  code: row.code,
+  amount: Number(row.amount || 0),
+  status: row.status || 'active',
+  expiresAt: row.expires_at || row.expiresAt || '',
+  usedAt: row.used_at || row.usedAt || '',
+  usedOrderId: row.used_order_id || row.usedOrderId || '',
+  createdAt: row.created_at || row.createdAt || '',
+});
 
 const getCurrentUser = async (supabase, token) => {
   const { data, error } = token
@@ -398,7 +442,7 @@ const getSuccessfulReferralCount = async (supabase, userId) => {
     .from('referrals')
     .select('id', { count: 'exact', head: true })
     .eq('referrer_user_id', userId)
-    .in('status', ['successful', 'rewarded']);
+    .eq('status', 'active_plan');
 
   if (error) {
     throw createError(error, 'Unable to load referral progress.');
@@ -410,9 +454,8 @@ const getSuccessfulReferralCount = async (supabase, userId) => {
 const getReferralEntries = async (supabase, userId) => {
   const { data, error } = await supabase
     .from('referrals')
-    .select('id, referral_code, referred_user_id, status, created_at')
+    .select('id, referral_code, referred_user_id, status, reward_type, reward_value, reward_coupon_id, created_at, updated_at')
     .eq('referrer_user_id', userId)
-    .in('status', ['successful', 'rewarded'])
     .order('created_at', { ascending: false });
 
   if (error) {
@@ -563,7 +606,7 @@ const direct = {
       throw createError(error, 'Unable to load products.');
     }
 
-    let products = data.map(normalizeProduct);
+    let products = data.map(normalizeProduct).filter((product) => !isMonthlySubscriptionProduct(product));
 
     if (params.category && params.category !== 'All') {
       const categoryQuery = params.category.toLowerCase();
@@ -601,7 +644,13 @@ const direct = {
       throw createError(error, 'Product not found.');
     }
 
-    return normalizeProduct(data);
+    const product = normalizeProduct(data);
+
+    if (isMonthlySubscriptionProduct(product)) {
+      throw new Error('This plan is now available from the Monthly Plan section.');
+    }
+
+    return product;
   },
 
   createProduct: async (payload, token) => {
@@ -1141,6 +1190,7 @@ const direct = {
       p_payment_method: payload.paymentMethod || 'COD',
       p_items: payload.items,
       p_note: payload.note || '',
+      p_coupon_code: payload.couponCode || null,
       p_distance_km:
         payload.pricing?.distanceKm === null || payload.pricing?.distanceKm === undefined
           ? null
@@ -1154,6 +1204,50 @@ const direct = {
     const order = await getOrderRecord(supabase, data.id);
     await addressSavePromise;
     return order;
+  },
+
+  getMySubscription: async (token) => {
+    const supabase = await getSupabaseForToken(token);
+    const authUser = await getCurrentUser(supabase, token);
+    const { data, error } = await supabase.rpc('get_my_subscription', {
+      p_user_id: authUser.id,
+    });
+
+    if (error) {
+      throw createError(error, 'Unable to load your monthly plan.');
+    }
+
+    return normalizeSubscription(data);
+  },
+
+  subscribeToMonthlyPlan: async (token) => {
+    const supabase = await getSupabaseForToken(token);
+    const authUser = await getCurrentUser(supabase, token);
+    const { data, error } = await supabase.rpc('subscribe_monthly_plan', {
+      p_user_id: authUser.id,
+    });
+
+    if (error) {
+      throw createError(error, 'Unable to activate your monthly plan.');
+    }
+
+    return normalizeSubscription(data);
+  },
+
+  getRewardCoupons: async (token) => {
+    const supabase = await getSupabaseForToken(token);
+    const authUser = await getCurrentUser(supabase, token);
+    const { data, error } = await supabase
+      .from('reward_coupons')
+      .select('*')
+      .eq('user_id', authUser.id)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      throw createError(error, 'Unable to load your reward coupons.');
+    }
+
+    return (data || []).map(normalizeRewardCoupon);
   },
 
   updateOrderStatus: async (id, payload, token) => {
@@ -1359,6 +1453,9 @@ export const api = {
   verifyRegistrationOtp: (payload) => direct.verifyRegistrationOtp(payload),
   createDeliveryPartner: (payload, token) => direct.createDeliveryPartner(payload, token),
   me: (token) => (USE_API_SERVER ? request('/auth/me', { token }) : direct.me(token)),
+  getMySubscription: (token) => direct.getMySubscription(token),
+  subscribeToMonthlyPlan: (token) => direct.subscribeToMonthlyPlan(token),
+  getRewardCoupons: (token) => direct.getRewardCoupons(token),
   updateAddresses: (addresses, token) =>
     USE_API_SERVER
       ? request('/auth/addresses', { method: 'PUT', body: { addresses }, token })

@@ -1,6 +1,21 @@
 import { formatDateOnly } from '../../utils/format';
 
 const shortId = (value = '') => (value ? `${value.slice(0, 8)}...${value.slice(-4)}` : 'Updating');
+const getReferralStatusLabel = (entry) => {
+  if (entry.status === 'active_plan') {
+    return 'Active monthly plan';
+  }
+
+  if (entry.status === 'order_rewarded') {
+    return entry.rewardValue ? `First order reward issued • ₹${entry.rewardValue}` : 'First order reward issued';
+  }
+
+  if (entry.status === 'rewarded') {
+    return 'Reward completed';
+  }
+
+  return 'Pending qualification';
+};
 
 export const ReferralProgress = ({ progress }) => {
   if (!progress) {
@@ -17,7 +32,7 @@ export const ReferralProgress = ({ progress }) => {
         <strong className="referral-code">{progress.referralCode}</strong>
       </div>
 
-      <p>{progress.successfulReferralCount} successful joins so far.</p>
+      <p>Active plan referrals: {progress.activePlanReferralCount}</p>
       {progress.appliedReferralCode ? <p>Applied friend code: {progress.appliedReferralCode}</p> : null}
 
       <div className="milestone-list">
@@ -32,7 +47,7 @@ export const ReferralProgress = ({ progress }) => {
       {progress.referralEntries?.length ? (
         <div className="referral-entry-list">
           <div className="space-between">
-            <h4>Existing referral joins</h4>
+            <h4>Referral activity</h4>
             <span>{progress.referralEntries.length} linked</span>
           </div>
           {progress.referralEntries.map((entry) => (
@@ -42,7 +57,7 @@ export const ReferralProgress = ({ progress }) => {
                 <p>Referral ID: {shortId(entry.id)}</p>
               </div>
               <div>
-                <strong>{entry.status}</strong>
+                <strong>{getReferralStatusLabel(entry)}</strong>
                 <p>{formatDateOnly(entry.createdAt)}</p>
               </div>
             </div>

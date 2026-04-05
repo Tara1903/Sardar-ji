@@ -20,6 +20,11 @@ import { useAppData } from '../contexts/AppDataContext';
 import { useCart } from '../contexts/CartContext';
 import { formatCurrency } from '../utils/format';
 import { getCartOfferState } from '../utils/pricing';
+import {
+  MONTHLY_SUBSCRIPTION_BENEFITS,
+  MONTHLY_SUBSCRIPTION_PLAN_NAME,
+  MONTHLY_SUBSCRIPTION_PRICE,
+} from '../utils/subscription';
 import { createGeneralOrderMessage, createWhatsAppLink } from '../utils/whatsapp';
 import { STORE_AVERAGE_RATING, STORE_CITY, STORE_ORDER_SOCIAL_PROOF, sortFeaturedProducts } from '../utils/catalog';
 
@@ -266,6 +271,38 @@ export const HomePage = () => {
               {itemCount ? 'Open cart' : 'Start adding items'}
             </Link>
           </aside>
+        </div>
+      </section>
+
+      <section className="section subscription-highlight-section">
+        <div className="container">
+          <div className="panel-card subscription-highlight-card">
+            <div>
+              <p className="eyebrow">Monthly Plan</p>
+              <h2>{MONTHLY_SUBSCRIPTION_PLAN_NAME}</h2>
+              <p>
+                A dedicated monthly thali subscription for regular veg meals, tracked separately from your
+                normal food orders.
+              </p>
+            </div>
+            <div className="subscription-highlight-side">
+              <strong>{formatCurrency(MONTHLY_SUBSCRIPTION_PRICE)}</strong>
+              <span>30-day plan</span>
+            </div>
+            <div className="subscription-benefit-list">
+              {MONTHLY_SUBSCRIPTION_BENEFITS.map((benefit) => (
+                <div className="subscription-benefit-row" key={benefit}>
+                  <Star fill="currentColor" size={16} />
+                  <span>{benefit}</span>
+                </div>
+              ))}
+            </div>
+            <div className="subscription-action-row">
+              <Link className="btn btn-primary" to="/my-subscription">
+                Subscribe Now
+              </Link>
+            </div>
+          </div>
         </div>
       </section>
 
