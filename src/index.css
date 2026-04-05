@@ -2307,15 +2307,18 @@ textarea {
 }
 
 .pure-veg-badge {
-  color: #0f7a33;
+  color: #ffffff !important;
+  background: linear-gradient(135deg, #179a45, #12813a) !important;
+  border-color: rgba(18, 129, 58, 0.38) !important;
+  box-shadow: 0 10px 22px rgba(18, 129, 58, 0.22);
 }
 
 .pure-veg-dot {
   width: 10px;
   height: 10px;
   border-radius: 999px;
-  background: #16a34a;
-  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.16);
+  background: #d9ffe7;
+  box-shadow: 0 0 0 3px rgba(217, 255, 231, 0.2);
   flex-shrink: 0;
 }
 
