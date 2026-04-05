@@ -35,6 +35,10 @@ export const Navbar = ({ businessName }) => {
             title={businessName || 'Sardar Ji Food Corner'}
           />
           <div className="header-brand-meta">
+            <span className="pure-veg-badge">
+              <span className="pure-veg-dot" aria-hidden="true" />
+              Pure Veg
+            </span>
             <span>
               <MapPin size={13} />
               {STORE_CITY}

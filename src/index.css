@@ -2306,6 +2306,19 @@ textarea {
   gap: 0.35rem;
 }
 
+.pure-veg-badge {
+  color: #0f7a33;
+}
+
+.pure-veg-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: #16a34a;
+  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.16);
+  flex-shrink: 0;
+}
+
 .landing-stage {
   position: relative;
   padding: 6.55rem 0 2.2rem;
