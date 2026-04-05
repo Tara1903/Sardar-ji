@@ -18,6 +18,8 @@ export const SPECIAL_OFFER_POPUP_STORAGE_KEY = 'sjfc-special-offer-popup-v2';
 export const STORE_ADDRESS =
   'Silicon Road, Palm n Dine Market, Agra - Mumbai Hwy, near Chika Chik Hotel, Indore, Madhya Pradesh 452012';
 export const STORE_ADDRESS_SHORT = 'Silicon Road, Palm n Dine Market, Indore';
+export const STORE_OPENING_HOURS_TEXT = 'Open daily from 8:00 AM to 11:00 PM';
+export const STORE_OPENING_HOURS_SHORT = 'Daily · 8:00 AM - 11:00 PM';
 export const STORE_PRIMARY_HEADLINE = 'Delicious Food Delivered Fast 🍽️';
 export const STORE_PRIMARY_SUBTEXT =
   'Order from Sardar Ji Food Corner and enjoy fresh taste with exciting offers on every order.';
@@ -76,3 +78,13 @@ export const DEFAULT_OFFERS = [
     description: 'Fast local delivery, clear pricing, and a menu designed for quick repeat orders.',
   },
 ];
+
+export const resolveStoreTimings = (value) => {
+  const current = String(value || '').trim();
+
+  if (!current || /morning\s*to\s*night/i.test(current)) {
+    return STORE_OPENING_HOURS_SHORT;
+  }
+
+  return current;
+};

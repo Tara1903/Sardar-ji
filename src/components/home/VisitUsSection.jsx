@@ -5,6 +5,7 @@ import {
   STORE_ADDRESS_SHORT,
   STORE_MAP_EMBED_URL,
   STORE_MAP_URL,
+  resolveStoreTimings,
 } from '../../utils/storefront';
 
 export const VisitUsSection = () => {
@@ -28,6 +29,7 @@ export const VisitUsSection = () => {
               <strong>{businessName}</strong>
               <p>{STORE_ADDRESS_SHORT}</p>
               <small>{STORE_ADDRESS}</small>
+              <small>{resolveStoreTimings(settings?.timings)}</small>
             </div>
           </div>
 

@@ -3,6 +3,7 @@ import { MapPin, MessageCircleMore, Star } from 'lucide-react';
 import { useAppData } from '../../contexts/AppDataContext';
 import { createGeneralOrderMessage, createWhatsAppLink } from '../../utils/whatsapp';
 import { SITE_LOCATION_LABEL } from '../../seo/siteSeo';
+import { resolveStoreTimings } from '../../utils/storefront';
 
 export const LocalSeoSection = () => {
   const { settings } = useAppData();
@@ -29,6 +30,7 @@ export const LocalSeoSection = () => {
                 {SITE_LOCATION_LABEL}. That helps nearby customers discover an affordable tiffin near
                 me, place orders quickly, and return for daily homestyle veg food.
               </p>
+              <p>Active hours: {resolveStoreTimings(settings?.timings)}</p>
             </div>
 
             <div className="local-seo-points">

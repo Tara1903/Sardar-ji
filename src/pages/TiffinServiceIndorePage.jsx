@@ -4,12 +4,30 @@ import { PageTransition } from '../components/common/PageTransition';
 import { PromoBanner } from '../components/common/PromoBanner';
 import { ReviewsSection } from '../components/home/ReviewsSection';
 import { VisitUsSection } from '../components/home/VisitUsSection';
+import { FaqSection } from '../components/seo/FaqSection';
 import { SeoMeta } from '../components/seo/SeoMeta';
 import { useAppData } from '../contexts/AppDataContext';
-import { createBreadcrumbSchema } from '../seo/siteSeo';
+import { STORE_OPENING_HOURS_SHORT } from '../utils/storefront';
+import { createBreadcrumbSchema, createFaqSchema } from '../seo/siteSeo';
 
 export const TiffinServiceIndorePage = () => {
   const { settings } = useAppData();
+  const faqItems = [
+    {
+      question: 'Do you offer a tiffin service in Indore for office and hostel customers?',
+      answer:
+        'Yes, Sardar Ji Food Corner serves local Indore customers looking for daily pure veg meals for office, hostel, and home.',
+    },
+    {
+      question: 'Can I also buy a monthly thali plan?',
+      answer:
+        'Yes, the monthly thali plan is available separately for customers who want a subscription instead of only one-time food orders.',
+    },
+    {
+      question: 'What are your active business hours?',
+      answer: `The store is currently active ${STORE_OPENING_HOURS_SHORT}.`,
+    },
+  ];
 
   return (
     <PageTransition>
@@ -23,10 +41,13 @@ export const TiffinServiceIndorePage = () => {
           'veg tiffin Indore',
         ]}
         path="/tiffin-service-indore"
-        schema={createBreadcrumbSchema([
-          { name: 'Home', path: '/' },
-          { name: 'Tiffin Service Indore', path: '/tiffin-service-indore' },
-        ])}
+        schema={[
+          createBreadcrumbSchema([
+            { name: 'Home', path: '/' },
+            { name: 'Tiffin Service Indore', path: '/tiffin-service-indore' },
+          ]),
+          createFaqSchema(faqItems),
+        ]}
         settings={settings}
         title="Tiffin Service in Indore"
       />
@@ -49,6 +70,7 @@ export const TiffinServiceIndorePage = () => {
                 <Clock3 size={14} />
                 Order quickly for daily meals
               </span>
+              <span className="hero-chip">{STORE_OPENING_HOURS_SHORT}</span>
             </div>
             <div className="landing-actions">
               <Link className="btn btn-primary" to="/menu">
@@ -108,6 +130,11 @@ export const TiffinServiceIndorePage = () => {
         </div>
       </section>
 
+      <FaqSection
+        eyebrow="Tiffin service FAQs"
+        questions={faqItems}
+        title="Questions customers ask before choosing our tiffin service in Indore"
+      />
       <ReviewsSection />
       <VisitUsSection />
     </PageTransition>

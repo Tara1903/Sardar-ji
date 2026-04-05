@@ -147,7 +147,10 @@ export const MenuPage = () => {
             <div className="section-heading">
               <div>
                 <p className="eyebrow">Browse the full menu</p>
-                <h1>{appConfig.hero.offerText}</h1>
+                <h1>Pure Veg Food Delivery Menu in Indore</h1>
+                <p className="section-heading-note">
+                  Fresh thalis, parathas, snacks, and drinks from Sardar Ji Food Corner.
+                </p>
               </div>
               <span className="hero-chip">Veg only</span>
             </div>

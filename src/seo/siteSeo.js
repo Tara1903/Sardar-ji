@@ -3,7 +3,9 @@ import {
   RESTAURANT_LOCATION,
   STORE_ADDRESS,
   STORE_ADDRESS_SHORT,
+  STORE_OPENING_HOURS_SHORT,
   STORE_MAP_URL,
+  resolveStoreTimings,
 } from '../utils/storefront';
 
 export const SITE_URL = 'https://www.sardarjifoodcorner.shop';
@@ -38,13 +40,16 @@ const daysOfWeek = [
 
 export const createLocalBusinessSchema = (settings = {}) => ({
   '@context': 'https://schema.org',
-  '@type': 'LocalBusiness',
+  '@type': ['LocalBusiness', 'Restaurant'],
   '@id': `${SITE_URL}#localbusiness`,
   name: settings.businessName || SITE_NAME,
   image: SITE_OG_IMAGE,
   url: SITE_URL,
   telephone: settings.phoneNumber || DEFAULT_PHONE_NUMBER,
   priceRange: '₹₹',
+  menu: `${SITE_URL}/menu`,
+  currenciesAccepted: 'INR',
+  paymentAccepted: ['Cash', 'UPI', 'Online Payment'],
   description:
     'Pure veg tiffin service in Indore with daily food delivery, monthly thali plans, and affordable home-style meals.',
   address: {
@@ -65,6 +70,7 @@ export const createLocalBusinessSchema = (settings = {}) => ({
     name: 'Indore',
   },
   hasMap: STORE_MAP_URL,
+  openingHours: resolveStoreTimings(settings.timings || STORE_OPENING_HOURS_SHORT),
   openingHoursSpecification: [
     {
       '@type': 'OpeningHoursSpecification',
@@ -97,6 +103,19 @@ export const createBreadcrumbSchema = (items = []) => ({
     position: index + 1,
     name: item.name,
     item: buildCanonicalUrl(item.path),
+  })),
+});
+
+export const createFaqSchema = (questions = []) => ({
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: questions.map((entry) => ({
+    '@type': 'Question',
+    name: entry.question,
+    acceptedAnswer: {
+      '@type': 'Answer',
+      text: entry.answer,
+    },
   })),
 });
 

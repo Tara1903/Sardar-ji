@@ -4,6 +4,7 @@ import { PageTransition } from '../components/common/PageTransition';
 import { PromoBanner } from '../components/common/PromoBanner';
 import { ReviewsSection } from '../components/home/ReviewsSection';
 import { VisitUsSection } from '../components/home/VisitUsSection';
+import { FaqSection } from '../components/seo/FaqSection';
 import { SeoMeta } from '../components/seo/SeoMeta';
 import { useAppData } from '../contexts/AppDataContext';
 import { formatCurrency } from '../utils/format';
@@ -12,10 +13,26 @@ import {
   MONTHLY_SUBSCRIPTION_PLAN_NAME,
   MONTHLY_SUBSCRIPTION_PRICE,
 } from '../utils/subscription';
-import { createBreadcrumbSchema } from '../seo/siteSeo';
+import { STORE_OPENING_HOURS_SHORT } from '../utils/storefront';
+import { createBreadcrumbSchema, createFaqSchema } from '../seo/siteSeo';
 
 export const MonthlyThaliPlanIndorePage = () => {
   const { settings } = useAppData();
+  const faqItems = [
+    {
+      question: 'How long is the monthly thali plan valid?',
+      answer: 'The monthly thali plan stays active for 30 days from the date of activation.',
+    },
+    {
+      question: 'Is the monthly thali plan available for customers in Indore only?',
+      answer:
+        'Yes, this plan is designed for local Indore customers within the delivery coverage managed by Sardar Ji Food Corner.',
+    },
+    {
+      question: 'What are the active hours for the plan and regular ordering?',
+      answer: `The store is currently active ${STORE_OPENING_HOURS_SHORT}.`,
+    },
+  ];
 
   return (
     <PageTransition>
@@ -29,10 +46,13 @@ export const MonthlyThaliPlanIndorePage = () => {
           'affordable thali plan Indore',
         ]}
         path="/monthly-thali-plan-indore"
-        schema={createBreadcrumbSchema([
-          { name: 'Home', path: '/' },
-          { name: 'Monthly Thali Plan Indore', path: '/monthly-thali-plan-indore' },
-        ])}
+        schema={[
+          createBreadcrumbSchema([
+            { name: 'Home', path: '/' },
+            { name: 'Monthly Thali Plan Indore', path: '/monthly-thali-plan-indore' },
+          ]),
+          createFaqSchema(faqItems),
+        ]}
         settings={settings}
         title="Monthly Thali Plan Indore"
       />
@@ -52,6 +72,7 @@ export const MonthlyThaliPlanIndorePage = () => {
                 Palm n Dine Market, Indore
               </span>
               <span className="hero-chip">{formatCurrency(MONTHLY_SUBSCRIPTION_PRICE)} for 30 days</span>
+              <span className="hero-chip">{STORE_OPENING_HOURS_SHORT}</span>
             </div>
             <div className="landing-actions">
               <Link className="btn btn-primary" to="/my-subscription?checkout=1">
@@ -106,6 +127,11 @@ export const MonthlyThaliPlanIndorePage = () => {
         </div>
       </section>
 
+      <FaqSection
+        eyebrow="Monthly plan FAQs"
+        questions={faqItems}
+        title="Common questions about our monthly thali plan in Indore"
+      />
       <ReviewsSection />
       <VisitUsSection />
     </PageTransition>

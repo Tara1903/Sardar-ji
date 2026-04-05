@@ -3,7 +3,12 @@ import { Link } from 'react-router-dom';
 import { DEFAULT_PHONE_NUMBER, DEFAULT_WHATSAPP_NUMBER } from '../../utils/contact';
 import { createGeneralOrderMessage, createWhatsAppLink } from '../../utils/whatsapp';
 import { BrandLockup } from '../brand/BrandLockup';
-import { STORE_ADDRESS, STORE_ADDRESS_SHORT, STORE_MAP_URL } from '../../utils/storefront';
+import {
+  STORE_ADDRESS,
+  STORE_ADDRESS_SHORT,
+  STORE_MAP_URL,
+  resolveStoreTimings,
+} from '../../utils/storefront';
 
 export const Footer = ({ settings }) => (
   <footer className="site-footer">
@@ -33,7 +38,7 @@ export const Footer = ({ settings }) => (
             <MapPin size={16} />
             <span>{STORE_ADDRESS_SHORT}</span>
           </p>
-          <p>{settings?.timings || 'Morning to Night'}</p>
+          <p>{resolveStoreTimings(settings?.timings)}</p>
           <a href={STORE_MAP_URL} rel="noreferrer" target="_blank">
             Open in Google Maps
           </a>
