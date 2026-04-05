@@ -26,7 +26,12 @@ import {
   MONTHLY_SUBSCRIPTION_PRICE,
 } from '../utils/subscription';
 import { createGeneralOrderMessage, createWhatsAppLink } from '../utils/whatsapp';
-import { STORE_AVERAGE_RATING, STORE_CITY, STORE_ORDER_SOCIAL_PROOF, sortFeaturedProducts } from '../utils/catalog';
+import {
+  STORE_AVERAGE_RATING,
+  STORE_CITY,
+  STORE_ORDER_SOCIAL_PROOF,
+  sortProductsByCategoryAndPrice,
+} from '../utils/catalog';
 
 const scrollToCatalog = () => {
   document.getElementById('home-catalog')?.scrollIntoView({
@@ -36,7 +41,7 @@ const scrollToCatalog = () => {
 };
 
 export const HomePage = () => {
-  const { appConfig, products, settings, loading } = useAppData();
+  const { appConfig, products, categories, settings, loading } = useAppData();
   const { items, itemCount } = useCart();
   const [search, setSearch] = useState('');
   const [activeCategory, setActiveCategory] = useState('All');
@@ -50,7 +55,10 @@ export const HomePage = () => {
   const offerCards = appConfig.offers?.cards || settings?.offers || [];
 
   const filteredProducts = useMemo(() => {
-    const searchable = sortFeaturedProducts(products.filter((product) => product.isAvailable));
+    const searchable = sortProductsByCategoryAndPrice(
+      products.filter((product) => product.isAvailable),
+      appConfig.categories?.length ? appConfig.categories : categories,
+    );
 
     return searchable.filter((product) => {
       if (activeCategory !== 'All' && product.category !== activeCategory) {
@@ -65,7 +73,7 @@ export const HomePage = () => {
         .toLowerCase()
         .includes(deferredSearch.toLowerCase());
     });
-  }, [activeCategory, deferredSearch, products]);
+  }, [activeCategory, appConfig.categories, categories, deferredSearch, products]);
 
   const topFoldProducts = filteredProducts.slice(0, 4);
   const featuredProducts = filteredProducts.slice(0, 8);

@@ -46,11 +46,34 @@ export const matchesSearchQuery = (product, search = '') => {
   return `${product.name} ${product.description} ${product.category}`.toLowerCase().includes(query);
 };
 
-export const sortFeaturedProducts = (products = []) =>
-  [...products].sort((left, right) => {
-    if (Boolean(right.badge) !== Boolean(left.badge)) {
-      return Number(Boolean(right.badge)) - Number(Boolean(left.badge));
+export const sortProductsByCategoryAndPrice = (products = [], categories = []) => {
+  const categoryOrder = new Map(
+    categories.map((category, index) => [String(category?.name || '').trim().toLowerCase(), index]),
+  );
+
+  return [...products].sort((left, right) => {
+    const leftCategory = String(left.category || '').trim().toLowerCase();
+    const rightCategory = String(right.category || '').trim().toLowerCase();
+    const leftCategoryIndex = categoryOrder.get(leftCategory) ?? Number.MAX_SAFE_INTEGER;
+    const rightCategoryIndex = categoryOrder.get(rightCategory) ?? Number.MAX_SAFE_INTEGER;
+
+    if (leftCategoryIndex !== rightCategoryIndex) {
+      return leftCategoryIndex - rightCategoryIndex;
     }
 
-    return Number(left.price || 0) - Number(right.price || 0);
+    if (leftCategory !== rightCategory) {
+      return leftCategory.localeCompare(rightCategory);
+    }
+
+    const leftPrice = Number(left.price || 0);
+    const rightPrice = Number(right.price || 0);
+    if (leftPrice !== rightPrice) {
+      return leftPrice - rightPrice;
+    }
+
+    return String(left.name || '').localeCompare(String(right.name || ''));
   });
+};
+
+export const sortFeaturedProducts = (products = [], categories = []) =>
+  sortProductsByCategoryAndPrice(products, categories);

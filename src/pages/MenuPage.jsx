@@ -9,6 +9,7 @@ import { CategoryShowcase } from '../components/home/CategoryShowcase';
 import { ProductCard } from '../components/menu/ProductCard';
 import { useAppData } from '../contexts/AppDataContext';
 import { useCart } from '../contexts/CartContext';
+import { sortProductsByCategoryAndPrice } from '../utils/catalog';
 import { formatCurrency } from '../utils/format';
 import { getCartOfferState } from '../utils/pricing';
 import { useStoreDistance } from '../hooks/useStoreDistance';
@@ -31,7 +32,7 @@ export const MenuPage = () => {
   const offersConfig = appConfig.offers || {};
 
   const filteredProducts = useMemo(() => {
-    return products.filter((product) => {
+    const matchingProducts = products.filter((product) => {
       if (!product.isAvailable) {
         return false;
       }
@@ -59,7 +60,12 @@ export const MenuPage = () => {
 
       return true;
     });
-  }, [activeCategory, deferredSearch, priceFilter, products]);
+
+    return sortProductsByCategoryAndPrice(
+      matchingProducts,
+      appConfig.categories?.length ? appConfig.categories : categories,
+    );
+  }, [activeCategory, appConfig.categories, categories, deferredSearch, priceFilter, products]);
 
   const cartOfferState = getCartOfferState(items, products, settings?.deliveryRules, 0, distanceKm);
 
