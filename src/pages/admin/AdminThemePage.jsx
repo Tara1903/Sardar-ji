@@ -10,13 +10,23 @@ const themeFields = [
 ];
 
 export const AdminThemePage = () => {
-  const { saveSettings, savingSettings, settingsDraft, updateStorefrontSection } = useAdmin();
+  const { saveSettings, savingSettings, settingsDraft, updateStorefrontSection, uploadAsset } = useAdmin();
 
   if (!settingsDraft) {
     return null;
   }
 
   const theme = settingsDraft.storefront?.theme || {};
+  const logoUrl = settingsDraft.storefront?.logoUrl || '/brand-logo.png';
+
+  const handleLogoUpload = async (file) => {
+    if (!file) {
+      return;
+    }
+
+    const upload = await uploadAsset(file);
+    updateStorefrontSection('logoUrl', upload.url);
+  };
 
   return (
     <section className="admin-page-grid">
@@ -30,6 +40,19 @@ export const AdminThemePage = () => {
         </div>
 
         <div className="admin-form-stack">
+          <label>
+            Logo image URL
+            <input
+              onChange={(event) => updateStorefrontSection('logoUrl', event.target.value)}
+              value={logoUrl}
+            />
+          </label>
+
+          <label>
+            Upload logo image
+            <input accept="image/*" onChange={(event) => handleLogoUpload(event.target.files?.[0])} type="file" />
+          </label>
+
           {themeFields.map(([key, label]) => (
             <label key={key}>
               {label}
@@ -74,8 +97,12 @@ export const AdminThemePage = () => {
         <div className="section-heading compact">
           <div>
             <p className="eyebrow">Preview palette</p>
-            <h2>Quick check before publishing</h2>
+            <h2>Logo and palette preview</h2>
           </div>
+        </div>
+
+        <div className="image-preview wide admin-preview-frame admin-logo-preview">
+          <img alt="Website logo preview" src={logoUrl} />
         </div>
 
         <div className="admin-theme-preview">

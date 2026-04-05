@@ -4326,6 +4326,16 @@ body {
   object-fit: cover;
 }
 
+.admin-logo-preview {
+  margin-bottom: 1rem;
+  min-height: 180px;
+}
+
+.admin-logo-preview img {
+  object-fit: contain;
+  background: #f8f4ee;
+}
+
 .admin-preview-copy.is-compact {
   padding: 1rem;
   border-radius: 20px;

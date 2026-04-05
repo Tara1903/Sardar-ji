@@ -38,6 +38,20 @@ export const AppDataProvider = ({ children }) => {
     applyThemeToDocument(settings?.storefront?.theme);
   }, [settings]);
 
+  useEffect(() => {
+    if (typeof document === 'undefined') {
+      return;
+    }
+
+    const favicon = document.querySelector("link[rel='icon']");
+    const nextLogoUrl = settings?.storefront?.logoUrl || '/brand-logo.png';
+
+    if (favicon) {
+      favicon.setAttribute('href', nextLogoUrl);
+      favicon.setAttribute('type', nextLogoUrl.endsWith('.svg') ? 'image/svg+xml' : 'image/png');
+    }
+  }, [settings]);
+
   const value = useMemo(
     () => ({
       appConfig: createAppConfig({ categories, products, settings }),

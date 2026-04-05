@@ -31,6 +31,9 @@ export const SeoMeta = ({
   const pageTitle = createSeoTitle(title);
   const canonicalUrl = getCanonicalUrl(path);
   const robots = noIndex ? 'noindex, nofollow' : 'index, follow, max-image-preview:large';
+  const resolvedImage = settings?.storefront?.logoUrl
+    ? new URL(settings.storefront.logoUrl, canonicalUrl).toString()
+    : image;
   const normalizedSchema = [
     ...(includeWebsiteSchema ? [createWebsiteSchema()] : []),
     ...(includeLocalBusiness ? [createLocalBusinessSchema(settings || {})] : []),
@@ -50,11 +53,11 @@ export const SeoMeta = ({
       <meta content={description} property="og:description" />
       <meta content={canonicalUrl} property="og:url" />
       <meta content="website" property="og:type" />
-      <meta content={image} property="og:image" />
+      <meta content={resolvedImage} property="og:image" />
       <meta content="summary_large_image" name="twitter:card" />
       <meta content={pageTitle} name="twitter:title" />
       <meta content={description} name="twitter:description" />
-      <meta content={image} name="twitter:image" />
+      <meta content={resolvedImage} name="twitter:image" />
       <meta content="India" name="geo.region" />
       <meta content="Indore" name="geo.placename" />
       <meta content="22.635280755003382;75.8351541995739" name="geo.position" />

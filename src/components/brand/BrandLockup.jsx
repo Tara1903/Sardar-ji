@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { useAppData } from '../../contexts/AppDataContext';
 
 export const BrandLockup = ({
   className = '',
@@ -8,8 +9,10 @@ export const BrandLockup = ({
   title = 'Sardar Ji Food Corner',
   tagline = 'Swad Bhi, Budget Bhi',
 }) => {
+  const { settings } = useAppData();
   const Wrapper = linkTo ? Link : 'div';
   const accessibleLabel = showTagline ? `${title} - ${tagline}` : title;
+  const logoSrc = settings?.storefront?.logoUrl || '/brand-logo.png';
 
   return (
     <Wrapper
@@ -22,7 +25,7 @@ export const BrandLockup = ({
         className="brand-logo"
         height={compact ? 62 : 82}
         loading="eager"
-        src="/brand-logo.svg"
+        src={logoSrc}
         width={compact ? 182 : 238}
       />
       <span className="sr-only">{accessibleLabel}</span>

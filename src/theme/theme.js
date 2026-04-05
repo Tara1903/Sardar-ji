@@ -97,6 +97,7 @@ export const defaultStorefrontConfig = {
   theme: {
     ...designTokens.colors,
   },
+  logoUrl: '/brand-logo.png',
   hero: defaultHeroConfig,
   offers: defaultOffersConfig,
   popup: defaultPopupConfig,
@@ -169,6 +170,7 @@ export const mergeStorefrontConfig = (storefront = {}) => {
 
   return {
     theme: mergedTheme,
+    logoUrl: storefront.logoUrl || defaultStorefrontConfig.logoUrl,
     hero: {
       ...defaultHeroConfig,
       ...(storefront.hero || {}),
@@ -275,6 +277,7 @@ export const createAppConfig = ({ categories = [], products = [], settings = nul
 
   return {
     theme: storefront.theme,
+    logoUrl: storefront.logoUrl,
     hero: storefront.hero,
     offers: {
       ...storefront.offers,
