@@ -138,6 +138,9 @@ export const HomePage = () => {
                 <p className="eyebrow">Trending right now</p>
                 <strong>{settings?.businessName || 'Sardar Ji Food Corner'}</strong>
                 <p>Order homestyle thalis, parathas, chaat, snacks, and beverages in a few taps.</p>
+                <Link className="btn btn-primary full-width" to="/my-subscription">
+                  Buy Monthly Plan
+                </Link>
                 <a
                   className="btn btn-secondary full-width"
                   href={createWhatsAppLink(settings?.whatsappNumber, createGeneralOrderMessage())}
@@ -300,6 +303,9 @@ export const HomePage = () => {
             <div className="subscription-action-row">
               <Link className="btn btn-primary" to="/my-subscription">
                 Subscribe Now
+              </Link>
+              <Link className="btn btn-secondary" to="/auth?redirect=%2Fmy-subscription">
+                Login to Buy
               </Link>
             </div>
           </div>

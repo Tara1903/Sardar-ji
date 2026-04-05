@@ -21,6 +21,7 @@ export const Navbar = ({ businessName }) => {
   const navItems = [
     { to: '/', label: 'Home' },
     { to: '/menu', label: 'Menu' },
+    { to: '/my-subscription', label: 'Monthly Plan' },
     { to: '/track', label: 'Track order' },
   ];
 

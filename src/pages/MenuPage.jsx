@@ -128,6 +128,11 @@ export const MenuPage = () => {
             </div>
 
             <PromoBanner
+              actions={
+                <Link className="btn btn-primary" to="/my-subscription">
+                  Buy Monthly Plan
+                </Link>
+              }
               className="menu-offer-banner"
               description={
                 offersConfig.bannerDescription ||
