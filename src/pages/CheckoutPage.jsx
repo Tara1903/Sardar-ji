@@ -42,6 +42,9 @@ export const CheckoutPage = () => {
   const [redirectSeconds, setRedirectSeconds] = useState(4);
   const [rewardCoupons, setRewardCoupons] = useState([]);
   const [useRewardCoupon, setUseRewardCoupon] = useState(true);
+  const [couponDraft, setCouponDraft] = useState('');
+  const [appliedCouponCode, setAppliedCouponCode] = useState('');
+  const [couponFeedback, setCouponFeedback] = useState('');
   const placeOrderLockRef = useRef(false);
   const redirectTimeoutRef = useRef(null);
   const countdownIntervalRef = useRef(null);
@@ -91,7 +94,17 @@ export const CheckoutPage = () => {
         .sort((left, right) => right.amount - left.amount),
     [rewardCoupons],
   );
-  const selectedRewardCoupon = useRewardCoupon ? activeRewardCoupons[0] || null : null;
+  const selectedRewardCoupon = useMemo(() => {
+    if (appliedCouponCode) {
+      return (
+        activeRewardCoupons.find(
+          (coupon) => coupon.code.trim().toUpperCase() === appliedCouponCode.trim().toUpperCase(),
+        ) || null
+      );
+    }
+
+    return useRewardCoupon ? activeRewardCoupons[0] || null : null;
+  }, [activeRewardCoupons, appliedCouponCode, useRewardCoupon]);
   const cartOfferState = getCartOfferState(
     items,
     products,
@@ -140,6 +153,47 @@ export const CheckoutPage = () => {
     }
 
     return '';
+  };
+
+  const handleApplyCoupon = () => {
+    const normalizedDraft = couponDraft.trim().toUpperCase();
+
+    if (!normalizedDraft) {
+      setCouponFeedback('Enter your coupon code to apply it.');
+      return;
+    }
+
+    const matchedCoupon = activeRewardCoupons.find(
+      (coupon) => coupon.code.trim().toUpperCase() === normalizedDraft,
+    );
+
+    if (!matchedCoupon) {
+      setCouponFeedback('This coupon is not active on your account right now.');
+      return;
+    }
+
+    setAppliedCouponCode(matchedCoupon.code);
+    setUseRewardCoupon(false);
+    setCouponDraft(matchedCoupon.code);
+    setCouponFeedback(`${matchedCoupon.code} applied successfully.`);
+  };
+
+  const handleUseBestCoupon = () => {
+    if (!activeRewardCoupons.length) {
+      return;
+    }
+
+    setAppliedCouponCode('');
+    setCouponDraft(activeRewardCoupons[0].code);
+    setUseRewardCoupon(true);
+    setCouponFeedback(`${activeRewardCoupons[0].code} is now applied as your best coupon.`);
+  };
+
+  const handleRemoveCoupon = () => {
+    setAppliedCouponCode('');
+    setCouponDraft('');
+    setUseRewardCoupon(false);
+    setCouponFeedback('Coupon removed from this order.');
   };
 
   const openTracking = (order) => {
@@ -248,28 +302,65 @@ export const CheckoutPage = () => {
               }
             />
 
-            {activeRewardCoupons.length ? (
-              <div className="panel-card compact-panel">
-                <div className="space-between">
-                  <div>
-                    <p className="eyebrow">Referral reward coupon</p>
-                    <h3>{selectedRewardCoupon ? `${selectedRewardCoupon.code} applied` : 'Reward coupon ready'}</h3>
-                  </div>
-                  <button
-                    className="btn btn-secondary"
-                    onClick={() => setUseRewardCoupon((current) => !current)}
-                    type="button"
-                  >
-                    {selectedRewardCoupon ? 'Remove coupon' : 'Apply best coupon'}
-                  </button>
+            <div className="panel-card compact-panel">
+              <div className="space-between">
+                <div>
+                  <p className="eyebrow">Coupon code</p>
+                  <h3>{selectedRewardCoupon ? `${selectedRewardCoupon.code} applied` : 'Add your coupon'}</h3>
                 </div>
-                <p>
-                  {selectedRewardCoupon
-                    ? `Best available referral coupon is reducing this order by ${formatCurrency(selectedRewardCoupon.amount)}.`
-                    : `Apply ${activeRewardCoupons[0].code} to save ${formatCurrency(activeRewardCoupons[0].amount)} on this order.`}
-                </p>
+                {activeRewardCoupons.length ? (
+                  <button className="btn btn-secondary" onClick={handleUseBestCoupon} type="button">
+                    Use best coupon
+                  </button>
+                ) : null}
               </div>
-            ) : null}
+              <p>
+                {selectedRewardCoupon
+                  ? `This order is using ${selectedRewardCoupon.code} for a ${formatCurrency(selectedRewardCoupon.amount)} discount.`
+                  : activeRewardCoupons.length
+                    ? 'Type your coupon code below or tap one of your available coupons.'
+                    : 'Referral reward coupons will appear here after they are generated on your account.'}
+              </p>
+              <div className="coupon-input-row">
+                <input
+                  className="coupon-input"
+                  onChange={(event) => setCouponDraft(event.target.value.toUpperCase())}
+                  placeholder="Enter coupon code"
+                  value={couponDraft}
+                />
+                <button className="btn btn-primary" onClick={handleApplyCoupon} type="button">
+                  Apply coupon
+                </button>
+                {selectedRewardCoupon ? (
+                  <button className="btn btn-secondary" onClick={handleRemoveCoupon} type="button">
+                    Remove
+                  </button>
+                ) : null}
+              </div>
+              {activeRewardCoupons.length ? (
+                <div className="coupon-chip-list">
+                  {activeRewardCoupons.map((coupon) => (
+                    <button
+                      className={`coupon-chip ${
+                        selectedRewardCoupon?.code === coupon.code ? 'active' : ''
+                      }`}
+                      key={coupon.id}
+                      onClick={() => {
+                        setCouponDraft(coupon.code);
+                        setAppliedCouponCode(coupon.code);
+                        setUseRewardCoupon(false);
+                        setCouponFeedback(`${coupon.code} applied successfully.`);
+                      }}
+                      type="button"
+                    >
+                      <span>{coupon.code}</span>
+                      <strong>{formatCurrency(coupon.amount)}</strong>
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+              {couponFeedback ? <p className="hint subtle-copy">{couponFeedback}</p> : null}
+            </div>
 
             <div className="panel-card">
               <div className="section-heading compact">
