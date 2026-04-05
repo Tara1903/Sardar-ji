@@ -22,7 +22,7 @@ export const BrandLockup = ({
         className="brand-logo"
         height={compact ? 62 : 82}
         loading="eager"
-        src="/brand-logo.png"
+        src="/brand-logo.svg"
         width={compact ? 182 : 238}
       />
       <span className="sr-only">{accessibleLabel}</span>

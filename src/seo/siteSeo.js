@@ -20,7 +20,7 @@ export const SITE_DEFAULT_KEYWORDS = [
   'Sardar Ji Food Corner',
   'Palm n Dine Market Indore food',
 ].join(', ');
-export const SITE_OG_IMAGE = `${SITE_URL}/brand-logo.png`;
+export const SITE_OG_IMAGE = `${SITE_URL}/brand-logo.svg`;
 export const SITE_LOCATION_LABEL = 'Located in Indore near Palm n Dine Market';
 export const GOOGLE_MAPS_COORDINATES = '22.6351768,75.835004';
 

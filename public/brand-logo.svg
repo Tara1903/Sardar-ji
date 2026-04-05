@@ -1,0 +1,82 @@
+<svg width="1200" height="420" viewBox="0 0 1200 420" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="turbanMain" x1="166" y1="92" x2="340" y2="224" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFB31A"/>
+      <stop offset="1" stop-color="#F97316"/>
+    </linearGradient>
+    <linearGradient id="skinTone" x1="192" y1="170" x2="322" y2="290" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFD29A"/>
+      <stop offset="1" stop-color="#F6A96E"/>
+    </linearGradient>
+    <linearGradient id="coatWhite" x1="96" y1="250" x2="370" y2="380" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#E9EDF2"/>
+    </linearGradient>
+    <linearGradient id="steel" x1="20" y1="244" x2="126" y2="314" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F5F7FA"/>
+      <stop offset="1" stop-color="#A7AFBD"/>
+    </linearGradient>
+    <filter id="softShadow" x="-30" y="-30" width="1260" height="480" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feOffset dy="12"/>
+      <feGaussianBlur stdDeviation="14"/>
+      <feColorMatrix type="matrix" values="0 0 0 0 0.2 0 0 0 0 0.109804 0 0 0 0 0.0666667 0 0 0 0.16 0"/>
+      <feBlend mode="normal" in2="SourceGraphic" result="shape"/>
+    </filter>
+  </defs>
+
+  <g filter="url(#softShadow)">
+    <g transform="translate(14 10)">
+      <ellipse cx="150" cy="247" rx="54" ry="14" fill="#1F2937" fill-opacity="0.12"/>
+      <ellipse cx="150" cy="239" rx="58" ry="18" fill="url(#steel)"/>
+      <path d="M99 239C99 204 122 180 150 180C178 180 201 204 201 239H99Z" fill="url(#steel)"/>
+      <ellipse cx="150" cy="180" rx="47" ry="9" fill="#D9E0EA"/>
+      <circle cx="150" cy="171" r="8" fill="#A5ADBA"/>
+    </g>
+
+    <g transform="translate(118 18)">
+      <g>
+        <ellipse cx="150" cy="55" rx="28" ry="25" fill="#FFFFFF"/>
+        <ellipse cx="118" cy="42" rx="32" ry="29" fill="#F8FAFC"/>
+        <ellipse cx="86" cy="55" rx="28" ry="25" fill="#F3F4F6"/>
+        <ellipse cx="52" cy="76" rx="32" ry="28" fill="#FFFFFF"/>
+        <ellipse cx="134" cy="76" rx="33" ry="31" fill="#F6F7FB"/>
+        <ellipse cx="196" cy="78" rx="27" ry="24" fill="#F8FAFC"/>
+        <ellipse cx="228" cy="102" rx="25" ry="23" fill="#FFFFFF"/>
+      </g>
+
+      <path d="M36 161C52 111 90 86 146 86C193 86 236 106 248 147C223 157 201 180 190 209H67C63 190 49 171 36 161Z" fill="url(#turbanMain)"/>
+      <path d="M51 164C81 145 112 129 155 117C142 134 129 155 122 209H92C87 193 76 179 51 164Z" fill="#F59E0B" fill-opacity="0.65"/>
+      <path d="M113 209C118 166 132 142 173 115C179 149 176 182 165 209H113Z" fill="#EA580C" fill-opacity="0.5"/>
+
+      <circle cx="140" cy="204" r="67" fill="url(#skinTone)"/>
+      <path d="M75 208C81 181 97 162 124 151C117 172 115 191 114 208H75Z" fill="#F7C58B" fill-opacity="0.9"/>
+      <path d="M203 208C197 181 181 162 154 151C161 172 163 191 164 208H203Z" fill="#E99C61" fill-opacity="0.8"/>
+
+      <path d="M104 176C111 164 123 157 140 157C131 170 124 179 104 176Z" fill="#1F2937"/>
+      <path d="M176 176C169 164 157 157 140 157C149 170 156 179 176 176Z" fill="#1F2937"/>
+      <ellipse cx="115" cy="195" rx="9" ry="12" fill="#111827"/>
+      <ellipse cx="165" cy="195" rx="9" ry="12" fill="#111827"/>
+      <ellipse cx="118" cy="192" rx="3" ry="4" fill="#FFFFFF"/>
+      <ellipse cx="168" cy="192" rx="3" ry="4" fill="#FFFFFF"/>
+      <path d="M138 199C142 203 144 209 144 215C139 214 136 209 138 199Z" fill="#D97745"/>
+      <path d="M109 231C120 246 134 254 151 254C165 254 178 249 188 239" stroke="#9A3412" stroke-width="8" stroke-linecap="round"/>
+      <path d="M96 235C107 280 131 305 168 305C201 305 220 277 225 235C206 220 186 214 161 214H132C118 214 106 220 96 235Z" fill="#23262F"/>
+      <path d="M108 245C124 266 148 277 171 277C190 277 206 269 219 252" stroke="#3B3F4B" stroke-width="9" stroke-linecap="round"/>
+      <path d="M124 236C127 251 135 259 151 259C165 259 176 250 178 236" stroke="#FFFFFF" stroke-width="8" stroke-linecap="round"/>
+
+      <path d="M57 356C60 292 93 250 140 250C167 250 193 260 210 281C224 298 233 321 235 356H57Z" fill="url(#coatWhite)" stroke="#C9D0D9" stroke-width="3"/>
+      <path d="M100 283C117 292 129 300 140 315C151 300 163 292 180 283" stroke="#D8DEE8" stroke-width="7" stroke-linecap="round"/>
+      <circle cx="140" cy="315" r="6" fill="#6B7280"/>
+      <circle cx="140" cy="340" r="6" fill="#6B7280"/>
+      <path d="M64 324C43 318 25 321 11 341C6 348 9 359 18 361C34 365 47 359 57 344L64 324Z" fill="url(#coatWhite)" stroke="#C9D0D9" stroke-width="3"/>
+      <path d="M229 284C255 268 279 278 287 304C291 317 284 328 272 328C260 328 252 322 248 312L229 284Z" fill="url(#skinTone)"/>
+      <path d="M218 283C238 267 261 277 274 296C283 309 278 325 264 326C248 327 239 319 233 309L218 283Z" fill="url(#coatWhite)" stroke="#C9D0D9" stroke-width="3"/>
+      <path d="M264 267C274 256 289 255 298 265C303 271 302 280 294 283C286 286 279 283 274 277L264 267Z" fill="url(#skinTone)"/>
+    </g>
+
+    <g transform="translate(430 86)">
+      <text x="0" y="120" fill="#55321F" font-family="Arial, Helvetica, sans-serif" font-size="112" font-weight="800" letter-spacing="-2">Sardar Ji</text>
+      <text x="0" y="228" fill="#FF7A1A" font-family="Arial, Helvetica, sans-serif" font-size="88" font-weight="700" letter-spacing="-1.2">Food Corner</text>
+    </g>
+  </g>
+</svg>
