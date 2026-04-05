@@ -135,7 +135,7 @@ export const MenuPage = () => {
 
             <PromoBanner
               actions={
-                <Link className="btn btn-primary" to="/my-subscription">
+                <Link className="btn btn-primary" to="/my-subscription?checkout=1">
                   Buy Monthly Plan
                 </Link>
               }

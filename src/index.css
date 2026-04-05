@@ -1356,6 +1356,25 @@ textarea {
   gap: 1rem;
 }
 
+.subscription-checkbox {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.95rem 1rem;
+  border-radius: 16px;
+  background: rgba(248, 250, 252, 0.88);
+  border: 1px solid rgba(17, 24, 39, 0.08);
+  color: var(--text);
+}
+
+.subscription-checkbox input {
+  margin-top: 0.15rem;
+  width: 18px;
+  height: 18px;
+  accent-color: var(--brand);
+  flex-shrink: 0;
+}
+
 @media (min-width: 900px) {
   .subscription-page-layout {
     grid-template-columns: minmax(0, 1.2fr) minmax(320px, 0.8fr);

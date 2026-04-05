@@ -13,6 +13,22 @@ export const createProductOrderMessage = (itemName, price) =>
 export const createGeneralOrderMessage = () =>
   `Hello Sardar Ji Food Corner, I want to place an order. Please share today's best options and the ${SPECIAL_OFFER_TITLE} details.`;
 
+export const createSubscriptionPaymentMessage = (planName, price, customerName = '') => {
+  const lines = [
+    'Hello Sardar Ji Food Corner, I want to subscribe to the monthly plan.',
+    `Plan: ${planName}`,
+    `Amount: ₹${price}`,
+  ];
+
+  if (customerName) {
+    lines.push(`Customer: ${customerName}`);
+  }
+
+  lines.push('Please share the payment details so I can complete the subscription.');
+
+  return lines.join('\n');
+};
+
 export const createCartOrderMessage = (items = [], pricing) => {
   const lines = [
     'Hello Sardar Ji Food Corner, I want to place this order:',

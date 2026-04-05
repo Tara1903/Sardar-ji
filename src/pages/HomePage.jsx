@@ -146,7 +146,7 @@ export const HomePage = () => {
                 <p className="eyebrow">Trending right now</p>
                 <strong>{settings?.businessName || 'Sardar Ji Food Corner'}</strong>
                 <p>Order homestyle thalis, parathas, chaat, snacks, and beverages in a few taps.</p>
-                <Link className="btn btn-primary full-width" to="/my-subscription">
+                <Link className="btn btn-primary full-width" to="/my-subscription?checkout=1">
                   Buy Monthly Plan
                 </Link>
                 <a
@@ -309,10 +309,10 @@ export const HomePage = () => {
               ))}
             </div>
             <div className="subscription-action-row">
-              <Link className="btn btn-primary" to="/my-subscription">
+              <Link className="btn btn-primary" to="/my-subscription?checkout=1">
                 Subscribe Now
               </Link>
-              <Link className="btn btn-secondary" to="/auth?redirect=%2Fmy-subscription">
+              <Link className="btn btn-secondary" to="/auth?redirect=%2Fmy-subscription%3Fcheckout%3D1">
                 Login to Buy
               </Link>
             </div>
