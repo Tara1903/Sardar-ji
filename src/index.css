@@ -6587,9 +6587,9 @@ html.dark .customer-app-shell .floating-cart-bar {
     height: 52px;
   }
 
-  .customer-app-shell .header-search-trigger {
-    min-height: 3.15rem;
-    padding-inline: 1rem;
+  .customer-app-shell .header-search-trigger,
+  .customer-app-shell .premium-nav-bottom {
+    display: none;
   }
 
   .customer-app-shell .app-hero-slide,
