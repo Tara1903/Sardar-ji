@@ -119,7 +119,7 @@ export const DeliveryPage = () => {
           <p>Assigned orders, customer addresses, and live GPS sharing in one place.</p>
         </div>
         <div className="panel-header-actions">
-          <ThemeSwitcher label="Delivery theme" />
+          <ThemeSwitcher compact label="Delivery theme" />
           <button className="btn btn-secondary" onClick={logout} type="button">
             <LogOut size={16} />
             Logout
