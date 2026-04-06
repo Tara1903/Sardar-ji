@@ -43,6 +43,8 @@ export const CartProvider = ({ children }) => {
 
   const clearCart = () => setItems([]);
 
+  const getItemQuantity = (id) => items.find((item) => item.id === id)?.quantity || 0;
+
   const value = useMemo(
     () => ({
       items,
@@ -52,6 +54,7 @@ export const CartProvider = ({ children }) => {
       updateQuantity,
       removeFromCart,
       clearCart,
+      getItemQuantity,
     }),
     [items],
   );

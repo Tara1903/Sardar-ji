@@ -1800,6 +1800,43 @@ textarea {
   background: rgba(255, 255, 255, 0.92);
 }
 
+.product-qty-control {
+  flex: 1 1 0;
+  justify-content: space-between;
+  min-height: 3rem;
+  padding: 0.35rem 0.45rem;
+  border-radius: 16px;
+  background: linear-gradient(135deg, var(--brand), var(--brand-strong));
+  box-shadow: 0 18px 34px rgba(23, 116, 58, 0.2);
+}
+
+.product-qty-control button {
+  width: 2.25rem;
+  height: 2.25rem;
+  border: none;
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+}
+
+.product-qty-control button:hover {
+  background: rgba(255, 255, 255, 0.24);
+}
+
+.product-qty-value {
+  min-width: 4rem;
+  text-align: center;
+  font-weight: 800;
+  color: #fff;
+}
+
+.product-qty-control.is-compact {
+  width: 100%;
+}
+
+.product-qty-control.detail-qty-control {
+  min-width: 10rem;
+}
+
 .track-lookup-card {
   width: min(680px, 100%);
   margin: 0 auto;

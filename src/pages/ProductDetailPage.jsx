@@ -1,4 +1,4 @@
-import { ArrowRight, BadgeCheck, MessageCircleMore, ShoppingBag } from 'lucide-react';
+import { ArrowRight, BadgeCheck, MessageCircleMore, Minus, Plus, ShoppingBag } from 'lucide-react';
 import { Link, useParams } from 'react-router-dom';
 import { PageTransition } from '../components/common/PageTransition';
 import { EmptyState } from '../components/common/EmptyState';
@@ -14,8 +14,9 @@ import { createBreadcrumbSchema } from '../seo/siteSeo';
 export const ProductDetailPage = () => {
   const { id } = useParams();
   const { products, settings } = useAppData();
-  const { addToCart } = useCart();
+  const { addToCart, updateQuantity, getItemQuantity } = useCart();
   const product = products.find((entry) => entry.id === id);
+  const quantity = getItemQuantity(id);
 
   if (!product) {
     return (
@@ -79,10 +80,22 @@ export const ProductDetailPage = () => {
               </span>
             </div>
             <div className="hero-actions">
-              <button className="btn btn-primary" onClick={() => addToCart(product)} type="button">
-                <ShoppingBag size={16} />
-                Add to cart
-              </button>
+              {quantity > 0 ? (
+                <div className="qty-control product-qty-control detail-qty-control">
+                  <button onClick={() => updateQuantity(product.id, quantity - 1)} type="button">
+                    <Minus size={16} />
+                  </button>
+                  <span className="product-qty-value">Qty {quantity}</span>
+                  <button onClick={() => updateQuantity(product.id, quantity + 1)} type="button">
+                    <Plus size={16} />
+                  </button>
+                </div>
+              ) : (
+                <button className="btn btn-primary" onClick={() => addToCart(product)} type="button">
+                  <ShoppingBag size={16} />
+                  Add to cart
+                </button>
+              )}
               <a
                 className="btn btn-secondary"
                 href={createWhatsAppLink(
