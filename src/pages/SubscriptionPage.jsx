@@ -9,6 +9,7 @@ import { SubscriptionActivatedPopup } from '../components/subscription/Subscript
 import { SeoMeta } from '../components/seo/SeoMeta';
 import { useAppData } from '../contexts/AppDataContext';
 import { formatCurrency, formatDateOnly } from '../utils/format';
+import { openRazorpayCheckout } from '../utils/razorpay';
 import {
   MONTHLY_SUBSCRIPTION_BENEFITS,
   MONTHLY_SUBSCRIPTION_DESCRIPTION,
@@ -78,6 +79,15 @@ export const SubscriptionPage = () => {
     : subscription
       ? `Renew to restart a fresh ${MONTHLY_SUBSCRIPTION_DURATION_DAYS}-day cycle.`
       : 'Subscribe once and track your validity directly from your account.';
+  const storefrontLogoUrl = useMemo(() => {
+    const logoUrl = settings?.storefront?.logoUrl || '/brand-logo.png';
+
+    try {
+      return new URL(logoUrl, window.location.origin).toString();
+    } catch {
+      return '';
+    }
+  }, [settings]);
 
   useEffect(() => {
     if (!loading && shouldOpenCheckout && !isActive) {
@@ -105,13 +115,47 @@ export const SubscriptionPage = () => {
   };
 
   const handleSubscribe = async () => {
-    if (!paymentConfirmed) {
+    if (paymentMethod !== 'ONLINE' && !paymentConfirmed) {
       setError('Confirm that the payment is completed before activating the monthly plan.');
       return;
     }
 
     setSubscribing(true);
+    let verifiedPayment = null;
+
     try {
+      if (paymentMethod === 'ONLINE') {
+        const amountInPaise = Math.round(MONTHLY_SUBSCRIPTION_PRICE * 100);
+        const paymentOrder = await api.createRazorpayOrder(
+          {
+            purpose: 'monthly-subscription',
+            amount: amountInPaise,
+            customerName: user?.name || '',
+            phoneNumber: user?.phoneNumber || '',
+            logoUrl: storefrontLogoUrl,
+          },
+          token,
+        );
+
+        const checkoutResponse = await openRazorpayCheckout({
+          amount: paymentOrder.order.amount,
+          business: paymentOrder.business,
+          keyId: paymentOrder.keyId,
+          order: paymentOrder.order,
+          prefill: paymentOrder.prefill,
+        });
+
+        verifiedPayment = await api.verifyRazorpayPayment(
+          {
+            amount: amountInPaise,
+            razorpayPaymentId: checkoutResponse.razorpay_payment_id,
+            razorpayOrderId: checkoutResponse.razorpay_order_id,
+            razorpaySignature: checkoutResponse.razorpay_signature,
+          },
+          token,
+        );
+      }
+
       const response = await api.subscribeToMonthlyPlan(token);
       setSubscription(response);
       setError('');
@@ -133,7 +177,13 @@ export const SubscriptionPage = () => {
         handleOpenPlan();
       }, 2800);
     } catch (subscribeError) {
-      setError(subscribeError.message);
+      if (verifiedPayment?.paymentId) {
+        setError(
+          `${subscribeError.message} Payment ID: ${verifiedPayment.paymentId}. If money was deducted, message us on WhatsApp so we can activate the plan manually.`,
+        );
+      } else {
+        setError(subscribeError.message);
+      }
     } finally {
       setSubscribing(false);
     }
@@ -237,8 +287,8 @@ export const SubscriptionPage = () => {
                     type="button"
                   >
                     <div>
-                      <strong>Online / UPI payment</strong>
-                      <span>Use payment details from the store, then activate your plan here.</span>
+                      <strong>Razorpay / UPI / Cards</strong>
+                      <span>Pay securely with Razorpay and activate your plan immediately.</span>
                     </div>
                   </button>
                   <button
@@ -264,18 +314,28 @@ export const SubscriptionPage = () => {
                   </div>
                   <div className="summary-line">
                     <span>Activation</span>
-                    <strong>Starts only after payment completion</strong>
+                    <strong>
+                      {paymentMethod === 'ONLINE'
+                        ? 'Activated automatically after successful Razorpay payment'
+                        : 'Starts only after payment completion'}
+                    </strong>
                   </div>
                 </div>
 
-                <label className="subscription-checkbox">
-                  <input
-                    checked={paymentConfirmed}
-                    onChange={(event) => setPaymentConfirmed(event.target.checked)}
-                    type="checkbox"
-                  />
-                  <span>I have completed the payment for this monthly plan.</span>
-                </label>
+                {paymentMethod === 'WHATSAPP' ? (
+                  <label className="subscription-checkbox">
+                    <input
+                      checked={paymentConfirmed}
+                      onChange={(event) => setPaymentConfirmed(event.target.checked)}
+                      type="checkbox"
+                    />
+                    <span>I have completed the payment for this monthly plan.</span>
+                  </label>
+                ) : (
+                  <p className="hint subtle-copy">
+                    You will be taken to Razorpay checkout to pay and activate the Monthly Plan safely.
+                  </p>
+                )}
 
                 <div className="subscription-action-row">
                   <a
@@ -296,11 +356,17 @@ export const SubscriptionPage = () => {
                   </a>
                   <button
                     className="btn btn-primary"
-                    disabled={subscribing || !paymentConfirmed}
+                    disabled={subscribing || (paymentMethod !== 'ONLINE' && !paymentConfirmed)}
                     onClick={handleSubscribe}
                     type="button"
                   >
-                    {subscribing ? 'Activating plan...' : 'Payment done, activate plan'}
+                    {subscribing
+                      ? paymentMethod === 'ONLINE'
+                        ? 'Opening Razorpay...'
+                        : 'Activating plan...'
+                      : paymentMethod === 'ONLINE'
+                        ? `Pay ${formatCurrency(MONTHLY_SUBSCRIPTION_PRICE)} with Razorpay`
+                        : 'Payment done, activate plan'}
                   </button>
                 </div>
               </div>

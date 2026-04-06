@@ -15,6 +15,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useAppData } from '../contexts/AppDataContext';
 import { getCartOfferState } from '../utils/pricing';
 import { formatCurrency } from '../utils/format';
+import { openRazorpayCheckout } from '../utils/razorpay';
 import { createCartOrderMessage, createWhatsAppLink } from '../utils/whatsapp';
 import { api } from '../api/client';
 import { isValidPhoneNumber } from '../utils/validation';
@@ -120,6 +121,15 @@ export const CheckoutPage = () => {
         : user?.addresses?.find((address) => address.id === selectedAddressId) || addressDraft,
     [addressDraft, selectedAddressId, user],
   );
+  const storefrontLogoUrl = useMemo(() => {
+    const logoUrl = settings?.storefront?.logoUrl || '/brand-logo.png';
+
+    try {
+      return new URL(logoUrl, window.location.origin).toString();
+    } catch {
+      return '';
+    }
+  }, [settings]);
 
   const checkoutMessage = [
     createCartOrderMessage(cartOfferState.displayItems, cartOfferState),
@@ -211,6 +221,50 @@ export const CheckoutPage = () => {
     });
   };
 
+  const finalizeOrderPlacement = async (options = {}) => {
+    const order = await api.placeOrder(
+      {
+        items: cartOfferState.orderItems,
+        address: chosenAddress,
+        paymentMethod: options.paymentMethod || paymentMethod,
+        pricing: {
+          subtotal: cartOfferState.subtotal,
+          deliveryFee: cartOfferState.deliveryFee,
+          handlingFee: cartOfferState.handlingFee,
+          discount: cartOfferState.discount,
+          total: cartOfferState.total,
+          distanceKm: cartOfferState.distanceKm,
+        },
+        couponCode: selectedRewardCoupon?.code || '',
+        note: options.note || '',
+      },
+      token,
+    );
+
+    setError('');
+    setPlacedOrder(order);
+    setRedirectSeconds(4);
+    clearCart();
+    refreshUser().catch(() => {});
+    if (countdownIntervalRef.current) {
+      window.clearInterval(countdownIntervalRef.current);
+    }
+    countdownIntervalRef.current = window.setInterval(() => {
+      setRedirectSeconds((current) => (current > 1 ? current - 1 : current));
+    }, 1000);
+    if (redirectTimeoutRef.current) {
+      window.clearTimeout(redirectTimeoutRef.current);
+    }
+    redirectTimeoutRef.current = window.setTimeout(() => {
+      if (countdownIntervalRef.current) {
+        window.clearInterval(countdownIntervalRef.current);
+      }
+      openTracking(order);
+    }, 3600);
+
+    return order;
+  };
+
   const handlePlaceOrder = async () => {
     if (placeOrderLockRef.current) {
       return;
@@ -225,47 +279,57 @@ export const CheckoutPage = () => {
 
     placeOrderLockRef.current = true;
     setPlacingOrder(true);
+    let verifiedPayment = null;
+
     try {
-      const order = await api.placeOrder(
-        {
-          items: cartOfferState.orderItems,
-          address: chosenAddress,
-          paymentMethod,
-          pricing: {
-            subtotal: cartOfferState.subtotal,
-            deliveryFee: cartOfferState.deliveryFee,
-            handlingFee: cartOfferState.handlingFee,
-            discount: cartOfferState.discount,
-            total: cartOfferState.total,
-            distanceKm: cartOfferState.distanceKm,
+      if (paymentMethod === 'ONLINE') {
+        const amountInPaise = Math.round(cartOfferState.total * 100);
+        const paymentOrder = await api.createRazorpayOrder(
+          {
+            purpose: 'food-order',
+            amount: amountInPaise,
+            customerName: chosenAddress.name || user?.name || '',
+            phoneNumber: chosenAddress.phoneNumber || user?.phoneNumber || '',
+            logoUrl: storefrontLogoUrl,
           },
-          couponCode: selectedRewardCoupon?.code || '',
-          note: '',
-        },
-        token,
-      );
-      setError('');
-      setPlacedOrder(order);
-      setRedirectSeconds(4);
-      clearCart();
-      refreshUser().catch(() => {});
-      if (countdownIntervalRef.current) {
-        window.clearInterval(countdownIntervalRef.current);
+          token,
+        );
+
+        const checkoutResponse = await openRazorpayCheckout({
+          amount: paymentOrder.order.amount,
+          business: paymentOrder.business,
+          keyId: paymentOrder.keyId,
+          order: paymentOrder.order,
+          prefill: paymentOrder.prefill,
+        });
+
+        verifiedPayment = await api.verifyRazorpayPayment(
+          {
+            amount: amountInPaise,
+            razorpayPaymentId: checkoutResponse.razorpay_payment_id,
+            razorpayOrderId: checkoutResponse.razorpay_order_id,
+            razorpaySignature: checkoutResponse.razorpay_signature,
+          },
+          token,
+        );
       }
-      countdownIntervalRef.current = window.setInterval(() => {
-        setRedirectSeconds((current) => (current > 1 ? current - 1 : current));
-      }, 1000);
-      if (redirectTimeoutRef.current) {
-        window.clearTimeout(redirectTimeoutRef.current);
-      }
-      redirectTimeoutRef.current = window.setTimeout(() => {
-        if (countdownIntervalRef.current) {
-          window.clearInterval(countdownIntervalRef.current);
-        }
-        openTracking(order);
-      }, 3600);
+
+      const paymentNote = verifiedPayment
+        ? `Razorpay payment verified. Payment ID: ${verifiedPayment.paymentId}. Razorpay order ID: ${verifiedPayment.orderId}. Status: ${verifiedPayment.status}.`
+        : '';
+
+      await finalizeOrderPlacement({
+        paymentMethod,
+        note: paymentNote,
+      });
     } catch (placeError) {
-      setError(placeError.message);
+      if (verifiedPayment?.paymentId) {
+        setError(
+          `${placeError.message} Payment ID: ${verifiedPayment.paymentId}. If money was deducted, please contact support on WhatsApp so we can confirm the order manually.`,
+        );
+      } else {
+        setError(placeError.message);
+      }
     } finally {
       placeOrderLockRef.current = false;
       setPlacingOrder(false);
@@ -494,11 +558,16 @@ export const CheckoutPage = () => {
                   type="button"
                 >
                   <div>
-                    <strong>Online ready</strong>
-                    <span>Razorpay / UPI architecture is prepared for integration</span>
+                    <strong>Razorpay / UPI / Cards</strong>
+                    <span>Pay securely with Razorpay before we confirm your order.</span>
                   </div>
                 </button>
               </div>
+              {paymentMethod === 'ONLINE' ? (
+                <p className="hint subtle-copy">
+                  Online payments open Razorpay checkout for UPI, cards, wallets and netbanking.
+                </p>
+              ) : null}
             </div>
           </div>
 
@@ -573,10 +642,14 @@ export const CheckoutPage = () => {
               type="button"
             >
               {placingOrder
-                ? 'Placing order...'
+                ? paymentMethod === 'ONLINE'
+                  ? 'Processing payment...'
+                  : 'Placing order...'
                 : cartOfferState.notDeliverable
                   ? 'Outside delivery zone'
-                  : 'Place order'}
+                  : paymentMethod === 'ONLINE'
+                    ? `Pay ${formatCurrency(cartOfferState.total)} with Razorpay`
+                    : 'Place order'}
             </button>
             <a
               className="btn btn-secondary full-width"

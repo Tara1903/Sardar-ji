@@ -108,12 +108,18 @@ These define the menu, orders, referrals, tracking, storage, and security rules 
    - `VITE_SUPABASE_URL`
    - `VITE_SUPABASE_ANON_KEY`
    - Optional: `VITE_GOOGLE_MAPS_API_KEY`
-5. Deploy
+5. Add secure payment variables for Razorpay:
+   - `RAZORPAY_KEY_ID`
+   - `RAZORPAY_KEY_SECRET`
+   - `SUPABASE_URL`
+   - `SUPABASE_ANON_KEY`
+6. Deploy
 
 ## Notes
 
-- The app is a static frontend. No Express server is required for deployment.
+- The app is a static frontend with lightweight Vercel `/api` functions for secure Razorpay order creation and payment verification.
 - Product and order data come directly from Supabase.
 - `vercel.json` is intentionally minimal and only exists to support React Router deep links on Vercel.
 - Google Maps is optional. Without an API key, tracking still shows location details and a map link.
 - The active storefront offer is `₹499+ Order = FREE Delivery + FREE Mango Juice 🥭`.
+- Razorpay uses the official order-first flow: create the order on the server, open Checkout in the browser, then verify the payment signature on the server before the order or subscription is finalized.

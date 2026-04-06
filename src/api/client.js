@@ -76,6 +76,34 @@ const request = async (path, options = {}) => {
   return data;
 };
 
+const requestAppRoute = async (path, options = {}) => {
+  const { token, body, headers, method = 'GET' } = options;
+
+  let response;
+
+  try {
+    response = await fetch(path, {
+      method,
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...(headers || {}),
+      },
+      body: body ? JSON.stringify(body) : undefined,
+    });
+  } catch {
+    throw new Error('Unable to reach the payment service right now. Please try again.');
+  }
+
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error(data.message || 'Request failed');
+  }
+
+  return data;
+};
+
 const getSupabase = async () => {
   if (!publicEnvFlags.hasSupabaseBrowserConfig) {
     throw new Error(
@@ -1406,6 +1434,20 @@ const direct = {
 
     return getOrderRecord(supabase, payload.orderId);
   },
+
+  createRazorpayOrder: async (payload, token) =>
+    requestAppRoute('/api/razorpay/create-order', {
+      method: 'POST',
+      body: payload,
+      token,
+    }),
+
+  verifyRazorpayPayment: async (payload, token) =>
+    requestAppRoute('/api/razorpay/verify-payment', {
+      method: 'POST',
+      body: payload,
+      token,
+    }),
 };
 
 export const api = {
@@ -1500,4 +1542,6 @@ export const api = {
     USE_API_SERVER
       ? request('/delivery/location-update', { method: 'POST', body: payload, token })
       : direct.updateDeliveryLocation(payload, token),
+  createRazorpayOrder: (payload, token) => direct.createRazorpayOrder(payload, token),
+  verifyRazorpayPayment: (payload, token) => direct.verifyRazorpayPayment(payload, token),
 };
