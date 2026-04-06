@@ -1,11 +1,10 @@
-import { MapPin, Menu, ShoppingBag, Star, User } from 'lucide-react';
+import { Menu, ShoppingBag, User } from 'lucide-react';
 import { Link, NavLink } from 'react-router-dom';
 import { useState } from 'react';
 import { BrandLockup } from '../brand/BrandLockup';
 import { ThemeSwitcher } from '../common/ThemeSwitcher';
 import { useCart } from '../../contexts/CartContext';
 import { useAuth } from '../../contexts/AuthContext';
-import { STORE_AVERAGE_RATING, STORE_CITY, STORE_ORDER_SOCIAL_PROOF } from '../../utils/catalog';
 
 export const Navbar = ({ businessName }) => {
   const [open, setOpen] = useState(false);
@@ -35,20 +34,6 @@ export const Navbar = ({ businessName }) => {
             tagline="Swad Bhi, Budget Bhi"
             title={businessName || 'Sardar Ji Food Corner'}
           />
-          <div className="header-brand-meta">
-            <span className="pure-veg-badge">
-              <span className="pure-veg-dot" aria-hidden="true" />
-              Pure Veg
-            </span>
-            <span>
-              <MapPin size={13} />
-              {STORE_CITY}
-            </span>
-            <span>
-              <Star fill="currentColor" size={13} />
-              {STORE_AVERAGE_RATING.toFixed(1)} | {STORE_ORDER_SOCIAL_PROOF}
-            </span>
-          </div>
         </div>
 
         <nav className="desktop-nav">

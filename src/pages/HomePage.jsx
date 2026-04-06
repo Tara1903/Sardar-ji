@@ -118,6 +118,10 @@ export const HomePage = () => {
               transition={{ duration: 0.36 }}
             >
               <div className="store-proof-row">
+                <span className="pure-veg-badge store-proof-pill">
+                  <span className="pure-veg-dot" aria-hidden="true" />
+                  Pure Veg
+                </span>
                 <span className="store-proof-pill">
                   <MapPin size={14} />
                   {STORE_CITY}
