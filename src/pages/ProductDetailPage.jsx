@@ -1,3 +1,4 @@
+import { AnimatePresence, motion } from 'framer-motion';
 import { ArrowRight, BadgeCheck, MessageCircleMore, Minus, Plus, ShoppingBag } from 'lucide-react';
 import { Link, useParams } from 'react-router-dom';
 import { PageTransition } from '../components/common/PageTransition';
@@ -8,6 +9,15 @@ import { ProductCard } from '../components/menu/ProductCard';
 import { SeoMeta } from '../components/seo/SeoMeta';
 import { useAppData } from '../contexts/AppDataContext';
 import { useCart } from '../contexts/CartContext';
+import {
+  BUTTON_PRESS_VARIANTS,
+  CARD_IMAGE_VARIANTS,
+  CONTENT_FADE_VARIANTS,
+  CONTENT_STACK_VARIANTS,
+  QUANTITY_SWAP_VARIANTS,
+  STAGGER_CONTAINER_VARIANTS,
+  SURFACE_REVEAL_VARIANTS,
+} from '../motion/variants';
 import { formatCurrency } from '../utils/format';
 import { createProductOrderMessage, createWhatsAppLink } from '../utils/whatsapp';
 import { createBreadcrumbSchema } from '../seo/siteSeo';
@@ -65,73 +75,154 @@ export const ProductDetailPage = () => {
         title={`${product.name} in Indore`}
       />
       <section className="section first-section">
-        <div className="container detail-grid">
-          <div className="detail-media">
-            <SmartImage
-              alt={`${product.name} home style thali and veg food in Indore`}
-              className="detail-media-image"
-              src={product.image}
-            />
-          </div>
+        <div className="container">
+          <motion.div
+            animate="show"
+            className="detail-grid detail-grid-premium"
+            initial="hidden"
+            variants={CONTENT_STACK_VARIANTS}
+          >
+            <motion.div className="detail-media detail-media-card" variants={SURFACE_REVEAL_VARIANTS}>
+              <motion.div className="detail-media-shell" initial="rest" variants={CARD_IMAGE_VARIANTS} whileHover="hover">
+                <SmartImage
+                  alt={`${product.name} home style thali and veg food in Indore`}
+                  className="detail-media-image"
+                  src={product.image}
+                />
+              </motion.div>
+              <div className="detail-media-topbar">
+                <span className="hero-chip">{product.category}</span>
+                <span className="hero-chip">{product.badge || 'Fresh daily'}</span>
+              </div>
+              <div className="detail-media-overlay-card">
+                <p className="eyebrow">House favourite</p>
+                <h3>{product.name}</h3>
+                <p>Pure veg comfort food from Sardar Ji Food Corner, packed fresh for fast delivery in Indore.</p>
+              </div>
+            </motion.div>
 
-          <div className="detail-copy">
-            <span className="hero-chip">{product.category}</span>
-            <h1>{product.name}</h1>
-            <p className="detail-price">{formatCurrency(product.price)}</p>
-            <p>{product.description}</p>
-            <div className="detail-list">
-              <span>
-                <BadgeCheck size={16} />
-                {product.badge || 'Fresh daily'}
-              </span>
-              <span>
-                <BadgeCheck size={16} />
-                {product.isAvailable ? 'Available now' : 'Currently unavailable'}
-              </span>
-            </div>
-            <div className="hero-actions">
-              {quantity > 0 ? (
-                <div className="qty-control product-qty-control detail-qty-control">
-                  <button onClick={() => updateQuantity(product.id, quantity - 1)} type="button">
-                    <Minus size={16} />
-                  </button>
-                  <span className="product-qty-value">Qty {quantity}</span>
-                  <button onClick={() => updateQuantity(product.id, quantity + 1)} type="button">
-                    <Plus size={16} />
-                  </button>
-                </div>
-              ) : (
-                <button className="btn btn-primary" onClick={() => addToCart(product)} type="button">
-                  <ShoppingBag size={16} />
-                  Add to cart
-                </button>
-              )}
-              <a
-                className="btn btn-secondary"
-                href={createWhatsAppLink(
-                  settings?.whatsappNumber,
-                  createProductOrderMessage(product.name, product.price),
-                )}
-                onClick={() =>
-                  trackWhatsAppClick({
-                    source: 'product-detail',
-                    label: product.name,
-                    value: product.price,
-                  })
-                }
-                rel="noreferrer"
-                target="_blank"
-              >
-                <MessageCircleMore size={16} />
-                Order on WhatsApp
-              </a>
-            </div>
-            <Link className="text-link" to="/menu">
-              Back to menu
-              <ArrowRight size={16} />
-            </Link>
-            <FrequentlyBoughtTogether items={frequentlyBoughtItems} />
-          </div>
+            <motion.div className="detail-copy detail-copy-card" variants={SURFACE_REVEAL_VARIANTS}>
+              <motion.div className="detail-copy-stack" variants={CONTENT_STACK_VARIANTS}>
+                <motion.div className="detail-heading-block" variants={CONTENT_FADE_VARIANTS}>
+                  <span className="hero-chip">{product.category}</span>
+                  <h1>{product.name}</h1>
+                  <p className="detail-price">{formatCurrency(product.price)}</p>
+                  <p>{product.description}</p>
+                </motion.div>
+
+                <motion.div className="detail-list detail-list-premium" variants={CONTENT_FADE_VARIANTS}>
+                  <span>
+                    <BadgeCheck size={16} />
+                    {product.badge || 'Fresh daily'}
+                  </span>
+                  <span>
+                    <BadgeCheck size={16} />
+                    {product.isAvailable ? 'Available now' : 'Currently unavailable'}
+                  </span>
+                  <span>
+                    <BadgeCheck size={16} />
+                    Best enjoyed hot and fresh
+                  </span>
+                </motion.div>
+
+                <motion.div className="detail-support-card" variants={CONTENT_FADE_VARIANTS}>
+                  <strong>Quick order support</strong>
+                  <p>Add it instantly to cart or jump to WhatsApp if you want manual confirmation from the team.</p>
+                </motion.div>
+
+                <motion.div className="hero-actions detail-actions" variants={CONTENT_FADE_VARIANTS}>
+                  <AnimatePresence initial={false} mode="popLayout">
+                    {quantity > 0 ? (
+                      <motion.div
+                        animate="animate"
+                        className="qty-control product-qty-control detail-qty-control"
+                        exit="exit"
+                        initial="initial"
+                        key="qty"
+                        layout
+                        variants={QUANTITY_SWAP_VARIANTS}
+                      >
+                        <motion.button
+                          animate="rest"
+                          initial="rest"
+                          onClick={() => updateQuantity(product.id, quantity - 1)}
+                          type="button"
+                          variants={BUTTON_PRESS_VARIANTS}
+                          whileHover="hover"
+                          whileTap="tap"
+                        >
+                          <Minus size={16} />
+                        </motion.button>
+                        <span className="product-qty-value">Qty {quantity}</span>
+                        <motion.button
+                          animate="rest"
+                          initial="rest"
+                          onClick={() => updateQuantity(product.id, quantity + 1)}
+                          type="button"
+                          variants={BUTTON_PRESS_VARIANTS}
+                          whileHover="hover"
+                          whileTap="tap"
+                        >
+                          <Plus size={16} />
+                        </motion.button>
+                      </motion.div>
+                    ) : (
+                      <motion.button
+                        animate="animate"
+                        className="btn btn-primary"
+                        exit="exit"
+                        initial="initial"
+                        key="add"
+                        layout
+                        onClick={() => addToCart(product)}
+                        type="button"
+                        variants={QUANTITY_SWAP_VARIANTS}
+                        whileTap={{ scale: 0.96 }}
+                      >
+                        <ShoppingBag size={16} />
+                        Add to cart
+                      </motion.button>
+                    )}
+                  </AnimatePresence>
+                  <motion.a
+                    animate="rest"
+                    className="btn btn-secondary"
+                    href={createWhatsAppLink(
+                      settings?.whatsappNumber,
+                      createProductOrderMessage(product.name, product.price),
+                    )}
+                    initial="rest"
+                    onClick={() =>
+                      trackWhatsAppClick({
+                        source: 'product-detail',
+                        label: product.name,
+                        value: product.price,
+                      })
+                    }
+                    rel="noreferrer"
+                    target="_blank"
+                    variants={BUTTON_PRESS_VARIANTS}
+                    whileHover="hover"
+                    whileTap="tap"
+                  >
+                    <MessageCircleMore size={16} />
+                    Order on WhatsApp
+                  </motion.a>
+                </motion.div>
+
+                <motion.div variants={CONTENT_FADE_VARIANTS}>
+                  <Link className="text-link" to="/menu">
+                    Back to menu
+                    <ArrowRight size={16} />
+                  </Link>
+                </motion.div>
+
+                <motion.div variants={CONTENT_FADE_VARIANTS}>
+                  <FrequentlyBoughtTogether items={frequentlyBoughtItems} />
+                </motion.div>
+              </motion.div>
+            </motion.div>
+          </motion.div>
         </div>
       </section>
 
@@ -144,7 +235,12 @@ export const ProductDetailPage = () => {
                 <h2>More from {product.category}</h2>
               </div>
             </div>
-            <div className="grid cards-grid">
+            <motion.div
+              animate="show"
+              className="grid cards-grid"
+              initial="hidden"
+              variants={STAGGER_CONTAINER_VARIANTS}
+            >
               {suggestions.map((item, index) => (
                 <ProductCard
                   key={item.id}
@@ -153,7 +249,7 @@ export const ProductDetailPage = () => {
                   whatsappNumber={settings?.whatsappNumber}
                 />
               ))}
-            </div>
+            </motion.div>
           </div>
         </section>
       ) : null}

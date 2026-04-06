@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { motion } from 'framer-motion';
 import { Gift, ShoppingBag } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../api/client';
@@ -10,6 +11,13 @@ import { useAuth } from '../contexts/AuthContext';
 import { useAppData } from '../contexts/AppDataContext';
 import { useCart } from '../contexts/CartContext';
 import { ReviewRequestCard } from '../components/order/ReviewRequestCard';
+import {
+  BUTTON_PRESS_VARIANTS,
+  CONTENT_FADE_VARIANTS,
+  CONTENT_STACK_VARIANTS,
+  STAGGER_ITEM_VARIANTS,
+  SURFACE_REVEAL_VARIANTS,
+} from '../motion/variants';
 import { formatCurrency, formatDateOnly, formatDateTime, initials } from '../utils/format';
 import { STORE_GOOGLE_REVIEW_URL } from '../utils/storefront';
 
@@ -73,6 +81,7 @@ export const ProfilePage = () => {
     .reduce((total, coupon) => total + coupon.amount, 0);
   const activeSubscription = subscription?.status === 'active' && subscription?.daysLeft > 0;
   const latestDeliveredOrder = orders.find((order) => order.status === 'Delivered');
+  const totalSpend = orders.reduce((total, order) => total + (Number(order.total) || 0), 0);
 
   const handleReorder = (order) => {
     const nextItems = (order.items || [])
@@ -99,22 +108,42 @@ export const ProfilePage = () => {
     <PageTransition>
       <SeoMeta noIndex path="/profile" title="Customer Profile" />
       <section className="section first-section">
-        <div className="container profile-layout">
-          <div className="profile-header panel-card">
-            <div className="profile-avatar">{initials(user.name)}</div>
-            <div>
-              <p className="eyebrow">Customer profile</p>
-              <h1>{user.name}</h1>
-              <p>{user.email}</p>
+        <motion.div animate="show" className="container profile-layout profile-layout-premium" initial="hidden" variants={CONTENT_STACK_VARIANTS}>
+          <motion.div className="profile-header panel-card profile-header-premium" variants={SURFACE_REVEAL_VARIANTS}>
+            <div className="profile-header-main">
+              <div className="profile-avatar">{initials(user.name)}</div>
+              <div className="profile-header-copy">
+                <p className="eyebrow">Customer profile</p>
+                <h1>{user.name}</h1>
+                <p>{user.email}</p>
+              </div>
             </div>
-            <button className="btn btn-secondary" onClick={logout} type="button">
+            <div className="profile-summary-pills">
+              <span className="profile-summary-pill">{orders.length} orders</span>
+              <span className="profile-summary-pill">{formatCurrency(totalSpend)} spent</span>
+              <span className={`profile-summary-pill ${activeSubscription ? 'is-success' : ''}`}>
+                {activeSubscription ? `${subscription.daysLeft} days left` : 'Plan inactive'}
+              </span>
+            </div>
+            <motion.button
+              animate="rest"
+              className="btn btn-secondary"
+              initial="rest"
+              onClick={logout}
+              type="button"
+              variants={BUTTON_PRESS_VARIANTS}
+              whileHover="hover"
+              whileTap="tap"
+            >
               Logout
-            </button>
-          </div>
+            </motion.button>
+          </motion.div>
 
-          <ReferralProgress progress={progress} />
+          <motion.div variants={STAGGER_ITEM_VARIANTS}>
+            <ReferralProgress progress={progress} />
+          </motion.div>
 
-          <div className="panel-card">
+          <motion.div className="panel-card profile-feature-card" variants={SURFACE_REVEAL_VARIANTS}>
             <div className="section-heading compact">
               <div>
                 <p className="eyebrow">My Subscription</p>
@@ -124,26 +153,28 @@ export const ProfilePage = () => {
                 View plan
               </Link>
             </div>
-            <div className="summary-line">
-              <span>Plan</span>
-              <strong>{subscription?.planName || 'Monthly Thali'}</strong>
+            <div className="user-detail-grid">
+              <div>
+                <span>Plan</span>
+                <strong>{subscription?.planName || 'Monthly Thali'}</strong>
+              </div>
+              <div>
+                <span>Status</span>
+                <strong>{activeSubscription ? 'Active' : subscription ? 'Expired' : 'Not started'}</strong>
+              </div>
+              <div>
+                <span>Days left</span>
+                <strong>{activeSubscription ? `${subscription.daysLeft} days` : '0 days'}</strong>
+              </div>
+              <div>
+                <span>Valid till</span>
+                <strong>{subscription?.endDate ? formatDateOnly(subscription.endDate) : 'Start your plan'}</strong>
+              </div>
             </div>
-            <div className="summary-line">
-              <span>Status</span>
-              <strong>{activeSubscription ? 'Active' : subscription ? 'Expired' : 'Not started'}</strong>
-            </div>
-            <div className="summary-line">
-              <span>Days left</span>
-              <strong>{activeSubscription ? `${subscription.daysLeft} days` : '0 days'}</strong>
-            </div>
-            <div className="summary-line">
-              <span>Valid till</span>
-              <strong>{subscription?.endDate ? formatDateOnly(subscription.endDate) : 'Start your plan'}</strong>
-            </div>
-          </div>
+          </motion.div>
 
           {activeCoupons.length ? (
-            <div className="panel-card">
+            <motion.div className="panel-card profile-feature-card" variants={SURFACE_REVEAL_VARIANTS}>
               <div className="section-heading compact">
                 <div>
                   <p className="eyebrow">Refer & earn wallet</p>
@@ -169,29 +200,36 @@ export const ProfilePage = () => {
                 </div>
               </div>
               <div className="coupon-list">
-                {activeCoupons.map((coupon) => (
-                  <div className="coupon-row" key={coupon.id}>
+                {activeCoupons.map((coupon, index) => (
+                  <motion.div
+                    className="coupon-row profile-coupon-row"
+                    custom={index}
+                    key={coupon.id}
+                    variants={STAGGER_ITEM_VARIANTS}
+                  >
                     <div>
                       <strong>{coupon.code}</strong>
                       <p>Expires {formatDateOnly(coupon.expiresAt)}</p>
                     </div>
                     <strong>{formatCurrency(coupon.amount)}</strong>
-                  </div>
+                  </motion.div>
                 ))}
               </div>
-            </div>
+            </motion.div>
           ) : null}
 
           {latestDeliveredOrder ? (
-            <ReviewRequestCard
-              orderId={latestDeliveredOrder.id}
-              reviewUrl={STORE_GOOGLE_REVIEW_URL}
-              source="profile"
-            />
+            <motion.div variants={SURFACE_REVEAL_VARIANTS}>
+              <ReviewRequestCard
+                orderId={latestDeliveredOrder.id}
+                reviewUrl={STORE_GOOGLE_REVIEW_URL}
+                source="profile"
+              />
+            </motion.div>
           ) : null}
 
           {!user.referralApplied ? (
-            <div className="panel-card">
+            <motion.div className="panel-card profile-feature-card" variants={SURFACE_REVEAL_VARIANTS}>
               <div className="space-between">
                 <div>
                   <p className="eyebrow">Apply a referral</p>
@@ -201,15 +239,24 @@ export const ProfilePage = () => {
               </div>
               <div className="inline-form">
                 <input onChange={(event) => setReferralCode(event.target.value)} placeholder="Enter referral code" value={referralCode} />
-                <button className="btn btn-primary" onClick={handleApplyReferral} type="button">
+                <motion.button
+                  animate="rest"
+                  className="btn btn-primary"
+                  initial="rest"
+                  onClick={handleApplyReferral}
+                  type="button"
+                  variants={BUTTON_PRESS_VARIANTS}
+                  whileHover="hover"
+                  whileTap="tap"
+                >
                   Apply
-                </button>
+                </motion.button>
               </div>
               {error ? <p className="error-text">{error}</p> : null}
-            </div>
+            </motion.div>
           ) : null}
 
-          <div className="panel-card">
+          <motion.div className="panel-card profile-feature-card" variants={SURFACE_REVEAL_VARIANTS}>
             <div className="section-heading compact">
               <div>
                 <p className="eyebrow">Recent orders</p>
@@ -221,13 +268,18 @@ export const ProfilePage = () => {
               </Link>
             </div>
             <div className="orders-list">
-              {orders.map((order) => (
-                <div className="order-row" key={order.id}>
-                  <div>
+              {orders.map((order, index) => (
+                <motion.div
+                  className="order-row profile-order-row"
+                  custom={index}
+                  key={order.id}
+                  variants={STAGGER_ITEM_VARIANTS}
+                >
+                  <div className="profile-order-copy">
                     <strong>{order.orderNumber}</strong>
                     <p>{formatDateTime(order.createdAt)}</p>
                   </div>
-                  <div>
+                  <div className="profile-order-copy">
                     <strong>{formatCurrency(order.total)}</strong>
                     <p>{order.status}</p>
                   </div>
@@ -235,15 +287,24 @@ export const ProfilePage = () => {
                     <Link className="btn btn-secondary" to={`/track/${order.id}`}>
                       Track
                     </Link>
-                    <button className="btn btn-primary" onClick={() => handleReorder(order)} type="button">
+                    <motion.button
+                      animate="rest"
+                      className="btn btn-primary"
+                      initial="rest"
+                      onClick={() => handleReorder(order)}
+                      type="button"
+                      variants={BUTTON_PRESS_VARIANTS}
+                      whileHover="hover"
+                      whileTap="tap"
+                    >
                       Reorder
-                    </button>
+                    </motion.button>
                   </div>
-                </div>
+                </motion.div>
               ))}
             </div>
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
       </section>
     </PageTransition>
   );
