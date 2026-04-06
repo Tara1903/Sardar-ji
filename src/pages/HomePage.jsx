@@ -2,6 +2,7 @@ import { startTransition, useDeferredValue, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   ArrowRight,
+  Clock3,
   MapPin,
   MessageCircleMore,
   Search,
@@ -15,6 +16,7 @@ import { SkeletonGrid } from '../components/common/Loader';
 import { ReviewsSection } from '../components/home/ReviewsSection';
 import { VisitUsSection } from '../components/home/VisitUsSection';
 import { CategoryShowcase } from '../components/home/CategoryShowcase';
+import { HeroCarousel, createHeroSlides } from '../components/home/HeroCarousel';
 import { LocalSeoSection } from '../components/home/LocalSeoSection';
 import { ProductCard } from '../components/menu/ProductCard';
 import { SeoMeta } from '../components/seo/SeoMeta';
@@ -85,6 +87,10 @@ export const HomePage = () => {
   const topFoldProducts = filteredProducts.slice(0, 4);
   const featuredProducts = filteredProducts.slice(0, 8);
   const comboOffers = useMemo(() => createComboOffers(products), [products]);
+  const heroSlides = useMemo(
+    () => createHeroSlides({ heroConfig: appConfig.hero, products: filteredProducts.slice(0, 4) }),
+    [appConfig.hero, filteredProducts],
+  );
   const heroConfig = appConfig.hero;
   const dynamicHeroLine = itemCount
     ? liveCartState.offerMessage
@@ -129,38 +135,28 @@ export const HomePage = () => {
         title="Tiffin Service in Indore | Monthly Thali Plan"
       />
       {showHero ? (
-        <section
-          className="landing-stage premium-home-hero first-section"
-          style={{
-            backgroundImage: `linear-gradient(120deg, rgba(17, 24, 39, 0.82), rgba(17, 24, 39, 0.42)), url('${heroConfig.backgroundImage}')`,
-          }}
-        >
-          <div className="container premium-home-grid">
-            <motion.div
-              animate={{ opacity: 1, y: 0 }}
-              className="premium-home-copy"
-              initial={{ opacity: 0, y: 16 }}
-              transition={{ duration: 0.36 }}
-            >
-              <div className="store-proof-row">
-                <span className="pure-veg-badge store-proof-pill">
-                  <span className="pure-veg-dot" aria-hidden="true" />
-                  Pure Veg
-                </span>
-                <span className="store-proof-pill">
-                  <MapPin size={14} />
-                  {STORE_CITY}
-                </span>
-                <span className="store-proof-pill">
-                  <Star fill="currentColor" size={14} />
-                  {STORE_AVERAGE_RATING.toFixed(1)} | {STORE_ORDER_SOCIAL_PROOF}
-                </span>
-              </div>
+        <section className="landing-stage premium-home-hero first-section">
+          <div className="container">
+            <div className="store-proof-row hero-proof-row">
+              <span className="pure-veg-badge store-proof-pill">
+                <span className="pure-veg-dot" aria-hidden="true" />
+                Pure Veg
+              </span>
+              <span className="store-proof-pill">
+                <MapPin size={14} />
+                {STORE_CITY}
+              </span>
+              <span className="store-proof-pill">
+                <Star fill="currentColor" size={14} />
+                {STORE_AVERAGE_RATING.toFixed(1)} | {STORE_ORDER_SOCIAL_PROOF}
+              </span>
+              <span className="store-proof-pill">
+                <Clock3 size={14} />
+                Avg 25-35 min
+              </span>
+            </div>
 
-              <span className="offer-badge">{heroConfig.offerText}</span>
-              <h1 className="premium-home-title">{heroConfig.headline}</h1>
-              <p className="premium-home-subtitle">{heroConfig.subtext}</p>
-
+            <div className="home-hero-search-bar">
               <label className="search-bar landing-search-bar premium-search-bar">
                 <Search size={18} />
                 <input
@@ -169,54 +165,96 @@ export const HomePage = () => {
                   value={search}
                 />
               </label>
+            </div>
 
-              <p className="landing-dynamic-line">{dynamicHeroLine}</p>
+            <HeroCarousel
+              onPrimaryAction={scrollToCatalog}
+              primaryLabel={heroConfig.primaryCta}
+              secondaryLabel={heroConfig.secondaryCta}
+              slides={heroSlides}
+            />
 
-              <div className="landing-actions">
-                <button className="btn btn-primary" onClick={scrollToCatalog} type="button">
-                  <ShoppingBag size={16} />
-                  {heroConfig.primaryCta}
-                </button>
-                <Link className="btn btn-secondary" to="/menu">
-                  {heroConfig.secondaryCta}
-                  <ArrowRight size={16} />
-                </Link>
-              </div>
-            </motion.div>
+            <div className="hero-support-grid">
+              <motion.div
+                animate={{ opacity: 1, y: 0 }}
+                className="hero-support-card hero-support-offer"
+                initial={{ opacity: 0, y: 14 }}
+                transition={{ duration: 0.34 }}
+              >
+                <p className="eyebrow">Live reward tracker</p>
+                <strong>{dynamicHeroLine}</strong>
+                <span>{heroConfig.offerText}</span>
+              </motion.div>
 
-            <motion.div
-              animate={{ opacity: 1, y: 0 }}
-              className="premium-home-sidecar"
-              initial={{ opacity: 0, y: 24 }}
-              transition={{ delay: 0.08, duration: 0.34 }}
-            >
-              <div className="premium-home-sidecar-card">
-                <p className="eyebrow">Trending right now</p>
-                <strong>{settings?.businessName || 'Sardar Ji Food Corner'}</strong>
-                <p>Order homestyle thalis, parathas, chaat, snacks, and beverages in a few taps.</p>
-                <Link className="btn btn-primary full-width" to="/my-subscription?checkout=1">
-                  Buy Monthly Plan
-                </Link>
-                <a
-                  className="btn btn-secondary full-width"
-                  href={createWhatsAppLink(settings?.whatsappNumber, createGeneralOrderMessage())}
-                  onClick={() =>
-                    trackWhatsAppClick({
-                      source: 'home-hero',
-                      label: 'general-order',
-                    })
-                  }
-                  rel="noreferrer"
-                  target="_blank"
-                >
-                  <MessageCircleMore size={16} />
-                  Order on WhatsApp
-                </a>
-              </div>
-            </motion.div>
+              <motion.div
+                animate={{ opacity: 1, y: 0 }}
+                className="hero-support-card hero-support-cta"
+                initial={{ opacity: 0, y: 14 }}
+                transition={{ delay: 0.08, duration: 0.34 }}
+              >
+                <div>
+                  <p className="eyebrow">Quick actions</p>
+                  <strong>{settings?.businessName || 'Sardar Ji Food Corner'}</strong>
+                  <span>Fast ordering, cart sync, and WhatsApp fallback in one flow.</span>
+                </div>
+                <div className="hero-support-actions">
+                  <Link className="btn btn-primary" to="/my-subscription?checkout=1">
+                    Buy Monthly Plan
+                  </Link>
+                  <a
+                    className="btn btn-secondary"
+                    href={createWhatsAppLink(settings?.whatsappNumber, createGeneralOrderMessage())}
+                    onClick={() =>
+                      trackWhatsAppClick({
+                        source: 'home-hero',
+                        label: 'general-order',
+                      })
+                    }
+                    rel="noreferrer"
+                    target="_blank"
+                  >
+                    <MessageCircleMore size={16} />
+                    Order on WhatsApp
+                  </a>
+                </div>
+              </motion.div>
+            </div>
           </div>
         </section>
       ) : null}
+
+      <section className="section offer-rail-section">
+        <div className="container">
+          <div className="section-heading compact">
+            <div>
+              <p className="eyebrow">Swipeable offers</p>
+              <h2>Rewards, reassurance, and fast decisions</h2>
+            </div>
+            <Link className="text-link" to="/menu">
+              Explore menu
+              <ArrowRight size={16} />
+            </Link>
+          </div>
+
+          <div className="offer-rail">
+            {offerCards.map((offer, index) => (
+              <motion.article
+                className={`offer-rail-card offer-rail-card-${(index % 3) + 1}`.trim()}
+                initial={{ opacity: 0, y: 14 }}
+                key={offer.id}
+                transition={{ delay: index * 0.05, duration: 0.24 }}
+                viewport={{ once: true, amount: 0.3 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                <p className="eyebrow">Offer {String(index + 1).padStart(2, '0')}</p>
+                <h3>{offer.title}</h3>
+                <p>{offer.description}</p>
+              </motion.article>
+            ))}
+          </div>
+        </div>
+      </section>
 
       {showCategories ? (
         <section className={`section category-section ${showHero ? '' : 'first-section'}`.trim()}>
@@ -420,12 +458,14 @@ export const HomePage = () => {
       {showReviews ? <ReviewsSection /> : null}
       {showVisit ? <VisitUsSection /> : null}
 
-      <div className="home-primary-cta">
-        <button className="btn btn-primary home-primary-cta-button" onClick={scrollToCatalog} type="button">
-          <ShoppingBag size={18} />
-          {itemCount ? `Continue Order • ${formatCurrency(liveCartState.total)}` : 'Order Now'}
-        </button>
-      </div>
+      {!itemCount ? (
+        <div className="home-primary-cta">
+          <button className="btn btn-primary home-primary-cta-button" onClick={scrollToCatalog} type="button">
+            <ShoppingBag size={18} />
+            Order Now
+          </button>
+        </div>
+      ) : null}
     </PageTransition>
   );
 };

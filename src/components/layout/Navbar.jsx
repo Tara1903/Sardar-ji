@@ -1,4 +1,4 @@
-import { Menu, ShoppingBag, User } from 'lucide-react';
+import { ChevronDown, MapPin, Menu, Search, ShoppingBag, User } from 'lucide-react';
 import { Link, NavLink } from 'react-router-dom';
 import { useState } from 'react';
 import { BrandLockup } from '../brand/BrandLockup';
@@ -27,44 +27,67 @@ export const Navbar = ({ businessName }) => {
 
   return (
     <header className="site-header">
-      <div className="container nav-shell">
-        <div className="header-brand-block">
-          <BrandLockup
-            compact
-            tagline="Swad Bhi, Budget Bhi"
-            title={businessName || 'Sardar Ji Food Corner'}
-          />
+      <div className="container nav-shell premium-nav-shell">
+        <div className="premium-nav-top">
+          <div className="header-brand-block">
+            <BrandLockup
+              compact
+              tagline="Swad Bhi, Budget Bhi"
+              title={businessName || 'Sardar Ji Food Corner'}
+            />
+            <button className="location-pill" type="button">
+              <MapPin size={14} />
+              <span>Indore</span>
+              <ChevronDown size={14} />
+            </button>
+          </div>
+
+          <Link className="nav-search-trigger desktop-search-trigger" to="/menu">
+            <Search size={16} />
+            Search thali, paneer, snacks...
+          </Link>
+
+          <div className="nav-actions">
+            <ThemeSwitcher className="desktop-only" label="Site theme" />
+            <Link className="icon-btn" to="/cart">
+              <ShoppingBag size={18} />
+              {itemCount ? <span className="cart-count">{itemCount}</span> : null}
+            </Link>
+            <Link className="icon-btn" to={accountLink}>
+              <User size={18} />
+            </Link>
+            {user ? (
+              <button className="btn btn-secondary desktop-only" onClick={logout} type="button">
+                Logout
+              </button>
+            ) : (
+              <Link className="btn btn-primary desktop-only" to="/auth">
+                Login
+              </Link>
+            )}
+            <button
+              className="icon-btn mobile-only"
+              onClick={() => setOpen((current) => !current)}
+              type="button"
+            >
+              <Menu size={18} />
+            </button>
+          </div>
         </div>
 
-        <nav className="desktop-nav">
-          {navItems.map((item) => (
-            <NavLink className="nav-link" key={item.to} to={item.to}>
-              {item.label}
-            </NavLink>
-          ))}
-        </nav>
+        <div className="premium-nav-bottom">
+          <Link className="nav-search-trigger mobile-search-trigger" to="/menu">
+            <Search size={16} />
+            Search thali, paneer, snacks...
+          </Link>
 
-        <div className="nav-actions">
-          <ThemeSwitcher className="desktop-only" label="Site theme" />
-          <Link className="icon-btn" to="/cart">
-            <ShoppingBag size={18} />
-            {itemCount ? <span className="cart-count">{itemCount}</span> : null}
-          </Link>
-          <Link className="icon-btn" to={accountLink}>
-            <User size={18} />
-          </Link>
-          {user ? (
-            <button className="btn btn-secondary desktop-only" onClick={logout} type="button">
-              Logout
-            </button>
-          ) : (
-            <Link className="btn btn-primary desktop-only" to="/auth">
-              Login
-            </Link>
-          )}
-          <button className="icon-btn mobile-only" onClick={() => setOpen((current) => !current)} type="button">
-            <Menu size={18} />
-          </button>
+          <nav className="desktop-nav premium-desktop-nav">
+            {navItems.map((item) => (
+              <NavLink className="nav-link" key={item.to} to={item.to}>
+                {item.label}
+              </NavLink>
+            ))}
+          </nav>
         </div>
       </div>
 

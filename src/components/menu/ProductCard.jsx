@@ -1,6 +1,6 @@
-import { motion } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { Minus, Plus, ShoppingBag, Star } from 'lucide-react';
+import { Clock3, Minus, Plus, ShoppingBag, Sparkles, Star } from 'lucide-react';
 import { useCart } from '../../contexts/CartContext';
 import { SmartImage } from '../common/SmartImage';
 import { formatCurrency } from '../../utils/format';
@@ -15,10 +15,11 @@ export const ProductCard = ({ product, whatsappNumber, variant = 'default' }) =>
 
   return (
     <motion.article
+      layout
       className={`product-card ${isCompact ? 'product-card-compact' : ''}`.trim()}
-      transition={{ duration: 0.2 }}
-      whileHover={{ y: -6, scale: 1.01 }}
-      whileTap={{ scale: 0.99 }}
+      transition={{ duration: 0.24 }}
+      whileHover={{ y: -8, scale: 1.012 }}
+      whileTap={{ scale: 0.992 }}
     >
       <Link className="product-image-wrap" to={`/product/${product.id}`}>
         <SmartImage
@@ -26,12 +27,23 @@ export const ProductCard = ({ product, whatsappNumber, variant = 'default' }) =>
           className="product-image"
           src={product.image}
         />
+        <div className="product-image-topbar">
+          <span className="product-image-chip">
+            <Star fill="currentColor" size={13} />
+            {STORE_AVERAGE_RATING.toFixed(1)}
+          </span>
+          <span className="product-image-chip">
+            <Clock3 size={13} />
+            {product.price >= 150 ? '30-40 min' : '20-30 min'}
+          </span>
+        </div>
         {product.badge ? (
           <span className="product-badge">
-            <Star size={14} />
+            <Sparkles size={14} />
             {product.badge}
           </span>
         ) : null}
+        <div className="product-image-bottomfade" />
       </Link>
       <div className="product-copy">
         <div className="space-between">
@@ -51,27 +63,50 @@ export const ProductCard = ({ product, whatsappNumber, variant = 'default' }) =>
         <p>{product.description}</p>
       </div>
       <div className="product-actions">
-        {quantity > 0 ? (
-          <div className={`qty-control product-qty-control ${isCompact ? 'is-compact' : ''}`.trim()}>
-            <button onClick={() => updateQuantity(product.id, quantity - 1)} type="button">
-              <Minus size={16} />
-            </button>
-            <span className="product-qty-value">Qty {quantity}</span>
-            <button onClick={() => updateQuantity(product.id, quantity + 1)} type="button">
-              <Plus size={16} />
-            </button>
-          </div>
-        ) : (
-          <motion.button
-            className="btn btn-primary"
-            onClick={() => addToCart(product)}
-            type="button"
-            whileTap={{ scale: 0.96 }}
-          >
-            <ShoppingBag size={16} />
-            {isCompact ? '+ Add' : 'Add to cart'}
-          </motion.button>
-        )}
+        <AnimatePresence initial={false} mode="popLayout">
+          {quantity > 0 ? (
+            <motion.div
+              animate={{ opacity: 1, scale: 1 }}
+              className={`qty-control product-qty-control ${isCompact ? 'is-compact' : ''}`.trim()}
+              exit={{ opacity: 0, scale: 0.92 }}
+              initial={{ opacity: 0, scale: 0.88 }}
+              key="qty"
+              layout
+              transition={{ duration: 0.2 }}
+            >
+              <motion.button
+                onClick={() => updateQuantity(product.id, quantity - 1)}
+                type="button"
+                whileTap={{ scale: 0.92 }}
+              >
+                <Minus size={16} />
+              </motion.button>
+              <span className="product-qty-value">Qty {quantity}</span>
+              <motion.button
+                onClick={() => updateQuantity(product.id, quantity + 1)}
+                type="button"
+                whileTap={{ scale: 0.92 }}
+              >
+                <Plus size={16} />
+              </motion.button>
+            </motion.div>
+          ) : (
+            <motion.button
+              animate={{ opacity: 1, scale: 1 }}
+              className="btn btn-primary product-add-button"
+              exit={{ opacity: 0, scale: 0.94 }}
+              initial={{ opacity: 0, scale: 0.94 }}
+              key="add"
+              layout
+              onClick={() => addToCart(product)}
+              type="button"
+              whileTap={{ scale: 0.95 }}
+            >
+              <ShoppingBag size={16} />
+              {isCompact ? '+ Add' : 'Add to cart'}
+            </motion.button>
+          )}
+        </AnimatePresence>
         {isCompact ? null : (
           <a
             className="btn btn-secondary"

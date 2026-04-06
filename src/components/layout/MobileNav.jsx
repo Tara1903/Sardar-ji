@@ -1,4 +1,4 @@
-import { House, Search, ShoppingBag, UserRound } from 'lucide-react';
+import { House, Search, ShoppingBag, Truck, UserRound } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import { useCart } from '../../contexts/CartContext';
 import { useAuth } from '../../contexts/AuthContext';
@@ -28,6 +28,10 @@ export const MobileNav = () => {
         <ShoppingBag size={18} />
         Cart
         {itemCount ? <span className="mobile-pill">{itemCount}</span> : null}
+      </NavLink>
+      <NavLink className="mobile-nav-link" to="/track">
+        <Truck size={18} />
+        Orders
       </NavLink>
       <NavLink className="mobile-nav-link" to={accountLink}>
         <UserRound size={18} />

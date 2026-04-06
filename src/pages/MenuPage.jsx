@@ -305,19 +305,6 @@ export const MenuPage = () => {
         </div>
       </section>
 
-      {itemCount ? (
-        <div className="mobile-order-bar">
-          <div>
-            <strong>{itemCount} items in cart</strong>
-            <span>{formatCurrency(cartOfferState.total)}</span>
-            <small>{cartOfferState.offerMessage}</small>
-          </div>
-          <Link className="btn btn-primary" to="/cart">
-            <ShoppingBag size={16} />
-            View cart
-          </Link>
-        </div>
-      ) : null}
     </PageTransition>
   );
 };

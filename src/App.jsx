@@ -6,6 +6,7 @@ import { Footer } from './components/layout/Footer';
 import { MobileNav } from './components/layout/MobileNav';
 import { SpecialOfferPopup } from './components/layout/SpecialOfferPopup';
 import { WhatsAppFab } from './components/layout/WhatsAppFab';
+import { FloatingCartBar } from './components/layout/FloatingCartBar';
 import { ProtectedRoute } from './components/common/ProtectedRoute';
 import { Loader } from './components/common/Loader';
 import { CheckoutRecoveryPopup } from './components/order/CheckoutRecoveryPopup';
@@ -141,12 +142,13 @@ const CustomerLayout = () => {
   }, []);
 
   return (
-    <div className="app-shell">
+    <div className="app-shell customer-app-shell">
       <Navbar businessName={settings?.businessName} />
       <div className="page-stack">
         <Outlet />
       </div>
       <Footer settings={settings} />
+      <FloatingCartBar />
       <MobileNav />
       <SpecialOfferPopup
         config={appConfig.popup}
