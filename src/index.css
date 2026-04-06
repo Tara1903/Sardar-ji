@@ -6563,15 +6563,21 @@ html.dark .customer-app-shell .floating-cart-bar {
 }
 
 @media (max-width: 900px) {
+  .customer-app-shell .premium-nav-shell {
+    padding: 0.62rem 0 0.68rem;
+  }
+
   .customer-app-shell .premium-nav-top {
-    gap: 0.8rem;
-    align-items: flex-start;
+    gap: 0.72rem;
+    align-items: center;
   }
 
   .customer-app-shell .header-brand-block {
     flex-direction: column;
     align-items: flex-start;
-    gap: 0.55rem;
+    gap: 0.4rem;
+    flex: 1 1 auto;
+    min-width: 0;
   }
 
   .customer-app-shell .desktop-nav,
@@ -6584,7 +6590,25 @@ html.dark .customer-app-shell .floating-cart-bar {
   }
 
   .customer-app-shell .brand-mark.compact .brand-logo {
-    height: 52px;
+    height: 46px;
+    max-width: min(100%, 220px);
+  }
+
+  .customer-app-shell .location-pill {
+    padding: 0.56rem 0.84rem;
+    font-size: 0.84rem;
+  }
+
+  .customer-app-shell .nav-actions {
+    gap: 0.55rem;
+    align-items: center;
+    flex-shrink: 0;
+  }
+
+  .customer-app-shell .nav-actions .icon-btn,
+  .customer-app-shell .nav-actions .mobile-only {
+    width: 2.9rem;
+    height: 2.9rem;
   }
 
   .customer-app-shell .header-search-trigger,
@@ -6635,11 +6659,25 @@ html.dark .customer-app-shell .floating-cart-bar {
   }
 
   .customer-app-shell .premium-nav-shell {
-    padding: 0.7rem 0 0.85rem;
+    padding: 0.58rem 0 0.62rem;
   }
 
   .customer-app-shell .nav-actions .icon-btn:not(.mobile-only) {
     display: none;
+  }
+
+  .customer-app-shell .header-brand-block {
+    gap: 0.32rem;
+  }
+
+  .customer-app-shell .brand-mark.compact .brand-logo {
+    height: 42px;
+    max-width: min(100%, 190px);
+  }
+
+  .customer-app-shell .location-pill {
+    padding: 0.48rem 0.76rem;
+    font-size: 0.8rem;
   }
 
   .customer-app-shell .cart-page-intro,
