@@ -157,7 +157,13 @@ export const HomePage = () => {
               </span>
             </div>
 
-            <div className="home-hero-search-bar">
+            <motion.div
+              animate={{ opacity: 1, y: 0 }}
+              className="home-hero-search-bar"
+              initial={{ opacity: 0, y: 12 }}
+              transition={{ duration: 0.28, ease: 'easeOut' }}
+            >
+              <p className="eyebrow hero-search-eyebrow">Search your favourite dishes right from home</p>
               <label className="search-bar landing-search-bar premium-search-bar">
                 <Search size={18} />
                 <input
@@ -166,7 +172,7 @@ export const HomePage = () => {
                   value={search}
                 />
               </label>
-            </div>
+            </motion.div>
 
             <HeroCarousel
               onPrimaryAction={scrollToCatalog}

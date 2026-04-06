@@ -5684,7 +5684,15 @@ html.dark .admin-day-pill span {
 }
 
 .customer-app-shell .home-hero-search-bar {
+  display: grid;
+  gap: 0.45rem;
+  width: min(100%, 560px);
   margin-bottom: 1rem;
+}
+
+.customer-app-shell .hero-search-eyebrow {
+  margin: 0 0 0 0.3rem;
+  color: rgba(24, 35, 22, 0.7);
 }
 
 .customer-app-shell .premium-search-bar {
@@ -6462,6 +6470,10 @@ html.dark .customer-app-shell .premium-desktop-nav,
 html.dark .customer-app-shell .mobile-nav {
   color: rgba(244, 247, 242, 0.82);
   background: rgba(17, 24, 39, 0.68);
+}
+
+html.dark .customer-app-shell .hero-search-eyebrow {
+  color: rgba(244, 247, 242, 0.68);
 }
 
 html.dark .customer-app-shell .cart-page-intro,
