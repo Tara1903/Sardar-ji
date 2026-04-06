@@ -77,3 +77,31 @@ export const sortProductsByCategoryAndPrice = (products = [], categories = []) =
 
 export const sortFeaturedProducts = (products = [], categories = []) =>
   sortProductsByCategoryAndPrice(products, categories);
+
+export const createComboOffers = (products = []) => {
+  const sorted = [...products].filter((product) => product.isAvailable);
+  const thali = sorted.find((product) => /thali/i.test(`${product.name} ${product.category}`));
+  const drink = sorted.find((product) => /lassi|chaach|juice|beverage/i.test(`${product.name} ${product.category}`));
+  const snack = sorted.find((product) => /chaat|momos|roll|chips|puri|bhel|puff|samosa/i.test(`${product.name} ${product.category}`));
+
+  return [
+    thali && drink
+      ? {
+          id: 'combo-thali-drink',
+          title: `${thali.name} + ${drink.name}`,
+          description: 'A fast lunch combo that works well for office and home orders.',
+          total: Number(thali.price || 0) + Number(drink.price || 0),
+          items: [thali, drink],
+        }
+      : null,
+    snack && drink
+      ? {
+          id: 'combo-snack-drink',
+          title: `${snack.name} + ${drink.name}`,
+          description: 'A lighter snack combo for evening cravings and quick add-ons.',
+          total: Number(snack.price || 0) + Number(drink.price || 0),
+          items: [snack, drink],
+        }
+      : null,
+  ].filter(Boolean);
+};

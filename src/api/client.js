@@ -310,7 +310,13 @@ const normalizeUser = (row) => ({
   referralCode: row.referral_code || '',
   referralApplied: row.referral_applied || '',
   successfulReferrals: row.successful_referrals || [],
-  addresses: row.addresses || [],
+  addresses: (row.addresses || []).filter((entry) => entry?._type !== 'subscription-meta'),
+  subscriptionMeta:
+    (row.addresses || []).find((entry) => entry?._type === 'subscription-meta')?.payload || {
+      pausedUntil: '',
+      skipDates: [],
+      holidayDates: [],
+    },
   avatarUrl: row.avatar_url || '',
   createdAt: row.created_at,
   updatedAt: row.updated_at,
@@ -424,6 +430,27 @@ const normalizeRewardCoupon = (row) => ({
   usedOrderId: row.used_order_id || row.usedOrderId || '',
   createdAt: row.created_at || row.createdAt || '',
 });
+
+const serializeUserAddresses = (addresses = [], subscriptionMeta = null) => {
+  const sanitizedAddresses = (addresses || []).filter((entry) => entry?._type !== 'subscription-meta');
+
+  if (!subscriptionMeta) {
+    return sanitizedAddresses;
+  }
+
+  return [
+    ...sanitizedAddresses,
+    {
+      id: '__subscription_meta__',
+      _type: 'subscription-meta',
+      payload: {
+        pausedUntil: subscriptionMeta.pausedUntil || '',
+        skipDates: Array.isArray(subscriptionMeta.skipDates) ? subscriptionMeta.skipDates : [],
+        holidayDates: Array.isArray(subscriptionMeta.holidayDates) ? subscriptionMeta.holidayDates : [],
+      },
+    },
+  ];
+};
 
 const getCurrentUser = async (supabase, token) => {
   const { data, error } = token
@@ -554,7 +581,7 @@ const saveAddressIfNew = async (supabase, user, address) => {
 
   const { data, error } = await supabase
     .from('users')
-    .update({ addresses: nextAddresses })
+    .update({ addresses: serializeUserAddresses(nextAddresses, user.subscriptionMeta) })
     .eq('id', user.id)
     .select('*')
     .single();
@@ -1139,15 +1166,42 @@ const direct = {
   updateAddresses: async (addresses, token) => {
     const supabase = await getSupabaseForToken(token);
     const authUser = await getCurrentUser(supabase, token);
+    const currentUser = await getProfile(supabase, authUser.id);
     const { data, error } = await supabase
       .from('users')
-      .update({ addresses })
+      .update({ addresses: serializeUserAddresses(addresses, currentUser.subscriptionMeta) })
       .eq('id', authUser.id)
       .select('*')
       .single();
 
     if (error) {
       throw createError(error, 'Unable to update addresses.');
+    }
+
+    return { user: normalizeUser(data) };
+  },
+
+  updateSubscriptionPreferences: async (payload, token) => {
+    const supabase = await getSupabaseForToken(token);
+    const authUser = await getCurrentUser(supabase, token);
+    const currentUser = await getProfile(supabase, authUser.id);
+    const nextMeta = {
+      pausedUntil: payload.pausedUntil || '',
+      skipDates: Array.isArray(payload.skipDates) ? payload.skipDates : [],
+      holidayDates: Array.isArray(payload.holidayDates) ? payload.holidayDates : [],
+    };
+
+    const { data, error } = await supabase
+      .from('users')
+      .update({
+        addresses: serializeUserAddresses(currentUser.addresses, nextMeta),
+      })
+      .eq('id', authUser.id)
+      .select('*')
+      .single();
+
+    if (error) {
+      throw createError(error, 'Unable to update your subscription preferences.');
     }
 
     return { user: normalizeUser(data) };
@@ -1502,6 +1556,7 @@ export const api = {
     USE_API_SERVER
       ? request('/auth/addresses', { method: 'PUT', body: { addresses }, token })
       : direct.updateAddresses(addresses, token),
+  updateSubscriptionPreferences: (payload, token) => direct.updateSubscriptionPreferences(payload, token),
   getUsers: (role, token) =>
     USE_API_SERVER
       ? request(`/auth/users${role ? `?role=${role}` : ''}`, { token })

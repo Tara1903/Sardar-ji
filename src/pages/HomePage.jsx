@@ -20,6 +20,7 @@ import { ProductCard } from '../components/menu/ProductCard';
 import { SeoMeta } from '../components/seo/SeoMeta';
 import { useAppData } from '../contexts/AppDataContext';
 import { useCart } from '../contexts/CartContext';
+import { useAuth } from '../contexts/AuthContext';
 import { formatCurrency } from '../utils/format';
 import { getCartOfferState } from '../utils/pricing';
 import {
@@ -32,9 +33,11 @@ import {
   STORE_AVERAGE_RATING,
   STORE_CITY,
   STORE_ORDER_SOCIAL_PROOF,
+  createComboOffers,
   sortProductsByCategoryAndPrice,
 } from '../utils/catalog';
-import { createBreadcrumbSchema } from '../seo/siteSeo';
+import { trackWhatsAppClick } from '../utils/analytics';
+import { createBreadcrumbSchema, createFaqSchema } from '../seo/siteSeo';
 
 const scrollToCatalog = () => {
   document.getElementById('home-catalog')?.scrollIntoView({
@@ -45,7 +48,8 @@ const scrollToCatalog = () => {
 
 export const HomePage = () => {
   const { appConfig, products, categories, settings, loading } = useAppData();
-  const { items, itemCount } = useCart();
+  const { addItemsToCart, items, itemCount } = useCart();
+  const { isAuthenticated } = useAuth();
   const [search, setSearch] = useState('');
   const [activeCategory, setActiveCategory] = useState('All');
   const deferredSearch = useDeferredValue(search);
@@ -80,10 +84,28 @@ export const HomePage = () => {
 
   const topFoldProducts = filteredProducts.slice(0, 4);
   const featuredProducts = filteredProducts.slice(0, 8);
+  const comboOffers = useMemo(() => createComboOffers(products), [products]);
   const heroConfig = appConfig.hero;
   const dynamicHeroLine = itemCount
     ? liveCartState.offerMessage
     : 'Add your favourites and unlock the best delivery reward automatically.';
+  const faqItems = [
+    {
+      question: 'Do you offer tiffin service in Indore for daily orders?',
+      answer:
+        'Yes, Sardar Ji Food Corner serves local customers in Indore with daily pure veg meals, fast ordering, and a dedicated monthly thali option.',
+    },
+    {
+      question: 'How does delivery pricing work on the website?',
+      answer:
+        'Delivery pricing updates automatically using cart total and store distance. Orders above ₹299 can unlock free or discounted delivery, and orders above ₹499 unlock free delivery plus a free mango juice.',
+    },
+    {
+      question: 'Can I buy the monthly thali plan online?',
+      answer:
+        'Yes, the Monthly Thali subscription has its own page where customers can activate the plan and track validity inside their account.',
+    },
+  ];
 
   return (
     <PageTransition>
@@ -99,7 +121,10 @@ export const HomePage = () => {
           'pure veg meals Indore',
         ]}
         path="/"
-        schema={createBreadcrumbSchema([{ name: 'Home', path: '/' }])}
+        schema={[
+          createBreadcrumbSchema([{ name: 'Home', path: '/' }]),
+          createFaqSchema(faqItems),
+        ]}
         settings={settings}
         title="Tiffin Service in Indore | Monthly Thali Plan"
       />
@@ -175,6 +200,12 @@ export const HomePage = () => {
                 <a
                   className="btn btn-secondary full-width"
                   href={createWhatsAppLink(settings?.whatsappNumber, createGeneralOrderMessage())}
+                  onClick={() =>
+                    trackWhatsAppClick({
+                      source: 'home-hero',
+                      label: 'general-order',
+                    })
+                  }
                   rel="noreferrer"
                   target="_blank"
                 >
@@ -261,6 +292,16 @@ export const HomePage = () => {
               </Link>
             </div>
 
+            {!isAuthenticated ? (
+              <PromoBanner
+                className="first-order-banner"
+                description="Create an account, save your address faster, and place your first order in a few taps."
+                eyebrow="First order perk"
+                title="New here? Start with our best-selling veg meals today"
+                tone="success"
+              />
+            ) : null}
+
             {loading ? (
               <SkeletonGrid count={8} />
             ) : (
@@ -274,6 +315,38 @@ export const HomePage = () => {
                 ))}
               </div>
             )}
+
+            {comboOffers.length ? (
+              <div className="combo-offer-grid">
+                {comboOffers.map((combo) => (
+                  <article className="panel-card combo-offer-card" key={combo.id}>
+                    <p className="eyebrow">Combo pick</p>
+                    <h3>{combo.title}</h3>
+                    <p>{combo.description}</p>
+                    <strong>{formatCurrency(combo.total)}</strong>
+                    <div className="subscription-action-row">
+                      <button
+                        className="btn btn-primary"
+                        onClick={() =>
+                          addItemsToCart(
+                            combo.items.map((item) => ({
+                              ...item,
+                              quantity: 1,
+                            })),
+                          )
+                        }
+                        type="button"
+                      >
+                        Quick combo
+                      </button>
+                      <Link className="btn btn-secondary" to="/menu">
+                        View menu
+                      </Link>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            ) : null}
           </div>
 
           <aside className="summary-card sticky storefront-cart-panel">

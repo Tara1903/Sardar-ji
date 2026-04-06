@@ -20,6 +20,8 @@ import { createCartOrderMessage, createWhatsAppLink } from '../utils/whatsapp';
 import { api } from '../api/client';
 import { isValidPhoneNumber } from '../utils/validation';
 import { useStoreDistance } from '../hooks/useStoreDistance';
+import { clearCheckoutRecovery, saveCheckoutRecovery } from '../utils/cartRecovery';
+import { trackBeginCheckout, trackPaymentSuccess } from '../utils/analytics';
 
 const emptyAddress = {
   name: '',
@@ -84,6 +86,19 @@ export const CheckoutPage = () => {
 
     loadRewardCoupons();
   }, [token]);
+
+  useEffect(() => {
+    if (!items.length || placedOrder) {
+      clearCheckoutRecovery();
+      return;
+    }
+
+    saveCheckoutRecovery({
+      itemCount: cartOfferState.baseItems.length,
+      totalLabel: formatCurrency(cartOfferState.total),
+      whatsappLink: createWhatsAppLink(settings?.whatsappNumber, checkoutMessage),
+    });
+  }, [cartOfferState.baseItems.length, cartOfferState.total, checkoutMessage, items.length, placedOrder, settings?.whatsappNumber]);
 
   const activeRewardCoupons = useMemo(
     () =>
@@ -222,7 +237,9 @@ export const CheckoutPage = () => {
   };
 
   const finalizeOrderPlacement = async (options = {}) => {
-    const order = await api.placeOrder(
+    const order =
+      options.fulfilledOrder ||
+      (await api.placeOrder(
       {
         items: cartOfferState.orderItems,
         address: chosenAddress,
@@ -239,7 +256,7 @@ export const CheckoutPage = () => {
         note: options.note || '',
       },
       token,
-    );
+    ));
 
     setError('');
     setPlacedOrder(order);
@@ -261,6 +278,7 @@ export const CheckoutPage = () => {
       }
       openTracking(order);
     }, 3600);
+    clearCheckoutRecovery();
 
     return order;
   };
@@ -280,6 +298,7 @@ export const CheckoutPage = () => {
     placeOrderLockRef.current = true;
     setPlacingOrder(true);
     let verifiedPayment = null;
+    trackBeginCheckout(cartOfferState);
 
     try {
       if (paymentMethod === 'ONLINE') {
@@ -309,6 +328,16 @@ export const CheckoutPage = () => {
             razorpayPaymentId: checkoutResponse.razorpay_payment_id,
             razorpayOrderId: checkoutResponse.razorpay_order_id,
             razorpaySignature: checkoutResponse.razorpay_signature,
+            purpose: 'food-order',
+            payload: {
+              items: cartOfferState.orderItems,
+              address: chosenAddress,
+              couponCode: selectedRewardCoupon?.code || '',
+              pricing: {
+                distanceKm: cartOfferState.distanceKm,
+              },
+              note: '',
+            },
           },
           token,
         );
@@ -317,11 +346,21 @@ export const CheckoutPage = () => {
       const paymentNote = verifiedPayment
         ? `Razorpay payment verified. Payment ID: ${verifiedPayment.paymentId}. Razorpay order ID: ${verifiedPayment.orderId}. Status: ${verifiedPayment.status}.`
         : '';
+      const fulfilledOrder = paymentMethod === 'ONLINE' ? verifiedPayment?.order || null : null;
 
       await finalizeOrderPlacement({
         paymentMethod,
         note: paymentNote,
+        fulfilledOrder,
       });
+
+      if (verifiedPayment?.paymentId) {
+        trackPaymentSuccess({
+          paymentId: verifiedPayment.paymentId,
+          purpose: 'food-order',
+          value: cartOfferState.total,
+        });
+      }
     } catch (placeError) {
       if (verifiedPayment?.paymentId) {
         setError(

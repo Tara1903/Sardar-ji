@@ -1,16 +1,23 @@
 import { useEffect, useState } from 'react';
 import { Gift, ShoppingBag } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../api/client';
 import { PageTransition } from '../components/common/PageTransition';
 import { Loader } from '../components/common/Loader';
 import { ReferralProgress } from '../components/referral/ReferralProgress';
 import { SeoMeta } from '../components/seo/SeoMeta';
 import { useAuth } from '../contexts/AuthContext';
+import { useAppData } from '../contexts/AppDataContext';
+import { useCart } from '../contexts/CartContext';
+import { ReviewRequestCard } from '../components/order/ReviewRequestCard';
 import { formatCurrency, formatDateOnly, formatDateTime, initials } from '../utils/format';
+import { STORE_GOOGLE_REVIEW_URL } from '../utils/storefront';
 
 export const ProfilePage = () => {
+  const navigate = useNavigate();
   const { user, token, logout, refreshUser } = useAuth();
+  const { products } = useAppData();
+  const { addItemsToCart } = useCart();
   const [orders, setOrders] = useState([]);
   const [progress, setProgress] = useState(null);
   const [subscription, setSubscription] = useState(null);
@@ -59,7 +66,34 @@ export const ProfilePage = () => {
   const activeCoupons = rewardCoupons.filter(
     (coupon) => coupon.status === 'active' && (!coupon.expiresAt || new Date(coupon.expiresAt).getTime() > Date.now()),
   );
+  const walletBalance = activeCoupons.reduce((total, coupon) => total + coupon.amount, 0);
+  const lifetimeRewards = rewardCoupons.reduce((total, coupon) => total + coupon.amount, 0);
+  const usedRewards = rewardCoupons
+    .filter((coupon) => coupon.status === 'used')
+    .reduce((total, coupon) => total + coupon.amount, 0);
   const activeSubscription = subscription?.status === 'active' && subscription?.daysLeft > 0;
+  const latestDeliveredOrder = orders.find((order) => order.status === 'Delivered');
+
+  const handleReorder = (order) => {
+    const nextItems = (order.items || [])
+      .filter((item) => !item.isFreebie)
+      .map((item) => {
+        const matchedProduct = products.find((product) => product.id === item.id || product.name === item.name);
+
+        return {
+          ...(matchedProduct || item),
+          quantity: item.quantity || 1,
+        };
+      });
+
+    if (!nextItems.length) {
+      navigate('/menu');
+      return;
+    }
+
+    addItemsToCart(nextItems, { replace: true });
+    navigate('/cart');
+  };
 
   return (
     <PageTransition>
@@ -112,8 +146,26 @@ export const ProfilePage = () => {
             <div className="panel-card">
               <div className="section-heading compact">
                 <div>
-                  <p className="eyebrow">Reward coupons</p>
-                  <h3>Referral rewards ready to use</h3>
+                  <p className="eyebrow">Refer & earn wallet</p>
+                  <h3>Rewards ready to use</h3>
+                </div>
+              </div>
+              <div className="user-detail-grid">
+                <div>
+                  <span>Wallet balance</span>
+                  <strong>{formatCurrency(walletBalance)}</strong>
+                </div>
+                <div>
+                  <span>Lifetime earned</span>
+                  <strong>{formatCurrency(lifetimeRewards)}</strong>
+                </div>
+                <div>
+                  <span>Used rewards</span>
+                  <strong>{formatCurrency(usedRewards)}</strong>
+                </div>
+                <div>
+                  <span>Active coupons</span>
+                  <strong>{activeCoupons.length}</strong>
                 </div>
               </div>
               <div className="coupon-list">
@@ -128,6 +180,14 @@ export const ProfilePage = () => {
                 ))}
               </div>
             </div>
+          ) : null}
+
+          {latestDeliveredOrder ? (
+            <ReviewRequestCard
+              orderId={latestDeliveredOrder.id}
+              reviewUrl={STORE_GOOGLE_REVIEW_URL}
+              source="profile"
+            />
           ) : null}
 
           {!user.referralApplied ? (
@@ -171,9 +231,14 @@ export const ProfilePage = () => {
                     <strong>{formatCurrency(order.total)}</strong>
                     <p>{order.status}</p>
                   </div>
-                  <Link className="btn btn-secondary" to={`/track/${order.id}`}>
-                    Track
-                  </Link>
+                  <div className="admin-button-stack">
+                    <Link className="btn btn-secondary" to={`/track/${order.id}`}>
+                      Track
+                    </Link>
+                    <button className="btn btn-primary" onClick={() => handleReorder(order)} type="button">
+                      Reorder
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>

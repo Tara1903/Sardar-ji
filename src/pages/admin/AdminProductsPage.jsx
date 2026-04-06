@@ -110,7 +110,8 @@ export const AdminProductsPage = () => {
                 <p>
                   {product.category} • {formatCurrency(product.price)}
                 </p>
-                <span>{product.isAvailable ? 'Available' : 'Unavailable'}</span>
+                <span>{product.isAvailable ? 'Available now' : product.isScheduledOutOfStock ? 'Scheduled out of stock right now' : 'Unavailable'}</span>
+                {product.availabilitySchedule?.enabled ? <small>{product.scheduleLabel}</small> : null}
               </div>
               <div className="admin-button-stack">
                 <button

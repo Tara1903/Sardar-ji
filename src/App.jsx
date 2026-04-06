@@ -1,4 +1,4 @@
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { BrowserRouter, Outlet, Route, Routes, useLocation } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import { Navbar } from './components/layout/Navbar';
@@ -8,8 +8,10 @@ import { SpecialOfferPopup } from './components/layout/SpecialOfferPopup';
 import { WhatsAppFab } from './components/layout/WhatsAppFab';
 import { ProtectedRoute } from './components/common/ProtectedRoute';
 import { Loader } from './components/common/Loader';
+import { CheckoutRecoveryPopup } from './components/order/CheckoutRecoveryPopup';
 import { GoogleAnalytics } from './components/seo/GoogleAnalytics';
 import { useAppData } from './contexts/AppDataContext';
+import { clearCheckoutRecovery, readCheckoutRecovery } from './utils/cartRecovery';
 
 const HomePage = lazy(() => import('./pages/HomePage').then((module) => ({ default: module.HomePage })));
 const MenuPage = lazy(() => import('./pages/MenuPage').then((module) => ({ default: module.MenuPage })));
@@ -46,6 +48,26 @@ const TiffinServiceIndorePage = lazy(() =>
     default: module.TiffinServiceIndorePage,
   })),
 );
+const PunjabiFoodRestaurantIndorePage = lazy(() =>
+  import('./pages/PunjabiFoodRestaurantIndorePage').then((module) => ({
+    default: module.PunjabiFoodRestaurantIndorePage,
+  })),
+);
+const VegTiffinServiceIndorePage = lazy(() =>
+  import('./pages/VegTiffinServiceIndorePage').then((module) => ({
+    default: module.VegTiffinServiceIndorePage,
+  })),
+);
+const OfficeLunchDeliveryIndorePage = lazy(() =>
+  import('./pages/OfficeLunchDeliveryIndorePage').then((module) => ({
+    default: module.OfficeLunchDeliveryIndorePage,
+  })),
+);
+const DailyThaliNearSiliconRoadPage = lazy(() =>
+  import('./pages/DailyThaliNearSiliconRoadPage').then((module) => ({
+    default: module.DailyThaliNearSiliconRoadPage,
+  })),
+);
 const AdminPage = lazy(() => import('./pages/AdminPage').then((module) => ({ default: module.AdminPage })));
 const AdminIndexRedirect = lazy(() =>
   import('./pages/AdminPage').then((module) => ({ default: module.AdminIndexRedirect })),
@@ -79,6 +101,9 @@ const AdminSectionsPage = lazy(() =>
 const AdminOrdersPage = lazy(() =>
   import('./pages/admin/AdminOrdersPage').then((module) => ({ default: module.AdminOrdersPage })),
 );
+const AdminKitchenPage = lazy(() =>
+  import('./pages/admin/AdminKitchenPage').then((module) => ({ default: module.AdminKitchenPage })),
+);
 const AdminCategoriesPage = lazy(() =>
   import('./pages/admin/AdminCategoriesPage').then((module) => ({
     default: module.AdminCategoriesPage,
@@ -100,6 +125,20 @@ const NotFoundPage = lazy(() =>
 const CustomerLayout = () => {
   const { appConfig, settings } = useAppData();
   const location = useLocation();
+  const [checkoutRecovery, setCheckoutRecovery] = useState(null);
+
+  useEffect(() => {
+    setCheckoutRecovery(readCheckoutRecovery());
+  }, [location.pathname]);
+
+  useEffect(() => {
+    const syncRecovery = () => {
+      setCheckoutRecovery(readCheckoutRecovery());
+    };
+
+    window.addEventListener('storage', syncRecovery);
+    return () => window.removeEventListener('storage', syncRecovery);
+  }, []);
 
   return (
     <div className="app-shell">
@@ -114,6 +153,15 @@ const CustomerLayout = () => {
         enabled={location.pathname === '/' && appConfig.sections?.popup !== false}
         phoneNumber={settings?.whatsappNumber}
       />
+      {location.pathname !== '/checkout' ? (
+        <CheckoutRecoveryPopup
+          onDismiss={() => {
+            clearCheckoutRecovery();
+            setCheckoutRecovery(null);
+          }}
+          recovery={checkoutRecovery}
+        />
+      ) : null}
       <WhatsAppFab phoneNumber={settings?.whatsappNumber} />
     </div>
   );
@@ -131,6 +179,10 @@ const AnimatedRoutes = () => {
             <Route path="/menu" element={<MenuPage />} />
             <Route path="/monthly-thali-plan-indore" element={<MonthlyThaliPlanIndorePage />} />
             <Route path="/tiffin-service-indore" element={<TiffinServiceIndorePage />} />
+            <Route path="/punjabi-food-restaurant-indore" element={<PunjabiFoodRestaurantIndorePage />} />
+            <Route path="/veg-tiffin-service-indore" element={<VegTiffinServiceIndorePage />} />
+            <Route path="/office-lunch-delivery-indore" element={<OfficeLunchDeliveryIndorePage />} />
+            <Route path="/daily-thali-near-silicon-road" element={<DailyThaliNearSiliconRoadPage />} />
             <Route path="/product/:id" element={<ProductDetailPage />} />
             <Route path="/cart" element={<CartPage />} />
             <Route
@@ -186,6 +238,7 @@ const AnimatedRoutes = () => {
             <Route path="theme" element={<AdminThemePage />} />
             <Route path="sections" element={<AdminSectionsPage />} />
             <Route path="orders" element={<AdminOrdersPage />} />
+            <Route path="kitchen" element={<AdminKitchenPage />} />
             <Route path="categories" element={<AdminCategoriesPage />} />
             <Route path="delivery" element={<AdminDeliveryPage />} />
             <Route path="users" element={<AdminUsersPage />} />

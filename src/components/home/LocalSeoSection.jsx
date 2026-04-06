@@ -7,6 +7,8 @@ import { resolveStoreTimings } from '../../utils/storefront';
 
 export const LocalSeoSection = () => {
   const { settings } = useAppData();
+  const googleBusiness = settings?.storefront?.googleBusinessProfile || {};
+  const reviewUrl = googleBusiness.reviewUrl;
 
   return (
     <section className="section local-seo-section">
@@ -56,6 +58,12 @@ export const LocalSeoSection = () => {
             <Link className="btn btn-secondary" to="/tiffin-service-indore">
               Read about Tiffin Service
             </Link>
+            <Link className="btn btn-secondary" to="/office-lunch-delivery-indore">
+              Office lunch delivery
+            </Link>
+            <Link className="btn btn-secondary" to="/daily-thali-near-silicon-road">
+              Daily thali near Silicon Road
+            </Link>
             <a
               className="text-link"
               href={createWhatsAppLink(settings?.whatsappNumber, createGeneralOrderMessage())}
@@ -64,6 +72,11 @@ export const LocalSeoSection = () => {
             >
               Order on WhatsApp
             </a>
+            {reviewUrl ? (
+              <a className="text-link" href={reviewUrl} rel="noreferrer" target="_blank">
+                Leave a Google review
+              </a>
+            ) : null}
           </div>
         </div>
       </div>

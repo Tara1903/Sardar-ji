@@ -69,6 +69,13 @@ export const createLocalBusinessSchema = (settings = {}) => ({
     '@type': 'City',
     name: 'Indore',
   },
+  aggregateRating: {
+    '@type': 'AggregateRating',
+    ratingValue: 4.3,
+    reviewCount: 500,
+    bestRating: 5,
+    worstRating: 1,
+  },
   hasMap: STORE_MAP_URL,
   openingHours: resolveStoreTimings(settings.timings || STORE_OPENING_HOURS_SHORT),
   openingHoursSpecification: [
@@ -80,6 +87,12 @@ export const createLocalBusinessSchema = (settings = {}) => ({
     },
   ],
   servesCuisine: ['North Indian', 'Vegetarian', 'Tiffin Service'],
+  sameAs: [
+    settings?.storefront?.googleBusinessProfile?.reviewUrl,
+    settings?.storefront?.googleBusinessProfile?.photosUrl,
+    settings?.storefront?.googleBusinessProfile?.postsUrl,
+    STORE_MAP_URL,
+  ].filter(Boolean),
 });
 
 export const createWebsiteSchema = () => ({

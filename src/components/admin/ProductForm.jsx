@@ -1,5 +1,16 @@
 import { useEffect, useRef, useState } from 'react';
 import { getFallbackImage } from '../../data/fallbackImages';
+import { defaultAvailabilitySchedule, normalizeAvailabilitySchedule } from '../../utils/availability';
+
+const scheduleDays = [
+  ['mon', 'Mon'],
+  ['tue', 'Tue'],
+  ['wed', 'Wed'],
+  ['thu', 'Thu'],
+  ['fri', 'Fri'],
+  ['sat', 'Sat'],
+  ['sun', 'Sun'],
+];
 
 export const ProductForm = ({
   categories,
@@ -18,6 +29,7 @@ export const ProductForm = ({
     isAvailable: true,
     image: '',
     imageFile: null,
+    availabilitySchedule: defaultAvailabilitySchedule,
   });
   const [previewImage, setPreviewImage] = useState('');
   const [objectUrl, setObjectUrl] = useState('');
@@ -28,6 +40,7 @@ export const ProductForm = ({
           ...initialProduct,
           price: String(initialProduct.price),
           imageFile: null,
+          availabilitySchedule: normalizeAvailabilitySchedule(initialProduct.availabilitySchedule),
         }
       : {
           name: '',
@@ -38,6 +51,7 @@ export const ProductForm = ({
           isAvailable: true,
           image: '',
           imageFile: null,
+          availabilitySchedule: normalizeAvailabilitySchedule(defaultAvailabilitySchedule),
         };
     setFormState(nextState);
     setPreviewImage(nextState.image || getFallbackImage(nextState.category));
@@ -76,6 +90,19 @@ export const ProductForm = ({
     }
 
     const nextValue = type === 'checkbox' ? checked : value;
+
+    if (name.startsWith('schedule.')) {
+      const scheduleKey = name.replace('schedule.', '');
+      setFormState((current) => ({
+        ...current,
+        availabilitySchedule: normalizeAvailabilitySchedule({
+          ...current.availabilitySchedule,
+          [scheduleKey]: nextValue,
+        }),
+      }));
+      return;
+    }
+
     setFormState((current) => ({
       ...current,
       [name]: nextValue,
@@ -148,6 +175,76 @@ export const ProductForm = ({
           <input checked={Boolean(formState.isAvailable)} name="isAvailable" onChange={handleChange} type="checkbox" />
           <span>Available for ordering</span>
         </label>
+
+        <div className="admin-subsection">
+          <label className="availability-toggle admin-toggle-row">
+            <input
+              checked={Boolean(formState.availabilitySchedule?.enabled)}
+              name="schedule.enabled"
+              onChange={handleChange}
+              type="checkbox"
+            />
+            <span>Use out-of-stock schedule</span>
+          </label>
+
+          {formState.availabilitySchedule?.enabled ? (
+            <>
+              <div className="admin-day-grid">
+                {scheduleDays.map(([value, label]) => {
+                  const isChecked = formState.availabilitySchedule?.days?.includes(value);
+
+                  return (
+                    <label className="admin-day-pill" key={value}>
+                      <input
+                        checked={isChecked}
+                        onChange={(event) => {
+                          setFormState((current) => {
+                            const currentDays = current.availabilitySchedule?.days || [];
+                            const nextDays = event.target.checked
+                              ? [...new Set([...currentDays, value])]
+                              : currentDays.filter((day) => day !== value);
+
+                            return {
+                              ...current,
+                              availabilitySchedule: normalizeAvailabilitySchedule({
+                                ...current.availabilitySchedule,
+                                days: nextDays,
+                              }),
+                            };
+                          });
+                        }}
+                        type="checkbox"
+                      />
+                      <span>{label}</span>
+                    </label>
+                  );
+                })}
+              </div>
+
+              <div className="admin-inline-grid">
+                <label>
+                  Start time
+                  <input
+                    name="schedule.startTime"
+                    onChange={handleChange}
+                    type="time"
+                    value={formState.availabilitySchedule?.startTime || '08:00'}
+                  />
+                </label>
+
+                <label>
+                  End time
+                  <input
+                    name="schedule.endTime"
+                    onChange={handleChange}
+                    type="time"
+                    value={formState.availabilitySchedule?.endTime || '23:00'}
+                  />
+                </label>
+              </div>
+            </>
+          ) : null}
+        </div>
       </div>
 
       <div className="image-preview admin-preview-frame">

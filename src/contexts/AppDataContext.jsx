@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { api } from '../api/client';
 import { applyThemeToDocument, createAppConfig } from '../theme/theme';
+import { applyProductAvailabilitySchedule } from '../utils/availability';
 
 const AppDataContext = createContext(null);
 
@@ -19,7 +20,8 @@ export const AppDataProvider = ({ children }) => {
         api.getCategories(),
         api.getSettings(),
       ]);
-      setProducts(productsResponse);
+      const scheduleMap = settingsResponse?.storefront?.productAvailabilitySchedules || {};
+      setProducts(productsResponse.map((product) => applyProductAvailabilitySchedule(product, scheduleMap)));
       setCategories(categoriesResponse);
       setSettings(settingsResponse);
       setError('');
@@ -67,6 +69,17 @@ export const AppDataProvider = ({ children }) => {
       refreshCatalog: loadAppData,
       refreshSettings: async () => {
         const nextSettings = await api.getSettings();
+        setProducts((current) =>
+          current.map((product) =>
+            applyProductAvailabilitySchedule(
+              {
+                ...product,
+                isAvailable: product.baseIsAvailable ?? product.isAvailable,
+              },
+              nextSettings?.storefront?.productAvailabilitySchedules || {},
+            ),
+          ),
+        );
         setSettings(nextSettings);
         return nextSettings;
       },

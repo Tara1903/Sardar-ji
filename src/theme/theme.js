@@ -106,6 +106,15 @@ export const defaultStorefrontConfig = {
   reviews: defaultReviews,
   sections: defaultSectionVisibility,
   categoryImages: {},
+  productAvailabilitySchedules: {},
+  comboOffers: [],
+  googleBusinessProfile: {
+    menuUrl: '/menu',
+    orderUrl: '/menu',
+    photosUrl: '',
+    postsUrl: '',
+    reviewUrl: '',
+  },
 };
 
 const clamp = (value) => Math.max(0, Math.min(255, value));
@@ -251,6 +260,12 @@ export const mergeStorefrontConfig = (storefront = {}) => {
       ...(storefront.sections || {}),
     },
     categoryImages: storefront.categoryImages || {},
+    productAvailabilitySchedules: storefront.productAvailabilitySchedules || {},
+    comboOffers: Array.isArray(storefront.comboOffers) ? storefront.comboOffers : [],
+    googleBusinessProfile: {
+      ...defaultStorefrontConfig.googleBusinessProfile,
+      ...(storefront.googleBusinessProfile || {}),
+    },
   };
 };
 
@@ -361,6 +376,8 @@ export const createAppConfig = ({ categories = [], products = [], settings = nul
     popup: storefront.popup,
     reviews: storefront.reviews,
     sections: storefront.sections,
+    comboOffers: storefront.comboOffers,
+    googleBusinessProfile: storefront.googleBusinessProfile,
   };
 };
 

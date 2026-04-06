@@ -76,3 +76,12 @@ export const verifyRazorpaySignature = ({ orderId, paymentId, signature }) => {
 
   return expectedSignature === signature;
 };
+
+export const verifyRazorpayWebhookSignature = ({ body, signature, secret }) => {
+  if (!signature || !secret) {
+    return false;
+  }
+
+  const expectedSignature = crypto.createHmac('sha256', secret).update(body).digest('hex');
+  return expectedSignature === signature;
+};

@@ -2,6 +2,7 @@ import { Bike, LayoutDashboard, MapPin, ShoppingBasket, Users } from 'lucide-rea
 import { useMemo } from 'react';
 import { useAdmin } from '../../contexts/AdminContext';
 import { formatDateTime } from '../../utils/format';
+import { publicEnv, publicEnvFlags } from '../../lib/env';
 
 const visibilitySummary = [
   ['hero', 'Hero'],
@@ -40,6 +41,9 @@ export const AdminDashboardPage = () => {
   }
 
   const sections = settingsDraft.storefront?.sections || {};
+  const googleBusiness = settingsDraft.storefront?.googleBusinessProfile || {};
+  const hasGa = publicEnvFlags.hasGoogleAnalytics;
+  const hasSearchConsole = Boolean(publicEnv.googleSiteVerification);
 
   return (
     <section className="admin-dashboard-stack">
@@ -262,6 +266,160 @@ export const AdminDashboardPage = () => {
           </label>
         </div>
       </article>
+
+      <div className="admin-page-grid">
+        <article className="panel-card admin-card-section">
+          <div className="section-heading compact">
+            <div>
+              <p className="eyebrow">Google Business Profile</p>
+              <h2>Local discovery links used across the website</h2>
+            </div>
+          </div>
+
+          <div className="admin-form-stack">
+            <label>
+              Menu link
+              <input
+                onChange={(event) =>
+                  updateSettingsDraftValue((current) => ({
+                    ...current,
+                    storefront: {
+                      ...(current?.storefront || {}),
+                      googleBusinessProfile: {
+                        ...(current?.storefront?.googleBusinessProfile || {}),
+                        menuUrl: event.target.value,
+                      },
+                    },
+                  }))
+                }
+                value={googleBusiness.menuUrl || ''}
+              />
+            </label>
+
+            <label>
+              Order link
+              <input
+                onChange={(event) =>
+                  updateSettingsDraftValue((current) => ({
+                    ...current,
+                    storefront: {
+                      ...(current?.storefront || {}),
+                      googleBusinessProfile: {
+                        ...(current?.storefront?.googleBusinessProfile || {}),
+                        orderUrl: event.target.value,
+                      },
+                    },
+                  }))
+                }
+                value={googleBusiness.orderUrl || ''}
+              />
+            </label>
+
+            <label>
+              Photos link
+              <input
+                onChange={(event) =>
+                  updateSettingsDraftValue((current) => ({
+                    ...current,
+                    storefront: {
+                      ...(current?.storefront || {}),
+                      googleBusinessProfile: {
+                        ...(current?.storefront?.googleBusinessProfile || {}),
+                        photosUrl: event.target.value,
+                      },
+                    },
+                  }))
+                }
+                value={googleBusiness.photosUrl || ''}
+              />
+            </label>
+
+            <label>
+              Posts link
+              <input
+                onChange={(event) =>
+                  updateSettingsDraftValue((current) => ({
+                    ...current,
+                    storefront: {
+                      ...(current?.storefront || {}),
+                      googleBusinessProfile: {
+                        ...(current?.storefront?.googleBusinessProfile || {}),
+                        postsUrl: event.target.value,
+                      },
+                    },
+                  }))
+                }
+                value={googleBusiness.postsUrl || ''}
+              />
+            </label>
+
+            <label>
+              Review collection link
+              <input
+                onChange={(event) =>
+                  updateSettingsDraftValue((current) => ({
+                    ...current,
+                    storefront: {
+                      ...(current?.storefront || {}),
+                      googleBusinessProfile: {
+                        ...(current?.storefront?.googleBusinessProfile || {}),
+                        reviewUrl: event.target.value,
+                      },
+                    },
+                  }))
+                }
+                value={googleBusiness.reviewUrl || ''}
+              />
+            </label>
+          </div>
+
+          <div className="admin-button-stack">
+            <button
+              className="btn btn-primary"
+              disabled={savingSettings}
+              onClick={() => saveSettings(settingsDraft)}
+              type="button"
+            >
+              {savingSettings ? 'Saving...' : 'Save Google Business links'}
+            </button>
+          </div>
+        </article>
+
+        <article className="panel-card admin-card-section">
+          <div className="section-heading compact">
+            <div>
+              <p className="eyebrow">SEO dashboards</p>
+              <h2>Search Console and GA4 readiness</h2>
+            </div>
+          </div>
+
+          <div className="stack-list">
+            <div className="admin-status-row">
+              <span>Google Analytics</span>
+              <strong>{hasGa ? 'Connected' : 'Env missing'}</strong>
+            </div>
+            <div className="admin-status-row">
+              <span>Search Console verification</span>
+              <strong>{hasSearchConsole ? 'Configured' : 'Env missing'}</strong>
+            </div>
+          </div>
+
+          <div className="admin-button-stack">
+            <a className="btn btn-secondary" href="https://analytics.google.com/" rel="noreferrer" target="_blank">
+              Open GA4 dashboard
+            </a>
+            <a className="btn btn-secondary" href="https://search.google.com/search-console" rel="noreferrer" target="_blank">
+              Open Search Console
+            </a>
+          </div>
+          {!hasGa || !hasSearchConsole ? (
+            <p className="hint">
+              Add <code>VITE_GA_MEASUREMENT_ID</code> and <code>VITE_GOOGLE_SITE_VERIFICATION</code> in
+              Vercel to complete live SEO tracking.
+            </p>
+          ) : null}
+        </article>
+      </div>
     </section>
   );
 };

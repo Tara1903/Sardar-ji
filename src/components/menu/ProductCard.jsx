@@ -6,6 +6,7 @@ import { SmartImage } from '../common/SmartImage';
 import { formatCurrency } from '../../utils/format';
 import { createProductOrderMessage, createWhatsAppLink } from '../../utils/whatsapp';
 import { STORE_AVERAGE_RATING } from '../../utils/catalog';
+import { trackWhatsAppClick } from '../../utils/analytics';
 
 export const ProductCard = ({ product, whatsappNumber, variant = 'default' }) => {
   const { addToCart, updateQuantity, getItemQuantity } = useCart();
@@ -78,6 +79,13 @@ export const ProductCard = ({ product, whatsappNumber, variant = 'default' }) =>
               whatsappNumber,
               createProductOrderMessage(product.name, product.price),
             )}
+            onClick={() =>
+              trackWhatsAppClick({
+                source: 'product-card',
+                label: product.name,
+                value: product.price,
+              })
+            }
             rel="noreferrer"
             target="_blank"
           >

@@ -161,12 +161,38 @@ export const AdminProvider = ({ children }) => {
         badge: formState.badge,
         isAvailable: Boolean(formState.isAvailable),
         image: imageUrl || '',
+        availabilitySchedule: formState.availabilitySchedule,
       };
 
+      let savedProduct;
+
       if (editingProduct?.id) {
-        await api.updateProduct(editingProduct.id, payload, token);
+        savedProduct = await api.updateProduct(editingProduct.id, payload, token);
       } else {
-        await api.createProduct(payload, token);
+        savedProduct = await api.createProduct(payload, token);
+      }
+
+      const nextScheduleMap = {
+        ...(settings?.storefront?.productAvailabilitySchedules || {}),
+      };
+
+      if (formState.availabilitySchedule?.enabled) {
+        nextScheduleMap[savedProduct.id] = formState.availabilitySchedule;
+      } else {
+        delete nextScheduleMap[savedProduct.id];
+      }
+
+      if (JSON.stringify(nextScheduleMap) !== JSON.stringify(settings?.storefront?.productAvailabilitySchedules || {})) {
+        const nextSettings = await api.updateSettings(
+          {
+            storefront: {
+              ...(settings?.storefront || {}),
+              productAvailabilitySchedules: nextScheduleMap,
+            },
+          },
+          token,
+        );
+        setSettings(nextSettings);
       }
 
       await refreshCatalog();

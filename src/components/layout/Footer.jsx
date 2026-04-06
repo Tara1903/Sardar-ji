@@ -6,13 +6,25 @@ import { BrandLockup } from '../brand/BrandLockup';
 import {
   STORE_ADDRESS,
   STORE_ADDRESS_SHORT,
+  STORE_GOOGLE_PHOTOS_URL,
+  STORE_GOOGLE_POSTS_URL,
+  STORE_GOOGLE_REVIEW_URL,
   STORE_MAP_URL,
   resolveStoreTimings,
 } from '../../utils/storefront';
+import { trackWhatsAppClick } from '../../utils/analytics';
 
-export const Footer = ({ settings }) => (
-  <footer className="site-footer">
-    <div className="container footer-grid">
+export const Footer = ({ settings }) => {
+  const googleBusiness = settings?.storefront?.googleBusinessProfile || {};
+  const menuUrl = googleBusiness.menuUrl || '/menu';
+  const orderUrl = googleBusiness.orderUrl || '/checkout';
+  const photosUrl = googleBusiness.photosUrl || STORE_GOOGLE_PHOTOS_URL;
+  const postsUrl = googleBusiness.postsUrl || STORE_GOOGLE_POSTS_URL;
+  const reviewUrl = googleBusiness.reviewUrl || STORE_GOOGLE_REVIEW_URL;
+
+  return (
+    <footer className="site-footer">
+      <div className="container footer-grid">
       <div className="footer-branding">
         <BrandLockup
           className="footer-brand"
@@ -52,7 +64,32 @@ export const Footer = ({ settings }) => (
           <Link to="/menu">Menu</Link>
           <Link to="/monthly-thali-plan-indore">Monthly Plan</Link>
           <Link to="/tiffin-service-indore">Tiffin Service</Link>
+          <Link to="/punjabi-food-restaurant-indore">Punjabi Food</Link>
+          <Link to="/veg-tiffin-service-indore">Veg Tiffin</Link>
+          <Link to="/office-lunch-delivery-indore">Office Lunch</Link>
+          <Link to="/daily-thali-near-silicon-road">Daily Thali</Link>
           <Link to="/cart">Cart</Link>
+        </div>
+      </div>
+
+      <div>
+        <h4>Google Business</h4>
+        <div className="footer-links">
+          <a href={menuUrl} rel="noreferrer" target="_blank">
+            Menu link
+          </a>
+          <a href={orderUrl} rel="noreferrer" target="_blank">
+            Order link
+          </a>
+          <a href={photosUrl} rel="noreferrer" target="_blank">
+            Photos
+          </a>
+          <a href={postsUrl} rel="noreferrer" target="_blank">
+            Posts
+          </a>
+          <a href={reviewUrl} rel="noreferrer" target="_blank">
+            Leave a review
+          </a>
         </div>
       </div>
 
@@ -65,6 +102,12 @@ export const Footer = ({ settings }) => (
               settings?.whatsappNumber || DEFAULT_WHATSAPP_NUMBER,
               createGeneralOrderMessage(),
             )}
+            onClick={() =>
+              trackWhatsAppClick({
+                source: 'footer',
+                label: 'general-order',
+              })
+            }
             rel="noreferrer"
             target="_blank"
           >
@@ -83,6 +126,12 @@ export const Footer = ({ settings }) => (
             settings?.whatsappNumber || DEFAULT_WHATSAPP_NUMBER,
             createGeneralOrderMessage(),
           )}
+          onClick={() =>
+            trackWhatsAppClick({
+              source: 'footer-cta',
+              label: 'general-order',
+            })
+          }
           rel="noreferrer"
           target="_blank"
         >
@@ -90,6 +139,7 @@ export const Footer = ({ settings }) => (
         </a>
         <p className="footer-note">{STORE_ADDRESS}</p>
       </div>
-    </div>
-  </footer>
-);
+      </div>
+    </footer>
+  );
+};

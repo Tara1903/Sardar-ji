@@ -1,7 +1,9 @@
-import { Search } from 'lucide-react';
+import { MessageCircleMore, Search } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useAdmin } from '../../contexts/AdminContext';
 import { formatCurrency, formatDateTime } from '../../utils/format';
+import { createOrderStatusMessage, createWhatsAppLink } from '../../utils/whatsapp';
+import { trackWhatsAppClick } from '../../utils/analytics';
 
 const ORDER_STATUSES = ['Order Placed', 'Preparing', 'Out for Delivery', 'Delivered'];
 
@@ -119,6 +121,22 @@ export const AdminOrdersPage = () => {
               >
                 {updatingOrderId === order.id ? 'Saving...' : 'Save order update'}
               </button>
+              <a
+                className="btn btn-secondary"
+                href={createWhatsAppLink(order.customerPhone, createOrderStatusMessage(order, draft.status))}
+                onClick={() =>
+                  trackWhatsAppClick({
+                    source: 'admin-order-update',
+                    label: order.orderNumber,
+                    value: order.total,
+                  })
+                }
+                rel="noreferrer"
+                target="_blank"
+              >
+                <MessageCircleMore size={16} />
+                Notify customer
+              </a>
             </div>
           );
         })}

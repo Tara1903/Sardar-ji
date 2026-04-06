@@ -3,6 +3,7 @@ import {
   Bike,
   Brush,
   ClipboardList,
+  CookingPot,
   LayoutDashboard,
   LayoutTemplate,
   LogOut,
@@ -102,6 +103,12 @@ const navGroups = [
         description: 'Statuses and delivery assignment',
       },
       {
+        to: '/admin/kitchen',
+        label: 'Kitchen',
+        icon: CookingPot,
+        description: 'Fast prep screen with big status buttons',
+      },
+      {
         to: '/admin/delivery',
         label: 'Delivery',
         icon: Bike,
@@ -169,6 +176,11 @@ const routeMeta = {
     eyebrow: 'Catalog management',
     title: 'Categories and organization',
     description: 'Keep menu sections easy to scan with clean names and images.',
+  },
+  '/admin/kitchen': {
+    eyebrow: 'Operations',
+    title: 'Kitchen prep screen',
+    description: 'Move active orders from placed to preparing to delivery with one tap.',
   },
   '/admin/delivery': {
     eyebrow: 'Operations',

@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import { PageTransition } from '../components/common/PageTransition';
 import { EmptyState } from '../components/common/EmptyState';
 import { SmartImage } from '../components/common/SmartImage';
+import { FrequentlyBoughtTogether } from '../components/menu/FrequentlyBoughtTogether';
 import { ProductCard } from '../components/menu/ProductCard';
 import { SeoMeta } from '../components/seo/SeoMeta';
 import { useAppData } from '../contexts/AppDataContext';
@@ -10,6 +11,7 @@ import { useCart } from '../contexts/CartContext';
 import { formatCurrency } from '../utils/format';
 import { createProductOrderMessage, createWhatsAppLink } from '../utils/whatsapp';
 import { createBreadcrumbSchema } from '../seo/siteSeo';
+import { trackWhatsAppClick } from '../utils/analytics';
 
 export const ProductDetailPage = () => {
   const { id } = useParams();
@@ -34,6 +36,14 @@ export const ProductDetailPage = () => {
   const suggestions = products
     .filter((entry) => entry.category === product.category && entry.id !== product.id)
     .slice(0, 3);
+  const frequentlyBoughtItems = products
+    .filter((entry) => entry.id !== product.id && entry.isAvailable)
+    .sort((left, right) => {
+      const leftScore = Number(left.category === product.category) + Number(/lassi|chaach|beverage/i.test(left.category));
+      const rightScore = Number(right.category === product.category) + Number(/lassi|chaach|beverage/i.test(right.category));
+      return rightScore - leftScore;
+    })
+    .slice(0, 2);
 
   return (
     <PageTransition>
@@ -102,6 +112,13 @@ export const ProductDetailPage = () => {
                   settings?.whatsappNumber,
                   createProductOrderMessage(product.name, product.price),
                 )}
+                onClick={() =>
+                  trackWhatsAppClick({
+                    source: 'product-detail',
+                    label: product.name,
+                    value: product.price,
+                  })
+                }
                 rel="noreferrer"
                 target="_blank"
               >
@@ -113,6 +130,7 @@ export const ProductDetailPage = () => {
               Back to menu
               <ArrowRight size={16} />
             </Link>
+            <FrequentlyBoughtTogether items={frequentlyBoughtItems} />
           </div>
         </div>
       </section>

@@ -1,9 +1,14 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { isMonthlySubscriptionProduct } from '../utils/subscription';
+import { trackAddToCart } from '../utils/analytics';
 
 const CartContext = createContext(null);
 const CART_KEY = 'sardar-ji-cart';
 const sanitizeCartItems = (items = []) => items.filter((item) => !isMonthlySubscriptionProduct(item));
+const normalizeCartItem = (item = {}) => ({
+  ...item,
+  quantity: Math.max(1, Number(item.quantity || 1)),
+});
 
 export const CartProvider = ({ children }) => {
   const [items, setItems] = useState(() => sanitizeCartItems(JSON.parse(localStorage.getItem(CART_KEY) || '[]')));
@@ -17,6 +22,7 @@ export const CartProvider = ({ children }) => {
       return;
     }
 
+    trackAddToCart(product, 1);
     setItems((current) => {
       const existing = current.find((item) => item.id === product.id);
       if (existing) {
@@ -30,6 +36,13 @@ export const CartProvider = ({ children }) => {
   };
 
   const updateQuantity = (id, quantity) => {
+    if (quantity > (items.find((item) => item.id === id)?.quantity || 0)) {
+      const item = items.find((entry) => entry.id === id);
+      if (item) {
+        trackAddToCart(item, 1);
+      }
+    }
+
     setItems((current) =>
       current
         .map((item) => (item.id === id ? { ...item, quantity } : item))
@@ -43,6 +56,34 @@ export const CartProvider = ({ children }) => {
 
   const clearCart = () => setItems([]);
 
+  const replaceCart = (nextItems = []) => {
+    setItems(sanitizeCartItems(nextItems).map(normalizeCartItem));
+  };
+
+  const addItemsToCart = (nextItems = [], { replace = false } = {}) => {
+    setItems((current) => {
+      const baseItems = replace ? [] : [...current];
+      const merged = [...baseItems];
+
+      sanitizeCartItems(nextItems).forEach((incomingItem) => {
+        const normalizedItem = normalizeCartItem(incomingItem);
+        const existingIndex = merged.findIndex((item) => item.id === normalizedItem.id);
+
+        if (existingIndex >= 0) {
+          merged[existingIndex] = {
+            ...merged[existingIndex],
+            quantity: merged[existingIndex].quantity + normalizedItem.quantity,
+          };
+          return;
+        }
+
+        merged.push(normalizedItem);
+      });
+
+      return merged;
+    });
+  };
+
   const getItemQuantity = (id) => items.find((item) => item.id === id)?.quantity || 0;
 
   const value = useMemo(
@@ -54,6 +95,8 @@ export const CartProvider = ({ children }) => {
       updateQuantity,
       removeFromCart,
       clearCart,
+      replaceCart,
+      addItemsToCart,
       getItemQuantity,
     }),
     [items],

@@ -9,12 +9,13 @@ import { CategoryShowcase } from '../components/home/CategoryShowcase';
 import { ProductCard } from '../components/menu/ProductCard';
 import { SeoMeta } from '../components/seo/SeoMeta';
 import { useAppData } from '../contexts/AppDataContext';
+import { useAuth } from '../contexts/AuthContext';
 import { useCart } from '../contexts/CartContext';
-import { sortProductsByCategoryAndPrice } from '../utils/catalog';
+import { createComboOffers, sortProductsByCategoryAndPrice } from '../utils/catalog';
 import { formatCurrency } from '../utils/format';
 import { getCartOfferState } from '../utils/pricing';
 import { useStoreDistance } from '../hooks/useStoreDistance';
-import { createBreadcrumbSchema } from '../seo/siteSeo';
+import { createBreadcrumbSchema, createFaqSchema } from '../seo/siteSeo';
 
 const priceFilters = [
   { label: 'All prices', value: 'all' },
@@ -25,13 +26,32 @@ const priceFilters = [
 
 export const MenuPage = () => {
   const { appConfig, products, categories, settings, loading } = useAppData();
-  const { itemCount, items } = useCart();
+  const { isAuthenticated } = useAuth();
+  const { addItemsToCart, itemCount, items } = useCart();
   const { distanceKm, locationStatus, isLocating } = useStoreDistance();
   const [search, setSearch] = useState('');
   const [activeCategory, setActiveCategory] = useState('All');
   const [priceFilter, setPriceFilter] = useState('all');
   const deferredSearch = useDeferredValue(search);
   const offersConfig = appConfig.offers || {};
+  const comboOffers = useMemo(() => createComboOffers(products), [products]);
+  const faqItems = [
+    {
+      question: 'Is the full menu pure veg?',
+      answer:
+        'Yes, the menu is organized as a pure veg food delivery menu for Indore customers, including thalis, parathas, snacks, and beverages.',
+    },
+    {
+      question: 'Can I get free delivery in Indore?',
+      answer:
+        'Orders above ₹299 can unlock free or discounted delivery depending on your distance, and orders above ₹499 unlock free delivery plus a free mango juice.',
+    },
+    {
+      question: 'Can I order on WhatsApp if I do not want to finish checkout online?',
+      answer:
+        'Yes, every major order flow includes a WhatsApp fallback so customers can continue ordering even if they prefer chat support.',
+    },
+  ];
 
   const filteredProducts = useMemo(() => {
     const matchingProducts = products.filter((product) => {
@@ -83,10 +103,13 @@ export const MenuPage = () => {
           'pure veg food delivery Indore',
         ]}
         path="/menu"
-        schema={createBreadcrumbSchema([
-          { name: 'Home', path: '/' },
-          { name: 'Menu', path: '/menu' },
-        ])}
+        schema={[
+          createBreadcrumbSchema([
+            { name: 'Home', path: '/' },
+            { name: 'Menu', path: '/menu' },
+          ]),
+          createFaqSchema(faqItems),
+        ]}
         settings={settings}
         title="Food Delivery Menu in Indore"
       />
@@ -176,6 +199,16 @@ export const MenuPage = () => {
               tone="accent"
             />
 
+            {!isAuthenticated ? (
+              <PromoBanner
+                className="first-order-banner"
+                description="Create an account once, save your address, and make repeat orders much faster from cart, checkout, and WhatsApp."
+                eyebrow="First order perk"
+                title="New customer? Start with our fastest-moving veg dishes"
+                tone="success"
+              />
+            ) : null}
+
             {loading ? (
               <SkeletonGrid count={8} />
             ) : filteredProducts.length ? (
@@ -190,6 +223,38 @@ export const MenuPage = () => {
                 description="Try another search term or reset the category and price filters."
               />
             )}
+
+            {comboOffers.length ? (
+              <div className="combo-offer-grid">
+                {comboOffers.map((combo) => (
+                  <article className="panel-card combo-offer-card" key={combo.id}>
+                    <p className="eyebrow">Combo pick</p>
+                    <h3>{combo.title}</h3>
+                    <p>{combo.description}</p>
+                    <strong>{formatCurrency(combo.total)}</strong>
+                    <div className="subscription-action-row">
+                      <button
+                        className="btn btn-primary"
+                        onClick={() =>
+                          addItemsToCart(
+                            combo.items.map((item) => ({
+                              ...item,
+                              quantity: 1,
+                            })),
+                          )
+                        }
+                        type="button"
+                      >
+                        Add combo
+                      </button>
+                      <Link className="btn btn-secondary" to="/cart">
+                        Open cart
+                      </Link>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            ) : null}
           </div>
 
           <aside className="summary-card sticky menu-cart-panel">

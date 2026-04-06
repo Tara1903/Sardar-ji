@@ -23,6 +23,7 @@ export default async function handler(req, res) {
         user_id: user.id,
         customer_email: user.email || '',
         customer_name: body.customerName || user.user_metadata?.name || '',
+        customer_phone: body.phoneNumber || user.user_metadata?.phoneNumber || '',
       },
     });
 

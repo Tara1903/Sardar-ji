@@ -7,9 +7,12 @@ import { EmptyState } from '../components/common/EmptyState';
 import { Loader } from '../components/common/Loader';
 import { PromoBanner } from '../components/common/PromoBanner';
 import { OrderTimeline } from '../components/order/OrderTimeline';
+import { ReviewRequestCard } from '../components/order/ReviewRequestCard';
 import { TrackingMap } from '../components/order/TrackingMap';
 import { SeoMeta } from '../components/seo/SeoMeta';
 import { formatDateTime, formatEtaLabel } from '../utils/format';
+import { STORE_GOOGLE_REVIEW_URL } from '../utils/storefront';
+import { useOrderStatusNotifications } from '../hooks/useOrderStatusNotifications';
 
 export const TrackOrderPage = () => {
   const { orderId } = useParams();
@@ -32,6 +35,8 @@ export const TrackOrderPage = () => {
     const intervalId = window.setInterval(loadTracking, 4000);
     return () => window.clearInterval(intervalId);
   }, [orderId]);
+
+  useOrderStatusNotifications(order);
 
   if (error) {
     return (
@@ -85,6 +90,11 @@ export const TrackOrderPage = () => {
             <TrackingMap location={order.tracking?.currentLocation} />
           </div>
         </div>
+        {order.status === 'Delivered' ? (
+          <div className="container tracking-review-wrap">
+            <ReviewRequestCard orderId={order.id} reviewUrl={STORE_GOOGLE_REVIEW_URL} source="tracking-page" />
+          </div>
+        ) : null}
       </section>
     </PageTransition>
   );

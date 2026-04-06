@@ -33,6 +33,10 @@ const coordinateQuery = `${RESTAURANT_LOCATION.lat},${RESTAURANT_LOCATION.lng}`;
 
 export const STORE_MAP_EMBED_URL = `https://www.google.com/maps?q=${coordinateQuery}&z=15&output=embed`;
 export const STORE_MAP_URL = `https://www.google.com/maps?q=${coordinateQuery}`;
+export const STORE_GOOGLE_REVIEW_URL =
+  'https://www.google.com/search?q=Sardar+Ji+Food+Corner+Indore+reviews';
+export const STORE_GOOGLE_PHOTOS_URL = STORE_MAP_URL;
+export const STORE_GOOGLE_POSTS_URL = STORE_MAP_URL;
 
 export const CUSTOMER_REVIEWS = [
   {

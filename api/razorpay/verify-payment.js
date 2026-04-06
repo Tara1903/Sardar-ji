@@ -1,7 +1,12 @@
 import {
+  getRazorpayConfig,
   getRazorpayPayment,
   verifyRazorpaySignature,
 } from '../_lib/razorpay.js';
+import {
+  finalizeFoodOrderPayment,
+  finalizeSubscriptionPayment,
+} from '../_lib/payment-finalizer.js';
 import { readJsonBody, requireAuthenticatedUser, sendJson } from '../_lib/server.js';
 
 export default async function handler(req, res) {
@@ -10,12 +15,16 @@ export default async function handler(req, res) {
   }
 
   try {
-    await requireAuthenticatedUser(req);
+    const authUser = await requireAuthenticatedUser(req);
     const body = await readJsonBody(req);
     const razorpayPaymentId = String(body.razorpayPaymentId || '').trim();
     const razorpayOrderId = String(body.razorpayOrderId || '').trim();
     const razorpaySignature = String(body.razorpaySignature || '').trim();
     const expectedAmount = Number(body.amount || 0);
+    const authorization = req.headers.authorization || req.headers.Authorization || '';
+    const token = authorization.toLowerCase().startsWith('bearer ')
+      ? authorization.slice(7).trim()
+      : '';
 
     if (!razorpayPaymentId || !razorpayOrderId || !razorpaySignature) {
       return sendJson(res, 400, { message: 'Payment verification details are incomplete.' });
@@ -47,6 +56,26 @@ export default async function handler(req, res) {
       });
     }
 
+    let fulfillment = null;
+    const purpose = body.purpose === 'monthly-subscription' ? 'monthly-subscription' : body.purpose === 'food-order' ? 'food-order' : '';
+
+    if (purpose === 'food-order' && body.payload && token) {
+      fulfillment = await finalizeFoodOrderPayment({
+        authUser,
+        payment,
+        payload: body.payload,
+        token,
+      });
+    }
+
+    if (purpose === 'monthly-subscription' && token) {
+      fulfillment = await finalizeSubscriptionPayment({
+        authUser,
+        payment,
+        token,
+      });
+    }
+
     return sendJson(res, 200, {
       verified: true,
       paymentId: payment.id,
@@ -54,6 +83,11 @@ export default async function handler(req, res) {
       status: payment.status,
       amount: payment.amount,
       method: payment.method || '',
+      purpose,
+      order: fulfillment?.order || null,
+      subscription: fulfillment?.subscription || null,
+      alreadyProcessed: Boolean(fulfillment?.alreadyProcessed),
+      keyId: getRazorpayConfig().keyId,
     });
   } catch (error) {
     return sendJson(res, error.statusCode || 500, {

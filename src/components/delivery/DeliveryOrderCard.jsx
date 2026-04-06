@@ -1,5 +1,7 @@
-import { MapPinned, PackageCheck, Truck } from 'lucide-react';
+import { MapPinned, MessageCircleMore, PackageCheck, Truck } from 'lucide-react';
 import { formatCurrency } from '../../utils/format';
+import { createOrderStatusMessage, createWhatsAppLink } from '../../utils/whatsapp';
+import { trackWhatsAppClick } from '../../utils/analytics';
 
 export const DeliveryOrderCard = ({
   order,
@@ -51,5 +53,22 @@ export const DeliveryOrderCard = ({
       <MapPinned size={16} />
       {trackingOrderId === order.id ? 'Sharing live location' : 'Start live tracking'}
     </button>
+
+    <a
+      className="btn btn-secondary full-width"
+      href={createWhatsAppLink(order.customerPhone, createOrderStatusMessage(order, order.status))}
+      onClick={() =>
+        trackWhatsAppClick({
+          source: 'delivery-order-update',
+          label: order.orderNumber,
+          value: order.total,
+        })
+      }
+      rel="noreferrer"
+      target="_blank"
+    >
+      <MessageCircleMore size={16} />
+      Update customer on WhatsApp
+    </a>
   </article>
 );

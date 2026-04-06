@@ -20,12 +20,15 @@ import {
 import { createSubscriptionPaymentMessage, createWhatsAppLink } from '../utils/whatsapp';
 import { useAuth } from '../contexts/AuthContext';
 import { createBreadcrumbSchema } from '../seo/siteSeo';
+import { trackPaymentSuccess, trackSubscriptionPurchase } from '../utils/analytics';
+import { useCart } from '../contexts/CartContext';
 
 export const SubscriptionPage = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { token, user } = useAuth();
-  const { settings } = useAppData();
+  const { token, user, updateSubscriptionPreferences } = useAuth();
+  const { settings, products } = useAppData();
+  const { addItemsToCart } = useCart();
   const [subscription, setSubscription] = useState(null);
   const [loading, setLoading] = useState(true);
   const [subscribing, setSubscribing] = useState(false);
@@ -34,6 +37,9 @@ export const SubscriptionPage = () => {
   const [paymentConfirmed, setPaymentConfirmed] = useState(false);
   const [redirectSeconds, setRedirectSeconds] = useState(3);
   const [showSuccessPopup, setShowSuccessPopup] = useState(false);
+  const [pauseUntil, setPauseUntil] = useState(user?.subscriptionMeta?.pausedUntil || '');
+  const [skipDate, setSkipDate] = useState('');
+  const [holidayDate, setHolidayDate] = useState('');
   const paymentSectionRef = useRef(null);
   const redirectTimeoutRef = useRef(null);
   const redirectIntervalRef = useRef(null);
@@ -114,6 +120,34 @@ export const SubscriptionPage = () => {
     navigate('/my-subscription', { replace: true });
   };
 
+  const handleQuickReorder = () => {
+    const thaliProduct = products.find(
+      (product) => product.isAvailable && /thali/i.test(`${product.category} ${product.name}`),
+    );
+
+    if (!thaliProduct) {
+      navigate('/menu');
+      return;
+    }
+
+    addItemsToCart([{ ...thaliProduct, quantity: 1 }], { replace: false });
+    navigate('/cart');
+  };
+
+  const handleSaveSubscriptionPreferences = async (nextPatch = {}) => {
+    const nextMeta = {
+      ...(user?.subscriptionMeta || {}),
+      pausedUntil: nextPatch.pausedUntil ?? pauseUntil,
+      skipDates: nextPatch.skipDates ?? user?.subscriptionMeta?.skipDates ?? [],
+      holidayDates: nextPatch.holidayDates ?? user?.subscriptionMeta?.holidayDates ?? [],
+    };
+
+    await updateSubscriptionPreferences(nextMeta);
+    setPauseUntil(nextMeta.pausedUntil || '');
+    setSkipDate('');
+    setHolidayDate('');
+  };
+
   const handleSubscribe = async () => {
     if (paymentMethod !== 'ONLINE' && !paymentConfirmed) {
       setError('Confirm that the payment is completed before activating the monthly plan.');
@@ -151,15 +185,30 @@ export const SubscriptionPage = () => {
             razorpayPaymentId: checkoutResponse.razorpay_payment_id,
             razorpayOrderId: checkoutResponse.razorpay_order_id,
             razorpaySignature: checkoutResponse.razorpay_signature,
+            purpose: 'monthly-subscription',
           },
           token,
         );
       }
 
-      const response = await api.subscribeToMonthlyPlan(token);
+      const response =
+        paymentMethod === 'ONLINE'
+          ? verifiedPayment?.subscription || (await api.subscribeToMonthlyPlan(token))
+          : await api.subscribeToMonthlyPlan(token);
       setSubscription(response);
       setError('');
       setShowSuccessPopup(true);
+      if (verifiedPayment?.paymentId) {
+        trackPaymentSuccess({
+          paymentId: verifiedPayment.paymentId,
+          purpose: 'monthly-subscription',
+          value: MONTHLY_SUBSCRIPTION_PRICE,
+        });
+      }
+      trackSubscriptionPurchase({
+        value: MONTHLY_SUBSCRIPTION_PRICE,
+        planName: MONTHLY_SUBSCRIPTION_PLAN_NAME,
+      });
       setRedirectSeconds(3);
       if (redirectIntervalRef.current) {
         window.clearInterval(redirectIntervalRef.current);
@@ -246,9 +295,14 @@ export const SubscriptionPage = () => {
 
               <div className="subscription-action-row">
                 {isActive ? (
-                  <Link className="btn btn-primary" to="/profile">
-                    View active plan
-                  </Link>
+                  <>
+                    <Link className="btn btn-primary" to="/profile">
+                      View active plan
+                    </Link>
+                    <button className="btn btn-secondary" onClick={handleQuickReorder} type="button">
+                      Reorder a thali
+                    </button>
+                  </>
                 ) : (
                   <button
                     className="btn btn-primary"
@@ -399,6 +453,94 @@ export const SubscriptionPage = () => {
                 ))}
               </div>
             </div>
+
+            {isActive ? (
+              <div className="panel-card subscription-detail-card">
+                <div className="space-between">
+                  <div>
+                    <p className="eyebrow">Plan controls</p>
+                    <h3>Pause, skip day, or mark holidays</h3>
+                  </div>
+                  <CalendarClock size={18} />
+                </div>
+
+                <div className="admin-form-stack">
+                  <label>
+                    Pause service until
+                    <input
+                      onChange={(event) => setPauseUntil(event.target.value)}
+                      type="date"
+                      value={pauseUntil}
+                    />
+                  </label>
+
+                  <button
+                    className="btn btn-secondary"
+                    onClick={() => handleSaveSubscriptionPreferences({ pausedUntil: pauseUntil })}
+                    type="button"
+                  >
+                    Save pause date
+                  </button>
+
+                  <label>
+                    Skip one day
+                    <div className="coupon-input-row">
+                      <input onChange={(event) => setSkipDate(event.target.value)} type="date" value={skipDate} />
+                      <button
+                        className="btn btn-primary"
+                        onClick={() => {
+                          if (!skipDate) {
+                            return;
+                          }
+                          handleSaveSubscriptionPreferences({
+                            skipDates: [...new Set([...(user?.subscriptionMeta?.skipDates || []), skipDate])],
+                          });
+                        }}
+                        type="button"
+                      >
+                        Add skip day
+                      </button>
+                    </div>
+                  </label>
+
+                  <label>
+                    Holiday pause date
+                    <div className="coupon-input-row">
+                      <input onChange={(event) => setHolidayDate(event.target.value)} type="date" value={holidayDate} />
+                      <button
+                        className="btn btn-primary"
+                        onClick={() => {
+                          if (!holidayDate) {
+                            return;
+                          }
+                          handleSaveSubscriptionPreferences({
+                            holidayDates: [...new Set([...(user?.subscriptionMeta?.holidayDates || []), holidayDate])],
+                          });
+                        }}
+                        type="button"
+                      >
+                        Add holiday
+                      </button>
+                    </div>
+                  </label>
+                </div>
+
+                {(user?.subscriptionMeta?.skipDates?.length || user?.subscriptionMeta?.holidayDates?.length) ? (
+                  <div className="coupon-chip-list">
+                    {(user?.subscriptionMeta?.skipDates || []).map((dateValue) => (
+                      <span className="coupon-chip active" key={`skip-${dateValue}`}>
+                        Skip: {dateValue}
+                      </span>
+                    ))}
+                    {(user?.subscriptionMeta?.holidayDates || []).map((dateValue) => (
+                      <span className="coupon-chip" key={`holiday-${dateValue}`}>
+                        Holiday: {dateValue}
+                      </span>
+                    ))}
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
           </aside>
         </div>
       </section>

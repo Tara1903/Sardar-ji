@@ -92,6 +92,13 @@ export const AuthProvider = ({ children }) => {
     return response.user;
   };
 
+  const updateSubscriptionPreferences = async (payload) => {
+    const response = await api.updateSubscriptionPreferences(payload, token);
+    setUser(response.user);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ token, user: response.user }));
+    return response.user;
+  };
+
   const value = useMemo(
     () => ({
       token,
@@ -105,6 +112,7 @@ export const AuthProvider = ({ children }) => {
       logout,
       refreshUser,
       updateAddresses,
+      updateSubscriptionPreferences,
     }),
     [loading, token, user],
   );

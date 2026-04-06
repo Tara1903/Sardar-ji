@@ -58,3 +58,15 @@ export const createCartOrderMessage = (items = [], pricing) => {
 
   return lines.join('\n');
 };
+
+export const createOrderStatusMessage = (order, nextStatus) => {
+  const lines = [
+    'Hello from Sardar Ji Food Corner.',
+    order?.customerName ? `Order for: ${order.customerName}` : '',
+    order?.orderNumber ? `Order ID: ${order.orderNumber}` : '',
+    nextStatus ? `Status update: ${nextStatus}` : '',
+    'You can track your order live on our website or reply here if you need help.',
+  ];
+
+  return lines.filter(Boolean).join('\n');
+};

@@ -5110,8 +5110,236 @@ html.dark .admin-notification-badge {
   color: #102114;
 }
 
+.checkout-recovery-popup {
+  position: fixed;
+  right: 1rem;
+  bottom: 5.75rem;
+  z-index: 80;
+  max-width: min(28rem, calc(100vw - 2rem));
+  border: 1px solid rgba(226, 55, 68, 0.18);
+  border-radius: 1.5rem;
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(18px);
+  box-shadow: 0 24px 60px rgba(17, 24, 39, 0.16);
+  padding: 1rem;
+}
+
+html.dark .checkout-recovery-popup {
+  background: rgba(17, 24, 39, 0.94);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.checkout-recovery-copy {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.checkout-recovery-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.checkout-recovery-actions .btn {
+  flex: 1 1 10rem;
+}
+
+.review-request-card {
+  display: grid;
+  gap: 1rem;
+  align-items: center;
+}
+
+.review-request-stars {
+  display: inline-flex;
+  gap: 0.35rem;
+  color: #f59e0b;
+}
+
+.frequently-bought-card {
+  display: grid;
+  gap: 1rem;
+}
+
+.frequently-bought-list {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.frequently-bought-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  border: 1px solid var(--line-color);
+  border-radius: 1.15rem;
+  padding: 0.95rem 1rem;
+  background: rgba(255, 255, 255, 0.72);
+  transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+}
+
+html.dark .frequently-bought-item {
+  background: rgba(17, 24, 39, 0.48);
+}
+
+.frequently-bought-item:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 18px 35px rgba(17, 24, 39, 0.08);
+  border-color: rgba(226, 55, 68, 0.2);
+}
+
+.first-order-banner {
+  margin-bottom: 1rem;
+}
+
+.combo-offer-grid {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1.25rem;
+}
+
+.combo-offer-card {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.combo-offer-card strong {
+  font-size: 1.15rem;
+  color: var(--text-primary);
+}
+
+.admin-subsection {
+  display: grid;
+  gap: 0.85rem;
+  border: 1px solid var(--line-color);
+  border-radius: 1rem;
+  padding: 0.95rem;
+  background: rgba(255, 255, 255, 0.56);
+}
+
+html.dark .admin-subsection {
+  background: rgba(17, 24, 39, 0.42);
+}
+
+.admin-day-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.65rem;
+}
+
+.admin-day-pill {
+  position: relative;
+  display: inline-flex;
+}
+
+.admin-day-pill input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.admin-day-pill span {
+  width: 100%;
+  text-align: center;
+  border-radius: 999px;
+  border: 1px solid var(--line-color);
+  padding: 0.7rem 0.85rem;
+  font-weight: 600;
+  transition: all 180ms ease;
+  background: rgba(255, 255, 255, 0.8);
+}
+
+html.dark .admin-day-pill span {
+  background: rgba(17, 24, 39, 0.55);
+}
+
+.admin-day-pill input:checked + span {
+  background: rgba(226, 55, 68, 0.12);
+  border-color: rgba(226, 55, 68, 0.34);
+  color: var(--primary-color);
+}
+
+.admin-inline-grid {
+  display: grid;
+  gap: 0.9rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.admin-kitchen-stack {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.admin-kitchen-grid {
+  display: grid;
+  gap: 1rem;
+}
+
+.kitchen-order-card {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.kitchen-action-grid {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.kitchen-action-button,
+.kitchen-primary-button {
+  min-height: 3.15rem;
+}
+
+.tracking-review-wrap {
+  margin-top: 1.25rem;
+}
+
 @media (max-width: 900px) {
   .theme-switcher {
     min-width: 0;
+  }
+
+  .checkout-recovery-popup {
+    right: 0.75rem;
+    left: 0.75rem;
+    bottom: 5.25rem;
+    max-width: none;
+  }
+
+  .checkout-recovery-actions {
+    flex-direction: column;
+  }
+
+  .admin-day-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .admin-inline-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (min-width: 781px) {
+  .combo-offer-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .review-request-card {
+    grid-template-columns: minmax(0, 1fr) auto auto;
+  }
+
+  .admin-kitchen-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1181px) {
+  .admin-kitchen-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .combo-offer-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
