@@ -20,3 +20,5 @@ tools/jdk21
 tools/*.zip
 tools/*.msi
 tools/*.log
+
+.vercel

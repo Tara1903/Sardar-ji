@@ -1,3 +1,5 @@
+import { PUBLIC_SUPABASE_CONFIG } from './public-config.js';
+
 const parseJsonSafely = (value, fallback = {}) => {
   try {
     return JSON.parse(value);
@@ -57,12 +59,16 @@ export const requireAuthenticatedUser = async (req) => {
     throw error;
   }
 
-  const supabaseUrl = getEnv('SUPABASE_URL', 'VITE_SUPABASE_URL');
+  const supabaseUrl =
+    getEnv('SUPABASE_URL', 'VITE_SUPABASE_URL', 'NEXT_PUBLIC_SUPABASE_URL') ||
+    PUBLIC_SUPABASE_CONFIG.url;
   const supabaseAnonKey = getEnv(
     'SUPABASE_ANON_KEY',
     'VITE_SUPABASE_ANON_KEY',
     'VITE_SUPABASE_PUBLISHABLE_DEFAULT_KEY',
-  );
+    'NEXT_PUBLIC_SUPABASE_ANON_KEY',
+    'NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY',
+  ) || PUBLIC_SUPABASE_CONFIG.anonKey;
 
   if (!supabaseUrl || !supabaseAnonKey) {
     const error = new Error('Supabase server configuration is missing.');
