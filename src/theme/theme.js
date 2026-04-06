@@ -160,6 +160,47 @@ const darkenHex = (hex, factor = 0.14) => {
     .join('')}`;
 };
 
+const mixHex = (sourceHex, targetHex, weight = 0.5) => {
+  const source = hexToRgb(sourceHex);
+  const target = hexToRgb(targetHex);
+
+  if (!source || !target) {
+    return sourceHex;
+  }
+
+  const mix = (from, to) => clamp(Math.round(from * (1 - weight) + to * weight));
+
+  return `#${[mix(source.r, target.r), mix(source.g, target.g), mix(source.b, target.b)]
+    .map((value) => value.toString(16).padStart(2, '0'))
+    .join('')}`;
+};
+
+const lightenHex = (hex, factor = 0.14) => {
+  const rgb = hexToRgb(hex);
+
+  if (!rgb) {
+    return hex;
+  }
+
+  const channel = (value) => clamp(Math.round(value + (255 - value) * factor));
+
+  return `#${[channel(rgb.r), channel(rgb.g), channel(rgb.b)]
+    .map((value) => value.toString(16).padStart(2, '0'))
+    .join('')}`;
+};
+
+const createDarkPalette = (theme) => ({
+  background: mixHex(theme.background, '#0b120f', 0.88),
+  card: mixHex(theme.card, '#131d19', 0.9),
+  textPrimary: '#f4f7f2',
+  textSecondary: '#a8b4aa',
+  line: 'rgba(244, 247, 242, 0.12)',
+  primary: lightenHex(theme.primary, 0.08),
+  primaryStrong: lightenHex(darkenHex(theme.primary, 0.1), 0.04),
+  secondary: lightenHex(theme.secondary, 0.08),
+  highlight: lightenHex(theme.highlight, 0.02),
+});
+
 export const mergeTheme = (theme = {}) => ({
   ...designTokens.colors,
   ...(theme || {}),
@@ -202,21 +243,35 @@ export const mergeStorefrontConfig = (storefront = {}) => {
 
 export const getThemeCssVariables = (theme = designTokens.colors) => {
   const mergedTheme = mergeTheme(theme);
+  const darkTheme = createDarkPalette(mergedTheme);
 
   return {
-    '--bg': mergedTheme.background,
-    '--surface': mergedTheme.card,
-    '--surface-muted': rgba(mergedTheme.primary, 0.06),
-    '--surface-strong': mergedTheme.textPrimary,
-    '--text': mergedTheme.textPrimary,
-    '--muted': mergedTheme.textSecondary,
-    '--line': rgba(mergedTheme.textPrimary, 0.08),
-    '--brand': mergedTheme.primary,
-    '--brand-strong': darkenHex(mergedTheme.primary),
-    '--brand-secondary': mergedTheme.secondary,
-    '--accent': mergedTheme.highlight,
-    '--accent-soft': rgba(mergedTheme.highlight, 0.18),
-    '--danger': '#b91c1c',
+    '--theme-bg-light': mergedTheme.background,
+    '--theme-surface-light': mergedTheme.card,
+    '--theme-surface-muted-light': rgba(mergedTheme.primary, 0.06),
+    '--theme-surface-strong-light': mergedTheme.textPrimary,
+    '--theme-text-light': mergedTheme.textPrimary,
+    '--theme-muted-light': mergedTheme.textSecondary,
+    '--theme-line-light': rgba(mergedTheme.textPrimary, 0.08),
+    '--theme-brand-light': mergedTheme.primary,
+    '--theme-brand-strong-light': darkenHex(mergedTheme.primary),
+    '--theme-brand-secondary-light': mergedTheme.secondary,
+    '--theme-accent-light': mergedTheme.highlight,
+    '--theme-accent-soft-light': rgba(mergedTheme.highlight, 0.18),
+    '--theme-danger-light': '#b91c1c',
+    '--theme-bg-dark': darkTheme.background,
+    '--theme-surface-dark': darkTheme.card,
+    '--theme-surface-muted-dark': rgba(mergedTheme.primary, 0.18),
+    '--theme-surface-strong-dark': darkTheme.textPrimary,
+    '--theme-text-dark': darkTheme.textPrimary,
+    '--theme-muted-dark': darkTheme.textSecondary,
+    '--theme-line-dark': darkTheme.line,
+    '--theme-brand-dark': darkTheme.primary,
+    '--theme-brand-strong-dark': darkTheme.primaryStrong,
+    '--theme-brand-secondary-dark': darkTheme.secondary,
+    '--theme-accent-dark': darkTheme.highlight,
+    '--theme-accent-soft-dark': rgba(darkTheme.highlight, 0.24),
+    '--theme-danger-dark': '#f87171',
     '--shadow': designTokens.shadows.medium,
     '--shadow-soft': designTokens.shadows.soft,
     '--radius-xl': designTokens.radii.xl,

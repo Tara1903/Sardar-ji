@@ -2,6 +2,7 @@ import { MapPin, Menu, ShoppingBag, Star, User } from 'lucide-react';
 import { Link, NavLink } from 'react-router-dom';
 import { useState } from 'react';
 import { BrandLockup } from '../brand/BrandLockup';
+import { ThemeSwitcher } from '../common/ThemeSwitcher';
 import { useCart } from '../../contexts/CartContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { STORE_AVERAGE_RATING, STORE_CITY, STORE_ORDER_SOCIAL_PROOF } from '../../utils/catalog';
@@ -59,6 +60,7 @@ export const Navbar = ({ businessName }) => {
         </nav>
 
         <div className="nav-actions">
+          <ThemeSwitcher className="desktop-only" label="Site theme" />
           <Link className="icon-btn" to="/cart">
             <ShoppingBag size={18} />
             {itemCount ? <span className="cart-count">{itemCount}</span> : null}
@@ -83,6 +85,9 @@ export const Navbar = ({ businessName }) => {
 
       {open ? (
         <div className="mobile-drawer">
+          <div className="mobile-drawer-theme">
+            <ThemeSwitcher label="Site theme" />
+          </div>
           {navItems.map((item) => (
             <NavLink className="drawer-link" key={item.to} onClick={() => setOpen(false)} to={item.to}>
               {item.label}

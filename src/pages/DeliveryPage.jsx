@@ -4,6 +4,7 @@ import { api } from '../api/client';
 import { DeliveryOrderCard } from '../components/delivery/DeliveryOrderCard';
 import { BrandLockup } from '../components/brand/BrandLockup';
 import { Loader } from '../components/common/Loader';
+import { ThemeSwitcher } from '../components/common/ThemeSwitcher';
 import { SeoMeta } from '../components/seo/SeoMeta';
 import { useAuth } from '../contexts/AuthContext';
 import { formatDateTime } from '../utils/format';
@@ -117,10 +118,13 @@ export const DeliveryPage = () => {
           <h1>Welcome, {user.name}</h1>
           <p>Assigned orders, customer addresses, and live GPS sharing in one place.</p>
         </div>
-        <button className="btn btn-secondary" onClick={logout} type="button">
-          <LogOut size={16} />
-          Logout
-        </button>
+        <div className="panel-header-actions">
+          <ThemeSwitcher label="Delivery theme" />
+          <button className="btn btn-secondary" onClick={logout} type="button">
+            <LogOut size={16} />
+            Logout
+          </button>
+        </div>
       </header>
 
       <main className="panel-content">

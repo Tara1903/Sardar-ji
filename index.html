@@ -13,6 +13,32 @@
       content="tiffin service in Indore, monthly thali plan Indore, food delivery in Indore, affordable tiffin near me, Sardar Ji Food Corner"
     />
     <meta name="theme-color" content="#e23744" />
+    <script>
+      (() => {
+        try {
+          const storedTheme = localStorage.getItem('theme');
+          const theme =
+            storedTheme === 'light' || storedTheme === 'dark' || storedTheme === 'system'
+              ? storedTheme
+              : 'system';
+          const prefersDark =
+            window.matchMedia &&
+            window.matchMedia('(prefers-color-scheme: dark)').matches;
+          const resolvedTheme =
+            theme === 'dark' || (theme === 'system' && prefersDark) ? 'dark' : 'light';
+          const root = document.documentElement;
+          const metaThemeColor = document.querySelector("meta[name='theme-color']");
+
+          root.classList.toggle('dark', resolvedTheme === 'dark');
+          root.style.colorScheme = resolvedTheme;
+          if (metaThemeColor) {
+            metaThemeColor.setAttribute('content', resolvedTheme === 'dark' ? '#101713' : '#e23744');
+          }
+        } catch {
+          // Ignore storage access issues before the app loads.
+        }
+      })();
+    </script>
     <link rel="preconnect" href="https://images.unsplash.com" />
     <link rel="dns-prefetch" href="https://images.unsplash.com" />
     <title>Tiffin Service in Indore | Monthly Thali Plan | Sardar Ji Food Corner</title>
