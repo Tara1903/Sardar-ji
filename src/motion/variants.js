@@ -263,3 +263,63 @@ export const QUANTITY_SWAP_VARIANTS = {
     },
   },
 };
+
+export const SURFACE_REVEAL_VARIANTS = {
+  hidden: {
+    opacity: 0,
+    y: 24,
+    scale: 0.985,
+  },
+  show: {
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    transition: {
+      ...SPRING_SMOOTH,
+      duration: 0.34,
+    },
+  },
+};
+
+export const CONTENT_STACK_VARIANTS = {
+  hidden: {},
+  show: {
+    transition: {
+      staggerChildren: 0.06,
+      delayChildren: 0.05,
+    },
+  },
+};
+
+export const CONTENT_FADE_VARIANTS = {
+  hidden: {
+    opacity: 0,
+    y: 18,
+  },
+  show: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      ...SPRING_SMOOTH,
+      duration: 0.28,
+    },
+  },
+};
+
+export const TIMELINE_STEP_VARIANTS = {
+  hidden: {
+    opacity: 0,
+    x: -18,
+    y: 12,
+  },
+  show: (index = 0) => ({
+    opacity: 1,
+    x: 0,
+    y: 0,
+    transition: {
+      ...SPRING_SMOOTH,
+      duration: 0.28,
+      delay: index * 0.05,
+    },
+  }),
+};

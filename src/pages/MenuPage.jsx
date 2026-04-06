@@ -120,19 +120,14 @@ export const MenuPage = () => {
           <aside className="panel-card menu-sidebar">
             <div className="section-heading compact">
               <div>
-                <p className="eyebrow">Find your meal</p>
-                <h2>Search Paneer, Thali...</h2>
+                <p className="eyebrow">Browse with ease</p>
+                <h2>Categories & filters</h2>
+                <p className="menu-sidebar-intro">
+                  Narrow down the menu quickly, then use the featured search banner to jump to your
+                  next craving.
+                </p>
               </div>
             </div>
-
-            <label className="search-bar landing-search-bar">
-              <Search size={18} />
-              <input
-                onChange={(event) => startTransition(() => setSearch(event.target.value))}
-                placeholder="Search Paneer, Thali..."
-                value={search}
-              />
-            </label>
 
             <div className="menu-filter-block">
               <strong>Categories</strong>
@@ -182,14 +177,14 @@ export const MenuPage = () => {
 
             <PromoBanner
               actions={
-                <div className="promo-banner-actions">
+                <>
                   <Link className="btn btn-primary" to="/my-subscription?checkout=1">
                     Buy Monthly Plan
                   </Link>
                   <Link className="btn btn-secondary" to="/tiffin-service-indore">
                     Tiffin service in Indore
                   </Link>
-                </div>
+                </>
               }
               className="menu-offer-banner"
               description={
@@ -197,6 +192,24 @@ export const MenuPage = () => {
                 '₹299 = Free Delivery (≤5km) | ₹499 = Free Delivery + FREE Mango Juice 🥭'
               }
               eyebrow={offersConfig.bannerEyebrow || 'Offer of the day'}
+              extraContent={
+                <div className="promo-banner-search-wrap">
+                  <label className="search-bar promo-banner-search-bar">
+                    <Search size={18} />
+                    <input
+                      onChange={(event) => startTransition(() => setSearch(event.target.value))}
+                      placeholder="Search Paneer, Thali..."
+                      value={search}
+                    />
+                  </label>
+                  <div className="promo-banner-search-meta">
+                    <span className="promo-banner-search-chip">{filteredProducts.length} dishes visible</span>
+                    <span className="promo-banner-search-chip">
+                      {activeCategory === 'All' ? 'All categories' : activeCategory}
+                    </span>
+                  </div>
+                </div>
+              }
               title={offersConfig.bannerTitle || appConfig.hero.offerText}
               tone="accent"
             />

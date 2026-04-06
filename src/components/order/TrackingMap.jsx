@@ -1,7 +1,9 @@
 import { useEffect, useMemo } from 'react';
+import { motion } from 'framer-motion';
 import L from 'leaflet';
 import { MapContainer, Marker, Popup, TileLayer, useMap } from 'react-leaflet';
 import { MapPin } from 'lucide-react';
+import { SURFACE_REVEAL_VARIANTS } from '../../motion/variants';
 
 const deliveryIcon = L.divIcon({
   className: 'delivery-marker',
@@ -34,15 +36,15 @@ export const TrackingMap = ({ location }) => {
 
   if (!center) {
     return (
-      <div className="map-placeholder">
+      <motion.div animate="show" className="map-placeholder" initial="hidden" variants={SURFACE_REVEAL_VARIANTS}>
         <MapPin size={28} />
         <p>Delivery partner location will appear here once the order is out for delivery.</p>
-      </div>
+      </motion.div>
     );
   }
 
   return (
-    <div className="tracking-map leaflet-shell">
+    <motion.div animate="show" className="tracking-map leaflet-shell" initial="hidden" variants={SURFACE_REVEAL_VARIANTS}>
       <MapContainer center={center} scrollWheelZoom={false} zoom={15}>
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
@@ -53,6 +55,6 @@ export const TrackingMap = ({ location }) => {
           <Popup>Delivery partner is here.</Popup>
         </Marker>
       </MapContainer>
-    </div>
+    </motion.div>
   );
 };

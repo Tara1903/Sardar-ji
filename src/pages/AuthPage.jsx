@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
 import { ArrowLeft, Clock3, MailCheck, ShieldCheck } from 'lucide-react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { api } from '../api/client';
@@ -8,6 +9,13 @@ import { OtpSuccessPopup } from '../components/auth/OtpSuccessPopup';
 import { SeoMeta } from '../components/seo/SeoMeta';
 import { useAuth } from '../contexts/AuthContext';
 import { useCountdown } from '../hooks/useCountdown';
+import {
+  BUTTON_PRESS_VARIANTS,
+  CONTENT_FADE_VARIANTS,
+  CONTENT_STACK_VARIANTS,
+  SPRING_SMOOTH,
+  SURFACE_REVEAL_VARIANTS,
+} from '../motion/variants';
 import { formatOtpDuration } from '../utils/otpState';
 import {
   isStrongPassword,
@@ -290,32 +298,77 @@ export const AuthPage = () => {
         open={otpPopup.open}
         title={otpPopup.title}
       />
-      <div className="auth-card">
-        <Link className="text-link" to="/">
-          <ArrowLeft size={16} />
-          Back home
-        </Link>
+      <motion.div
+        animate="show"
+        className="auth-card auth-card-premium"
+        initial="hidden"
+        variants={SURFACE_REVEAL_VARIANTS}
+      >
+        <span aria-hidden="true" className="auth-card-orb auth-card-orb-primary" />
+        <span aria-hidden="true" className="auth-card-orb auth-card-orb-secondary" />
 
-        <BrandLockup className="auth-brand" linkTo="/" />
+        <motion.div className="auth-card-header" variants={CONTENT_STACK_VARIANTS}>
+          <motion.div variants={CONTENT_FADE_VARIANTS}>
+            <Link className="text-link" to="/">
+              <ArrowLeft size={16} />
+              Back home
+            </Link>
+          </motion.div>
 
-        <p className="eyebrow">Secure access</p>
-        <h1>{heading}</h1>
-        <p className="auth-intro-copy">{introCopy}</p>
+          <motion.div variants={CONTENT_FADE_VARIANTS}>
+            <BrandLockup className="auth-brand" linkTo="/" />
+          </motion.div>
 
-        <div className="tab-switch">
-          <button className={mode === 'login' ? 'active' : ''} onClick={() => switchMode('login')} type="button">
+          <motion.div className="auth-utility-row" variants={CONTENT_FADE_VARIANTS}>
+            <span className="auth-utility-chip">
+              <ShieldCheck size={15} />
+              Protected login
+            </span>
+            <span className="auth-utility-chip">
+              <Clock3 size={15} />
+              Fast checkout later
+            </span>
+            <span className="auth-utility-chip">
+              <MailCheck size={15} />
+              Order updates on email
+            </span>
+          </motion.div>
+
+          <motion.div variants={CONTENT_FADE_VARIANTS}>
+            <p className="eyebrow">Secure access</p>
+            <h1>{heading}</h1>
+            <p className="auth-intro-copy">{introCopy}</p>
+          </motion.div>
+        </motion.div>
+
+        <motion.div className="tab-switch" variants={CONTENT_FADE_VARIANTS}>
+          <motion.button
+            animate="rest"
+            className={mode === 'login' ? 'active' : ''}
+            initial="rest"
+            onClick={() => switchMode('login')}
+            type="button"
+            variants={BUTTON_PRESS_VARIANTS}
+            whileHover="hover"
+            whileTap="tap"
+          >
             Login
-          </button>
-          <button
+          </motion.button>
+          <motion.button
+            animate="rest"
             className={mode === 'register' ? 'active' : ''}
+            initial="rest"
             onClick={() => switchMode('register')}
             type="button"
+            variants={BUTTON_PRESS_VARIANTS}
+            whileHover="hover"
+            whileTap="tap"
           >
             Register
-          </button>
-        </div>
+          </motion.button>
+        </motion.div>
 
-        <div className="form-grid">
+        <motion.div className="form-grid" variants={CONTENT_FADE_VARIANTS}>
           {mode === 'register' ? (
             <>
               <label>
@@ -392,70 +445,105 @@ export const AuthPage = () => {
               />
             </label>
           ) : null}
-        </div>
+        </motion.div>
 
-        {mode === 'register' ? (
-          <div className="otp-panel">
-            <div className="space-between">
-              <div>
-                <p className="eyebrow">Verification code</p>
-                <h3>Secure your account before first order</h3>
-              </div>
-              <MailCheck size={18} />
-            </div>
-
-            <p>
-              We will send a 6-digit verification code to{' '}
-              <strong>{normalizeEmail(formState.email) || 'your email'}</strong> to secure your new
-              account. Your phone number is saved for delivery calls and WhatsApp support.
-            </p>
-
-            {isOtpStage ? (
-              <>
-                <OtpCodeInput
-                  autoFocus
-                  disabled={submitting}
-                  onChange={(nextValue) =>
-                    setFormState((current) => ({ ...current, otp: nextValue }))
-                  }
-                  value={formState.otp}
-                />
-                <div className="otp-status-row">
-                  <span>
-                    <Clock3 size={15} />
-                    {hasOtpExpired
-                      ? 'Code expired'
-                      : `Expires in ${formatOtpDuration(otpSecondsRemaining)}`}
-                  </span>
-                  <button
-                    className="text-button"
-                    disabled={submitting || resendSecondsRemaining > 0}
-                    onClick={handleResendOtp}
-                    type="button"
-                  >
-                    {resendSecondsRemaining > 0
-                      ? `Resend in ${formatOtpDuration(resendSecondsRemaining)}`
-                      : 'Resend code'}
-                  </button>
+        <AnimatePresence initial={false}>
+          {mode === 'register' ? (
+            <motion.div
+              animate={{ opacity: 1, y: 0 }}
+              className="otp-panel"
+              exit={{ opacity: 0, y: -14 }}
+              initial={{ opacity: 0, y: 18 }}
+              transition={SPRING_SMOOTH}
+            >
+              <div className="space-between">
+                <div>
+                  <p className="eyebrow">Verification code</p>
+                  <h3>Secure your account before first order</h3>
                 </div>
-              </>
-            ) : (
-              <div className="helper-note">
-                <ShieldCheck size={16} />
-                <span>Your code stays valid for 5 minutes and helps keep new accounts secure.</span>
+                <MailCheck size={18} />
               </div>
-            )}
-          </div>
-        ) : null}
 
-        {info ? <p className="success-text">{info}</p> : null}
-        {error ? <p className="error-text">{error}</p> : null}
+              <p>
+                We will send a 6-digit verification code to{' '}
+                <strong>{normalizeEmail(formState.email) || 'your email'}</strong> to secure your new
+                account. Your phone number is saved for delivery calls and WhatsApp support.
+              </p>
 
-        <button
+              {isOtpStage ? (
+                <>
+                  <OtpCodeInput
+                    autoFocus
+                    disabled={submitting}
+                    onChange={(nextValue) =>
+                      setFormState((current) => ({ ...current, otp: nextValue }))
+                    }
+                    value={formState.otp}
+                  />
+                  <div className="otp-status-row">
+                    <span>
+                      <Clock3 size={15} />
+                      {hasOtpExpired
+                        ? 'Code expired'
+                        : `Expires in ${formatOtpDuration(otpSecondsRemaining)}`}
+                    </span>
+                    <button
+                      className="text-button"
+                      disabled={submitting || resendSecondsRemaining > 0}
+                      onClick={handleResendOtp}
+                      type="button"
+                    >
+                      {resendSecondsRemaining > 0
+                        ? `Resend in ${formatOtpDuration(resendSecondsRemaining)}`
+                        : 'Resend code'}
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <div className="helper-note">
+                  <ShieldCheck size={16} />
+                  <span>Your code stays valid for 5 minutes and helps keep new accounts secure.</span>
+                </div>
+              )}
+            </motion.div>
+          ) : null}
+        </AnimatePresence>
+
+        <AnimatePresence initial={false}>
+          {info ? (
+            <motion.p
+              animate={{ opacity: 1, y: 0 }}
+              className="success-text"
+              exit={{ opacity: 0, y: -8 }}
+              initial={{ opacity: 0, y: 10 }}
+            >
+              {info}
+            </motion.p>
+          ) : null}
+        </AnimatePresence>
+        <AnimatePresence initial={false}>
+          {error ? (
+            <motion.p
+              animate={{ opacity: 1, y: 0 }}
+              className="error-text"
+              exit={{ opacity: 0, y: -8 }}
+              initial={{ opacity: 0, y: 10 }}
+            >
+              {error}
+            </motion.p>
+          ) : null}
+        </AnimatePresence>
+
+        <motion.button
+          animate="rest"
           className="btn btn-primary full-width"
           disabled={submitting}
+          initial="rest"
           onClick={handlePrimaryAction}
           type="button"
+          variants={BUTTON_PRESS_VARIANTS}
+          whileHover="hover"
+          whileTap="tap"
         >
           {submitting
             ? 'Please wait...'
@@ -464,8 +552,8 @@ export const AuthPage = () => {
               : isOtpStage && !hasOtpExpired
                 ? 'Verify and create account'
                 : 'Send verification code'}
-        </button>
-      </div>
+        </motion.button>
+      </motion.div>
     </section>
   );
 };
