@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { isMonthlySubscriptionProduct } from '../utils/subscription';
 import { trackAddToCart } from '../utils/analytics';
 
@@ -12,10 +12,36 @@ const normalizeCartItem = (item = {}) => ({
 
 export const CartProvider = ({ children }) => {
   const [items, setItems] = useState(() => sanitizeCartItems(JSON.parse(localStorage.getItem(CART_KEY) || '[]')));
+  const [cartToast, setCartToast] = useState(null);
+  const toastTimeoutRef = useRef(null);
+
+  const showCartToast = (payload) => {
+    setCartToast({
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      ...payload,
+    });
+
+    if (toastTimeoutRef.current) {
+      window.clearTimeout(toastTimeoutRef.current);
+    }
+
+    toastTimeoutRef.current = window.setTimeout(() => {
+      setCartToast(null);
+    }, 2400);
+  };
 
   useEffect(() => {
     localStorage.setItem(CART_KEY, JSON.stringify(sanitizeCartItems(items)));
   }, [items]);
+
+  useEffect(
+    () => () => {
+      if (toastTimeoutRef.current) {
+        window.clearTimeout(toastTimeoutRef.current);
+      }
+    },
+    [],
+  );
 
   const addToCart = (product) => {
     if (isMonthlySubscriptionProduct(product)) {
@@ -32,6 +58,10 @@ export const CartProvider = ({ children }) => {
       }
 
       return [...current, { ...product, quantity: 1 }];
+    });
+    showCartToast({
+      title: `${product.name} added`,
+      message: 'Ready in your cart whenever you want to check out.',
     });
   };
 
@@ -55,6 +85,13 @@ export const CartProvider = ({ children }) => {
   };
 
   const clearCart = () => setItems([]);
+
+  const dismissCartToast = () => {
+    if (toastTimeoutRef.current) {
+      window.clearTimeout(toastTimeoutRef.current);
+    }
+    setCartToast(null);
+  };
 
   const replaceCart = (nextItems = []) => {
     setItems(sanitizeCartItems(nextItems).map(normalizeCartItem));
@@ -82,6 +119,22 @@ export const CartProvider = ({ children }) => {
 
       return merged;
     });
+
+    if (nextItems.length) {
+      const firstItem = nextItems[0];
+      const addedCount = sanitizeCartItems(nextItems).reduce(
+        (total, item) => total + normalizeCartItem(item).quantity,
+        0,
+      );
+
+      showCartToast({
+        title:
+          addedCount > 1
+            ? `${addedCount} items added`
+            : `${firstItem?.name || 'Item'} added`,
+        message: replace ? 'Your cart has been refreshed.' : 'Cart updated successfully.',
+      });
+    }
   };
 
   const getItemQuantity = (id) => items.find((item) => item.id === id)?.quantity || 0;
@@ -98,8 +151,10 @@ export const CartProvider = ({ children }) => {
       replaceCart,
       addItemsToCart,
       getItemQuantity,
+      cartToast,
+      dismissCartToast,
     }),
-    [items],
+    [cartToast, items],
   );
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;

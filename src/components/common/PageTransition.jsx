@@ -1,11 +1,12 @@
 import { motion } from 'framer-motion';
+import { PAGE_TRANSITION_VARIANTS } from '../../motion/variants';
 
 export const PageTransition = ({ children }) => (
   <motion.main
-    initial={{ opacity: 0, y: 20 }}
-    animate={{ opacity: 1, y: 0 }}
-    exit={{ opacity: 0, y: -16 }}
-    transition={{ duration: 0.32, ease: 'easeOut' }}
+    animate="animate"
+    exit="exit"
+    initial="initial"
+    variants={PAGE_TRANSITION_VARIANTS}
   >
     {children}
   </motion.main>

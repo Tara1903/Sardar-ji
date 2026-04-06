@@ -4086,6 +4086,36 @@ body {
   .order-placed-popup-meta span {
     width: 100%;
   }
+
+  .coupon-input-row {
+    flex-direction: column;
+  }
+
+  .coupon-action-button,
+  .coupon-input-row .btn {
+    width: 100%;
+  }
+
+  .cart-action-toast {
+    left: 0.75rem;
+    right: 0.75rem;
+    bottom: calc(11.2rem + env(safe-area-inset-bottom, 0px));
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: start;
+    gap: 0.75rem;
+    padding: 0.9rem;
+    border-radius: 1.3rem;
+  }
+
+  .cart-action-toast__actions {
+    grid-column: 1 / -1;
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .cart-action-toast__actions .btn {
+    flex: 1 1 0;
+  }
 }
 
 /* Admin panel mobile-first refresh */
@@ -5124,9 +5154,91 @@ html.dark .admin-notification-badge {
   padding: 1rem;
 }
 
+.cart-action-toast {
+  position: fixed;
+  right: 1rem;
+  bottom: 6.2rem;
+  z-index: 81;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.85rem;
+  width: min(28rem, calc(100vw - 2rem));
+  padding: 0.95rem 1rem;
+  border: 1px solid rgba(255, 122, 36, 0.14);
+  border-radius: 1.45rem;
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(18px);
+  box-shadow: 0 24px 60px rgba(17, 24, 39, 0.16);
+}
+
+.cart-action-toast__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.6rem;
+  height: 2.6rem;
+  border-radius: 1rem;
+  color: #166534;
+  background: rgba(22, 163, 74, 0.12);
+}
+
+.cart-action-toast__copy {
+  min-width: 0;
+}
+
+.cart-action-toast__copy strong,
+.cart-action-toast__copy p {
+  display: block;
+  margin: 0;
+}
+
+.cart-action-toast__copy strong {
+  font-size: 0.98rem;
+}
+
+.cart-action-toast__copy p {
+  margin-top: 0.18rem;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.cart-action-toast__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.cart-action-toast__actions .btn {
+  min-height: 2.7rem;
+  padding-inline: 0.95rem;
+  white-space: nowrap;
+}
+
+.cart-action-toast__close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.45rem;
+  height: 2.45rem;
+  border: 1px solid rgba(17, 24, 39, 0.08);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.82);
+}
+
 html.dark .checkout-recovery-popup {
   background: rgba(17, 24, 39, 0.94);
   border-color: rgba(255, 255, 255, 0.1);
+}
+
+html.dark .cart-action-toast {
+  background: rgba(17, 24, 39, 0.94);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+html.dark .cart-action-toast__close {
+  background: rgba(31, 41, 55, 0.92);
+  border-color: rgba(255, 255, 255, 0.08);
 }
 
 .checkout-recovery-copy {
@@ -5303,12 +5415,19 @@ html.dark .admin-day-pill span {
   .checkout-recovery-popup {
     right: 0.75rem;
     left: 0.75rem;
-    bottom: 5.25rem;
+    bottom: 8.2rem;
     max-width: none;
   }
 
   .checkout-recovery-actions {
     flex-direction: column;
+  }
+
+  .cart-action-toast {
+    right: 0.75rem;
+    left: 0.75rem;
+    width: auto;
+    max-width: none;
   }
 
   .admin-day-grid {
@@ -5452,7 +5571,9 @@ html.dark .admin-day-pill span {
 
 .customer-app-shell .premium-nav-bottom {
   margin-top: 0.82rem;
-  justify-content: space-between;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.78rem;
 }
 
 .customer-app-shell .header-brand-block {
@@ -5491,11 +5612,18 @@ html.dark .admin-day-pill span {
   background: rgba(255, 255, 255, 0.82);
   box-shadow: var(--app-shadow-soft);
   backdrop-filter: blur(14px);
+  transition: transform 180ms ease, box-shadow 180ms ease, background-color 180ms ease;
 }
 
-.customer-app-shell .desktop-search-trigger {
-  flex: 1 1 320px;
-  max-width: 420px;
+.customer-app-shell .nav-search-trigger:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 16px 32px rgba(17, 24, 39, 0.1);
+}
+
+.customer-app-shell .header-search-trigger {
+  width: 100%;
+  justify-content: flex-start;
+  padding: 0 1.1rem;
 }
 
 .customer-app-shell .mobile-search-trigger {
@@ -5503,6 +5631,7 @@ html.dark .admin-day-pill span {
 }
 
 .customer-app-shell .premium-desktop-nav {
+  align-self: flex-start;
   padding: 0.28rem;
   border: 1px solid rgba(15, 23, 42, 0.06);
   border-radius: 999px;
@@ -5590,6 +5719,7 @@ html.dark .admin-day-pill span {
   height: 100%;
   object-fit: cover;
   transform: scale(1.02);
+  will-change: transform;
 }
 
 .customer-app-shell .app-hero-slide-overlay {
@@ -5929,6 +6059,7 @@ html.dark .admin-day-pill span {
   border: 1px solid rgba(255, 122, 36, 0.08);
   content-visibility: auto;
   contain-intrinsic-size: 400px;
+  will-change: transform;
 }
 
 .customer-app-shell .product-card::before {
@@ -6079,6 +6210,7 @@ html.dark .admin-day-pill span {
   background: rgba(17, 24, 39, 0.92);
   box-shadow: 0 28px 80px rgba(17, 24, 39, 0.3);
   backdrop-filter: blur(18px);
+  will-change: transform;
 }
 
 .customer-app-shell .floating-cart-bar-copy {
@@ -6153,6 +6285,40 @@ html.dark .admin-day-pill span {
   gap: 1.2rem;
 }
 
+.customer-app-shell .cart-page-intro,
+.customer-app-shell .checkout-page-intro {
+  display: grid;
+  gap: 0.8rem;
+  padding: 1.2rem 1.25rem;
+  border-radius: 28px;
+  border: 1px solid rgba(255, 122, 36, 0.12);
+  background:
+    radial-gradient(circle at top right, rgba(255, 181, 104, 0.18), transparent 32%),
+    linear-gradient(180deg, rgba(255, 252, 248, 0.98), rgba(255, 255, 255, 0.96));
+  box-shadow: 0 20px 44px rgba(17, 24, 39, 0.08);
+}
+
+.customer-app-shell .cart-page-intro h1,
+.customer-app-shell .checkout-page-intro h1 {
+  margin: 0;
+  font-size: clamp(1.8rem, 4vw, 2.45rem);
+  line-height: 0.98;
+}
+
+.customer-app-shell .cart-page-intro p:not(.eyebrow),
+.customer-app-shell .checkout-page-intro p:not(.eyebrow) {
+  margin: 0;
+  max-width: 54ch;
+  color: var(--muted);
+}
+
+.customer-app-shell .cart-page-intro-chips,
+.customer-app-shell .checkout-page-intro-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+}
+
 .customer-app-shell .cart-item {
   align-items: stretch;
   border-radius: 28px;
@@ -6165,6 +6331,23 @@ html.dark .admin-day-pill span {
 
 .customer-app-shell .qty-control button {
   border-radius: 999px;
+}
+
+.customer-app-shell .cart-item-footer {
+  flex-wrap: wrap;
+  gap: 0.85rem;
+  margin-top: auto;
+}
+
+.customer-app-shell .cart-summary-card,
+.customer-app-shell .checkout-summary-card {
+  overflow: hidden;
+}
+
+.customer-app-shell .coupon-action-button {
+  flex: 0 0 auto;
+  min-width: 9.5rem;
+  white-space: nowrap;
 }
 
 .customer-app-shell .site-footer {
@@ -6281,6 +6464,14 @@ html.dark .customer-app-shell .mobile-nav {
   background: rgba(17, 24, 39, 0.68);
 }
 
+html.dark .customer-app-shell .cart-page-intro,
+html.dark .customer-app-shell .checkout-page-intro {
+  border-color: rgba(255, 166, 92, 0.1);
+  background:
+    radial-gradient(circle at top right, rgba(255, 145, 77, 0.18), transparent 34%),
+    linear-gradient(180deg, rgba(24, 30, 36, 0.94), rgba(17, 24, 39, 0.9));
+}
+
 html.dark .customer-app-shell .nav-link {
   color: rgba(244, 247, 242, 0.7);
 }
@@ -6362,6 +6553,7 @@ html.dark .customer-app-shell .floating-cart-bar {
 @media (max-width: 900px) {
   .customer-app-shell .premium-nav-top {
     gap: 0.8rem;
+    align-items: flex-start;
   }
 
   .customer-app-shell .header-brand-block {
@@ -6381,6 +6573,11 @@ html.dark .customer-app-shell .floating-cart-bar {
 
   .customer-app-shell .brand-mark.compact .brand-logo {
     height: 52px;
+  }
+
+  .customer-app-shell .header-search-trigger {
+    min-height: 3.15rem;
+    padding-inline: 1rem;
   }
 
   .customer-app-shell .app-hero-slide,
@@ -6433,6 +6630,17 @@ html.dark .customer-app-shell .floating-cart-bar {
     display: none;
   }
 
+  .customer-app-shell .cart-page-intro,
+  .customer-app-shell .checkout-page-intro {
+    padding: 1rem 1rem 1.05rem;
+    border-radius: 24px;
+  }
+
+  .customer-app-shell .cart-page-intro h1,
+  .customer-app-shell .checkout-page-intro h1 {
+    font-size: clamp(1.55rem, 8vw, 2.1rem);
+  }
+
   .customer-app-shell .app-hero-dots {
     left: 1rem;
     bottom: 1rem;
@@ -6474,6 +6682,19 @@ html.dark .customer-app-shell .floating-cart-bar {
   .customer-app-shell .cart-item .cart-item-image {
     width: 100%;
     height: 200px;
+  }
+
+  .customer-app-shell .cart-item-footer {
+    align-items: stretch;
+  }
+
+  .customer-app-shell .cart-item-footer .icon-btn {
+    width: 100%;
+    min-height: 2.95rem;
+  }
+
+  .customer-app-shell .summary-card.sticky {
+    position: static;
   }
 }
 

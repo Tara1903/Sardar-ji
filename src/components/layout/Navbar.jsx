@@ -42,11 +42,6 @@ export const Navbar = ({ businessName }) => {
             </button>
           </div>
 
-          <Link className="nav-search-trigger desktop-search-trigger" to="/menu">
-            <Search size={16} />
-            Search thali, paneer, snacks...
-          </Link>
-
           <div className="nav-actions">
             <ThemeSwitcher className="desktop-only" label="Site theme" />
             <Link className="icon-btn" to="/cart">
@@ -76,7 +71,7 @@ export const Navbar = ({ businessName }) => {
         </div>
 
         <div className="premium-nav-bottom">
-          <Link className="nav-search-trigger mobile-search-trigger" to="/menu">
+          <Link className="nav-search-trigger header-search-trigger" to="/menu">
             <Search size={16} />
             Search thali, paneer, snacks...
           </Link>

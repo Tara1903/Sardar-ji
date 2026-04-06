@@ -3,8 +3,16 @@ import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { ArrowRight, ChevronLeft, ChevronRight, Clock3, MapPin, Sparkles, Star } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { formatCurrency } from '../../utils/format';
+import {
+  BUTTON_PRESS_VARIANTS,
+  HERO_CONTENT_ITEM_VARIANTS,
+  HERO_CONTENT_VARIANTS,
+  HERO_IMAGE_VARIANTS,
+  HERO_SLIDE_VARIANTS,
+} from '../../motion/variants';
 
 const AUTO_ADVANCE_MS = 5200;
+const MotionLink = motion(Link);
 
 export const HeroCarousel = ({
   onPrimaryAction,
@@ -76,23 +84,32 @@ export const HeroCarousel = ({
         <AnimatePresence initial={false} mode="wait">
           <motion.article
             key={activeSlide.id}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
+            animate="animate"
             className="app-hero-slide"
-            exit={{ opacity: 0, y: -12, scale: 0.985 }}
-            initial={{ opacity: 0, y: 18, scale: 1.015 }}
-            transition={{ duration: 0.42, ease: 'easeOut' }}
+            exit="exit"
+            initial="initial"
+            variants={HERO_SLIDE_VARIANTS}
             {...dragHandlers}
           >
-            <img
+            <motion.img
               alt={activeSlide.imageAlt || activeSlide.title}
+              animate="animate"
               className="app-hero-slide-image"
               fetchPriority="high"
+              initial="initial"
               src={activeSlide.image}
+              variants={HERO_IMAGE_VARIANTS}
+              whileHover="hover"
             />
             <div className="app-hero-slide-overlay" />
             <div className="app-hero-content">
-              <div className="app-hero-copy">
-                <div className="app-hero-topline">
+              <motion.div
+                animate="show"
+                className="app-hero-copy"
+                initial="hidden"
+                variants={HERO_CONTENT_VARIANTS}
+              >
+                <motion.div className="app-hero-topline" variants={HERO_CONTENT_ITEM_VARIANTS}>
                   <span className="app-hero-badge">
                     <Sparkles size={14} />
                     {activeSlide.kicker}
@@ -101,31 +118,54 @@ export const HeroCarousel = ({
                     <MapPin size={14} />
                     Delivering across Indore
                   </span>
-                </div>
-                <h1>{activeSlide.title}</h1>
-                <p>{activeSlide.description}</p>
+                </motion.div>
+                <motion.h1 variants={HERO_CONTENT_ITEM_VARIANTS}>{activeSlide.title}</motion.h1>
+                <motion.p variants={HERO_CONTENT_ITEM_VARIANTS}>{activeSlide.description}</motion.p>
 
-                <div className="app-hero-chip-row">
+                <motion.div className="app-hero-chip-row" variants={HERO_CONTENT_ITEM_VARIANTS}>
                   {(activeSlide.highlights || []).map((highlight) => (
                     <span className="app-hero-info-chip" key={highlight}>
                       {highlight}
                     </span>
                   ))}
-                </div>
+                </motion.div>
 
-                <div className="app-hero-actions">
-                  <button className="btn btn-primary app-hero-primary" onClick={onPrimaryAction} type="button">
+                <motion.div className="app-hero-actions" variants={HERO_CONTENT_ITEM_VARIANTS}>
+                  <motion.button
+                    className="btn btn-primary app-hero-primary"
+                    initial="rest"
+                    onClick={onPrimaryAction}
+                    type="button"
+                    variants={BUTTON_PRESS_VARIANTS}
+                    whileHover="hover"
+                    whileTap="tap"
+                  >
                     {primaryLabel}
                     <ArrowRight size={16} />
-                  </button>
-                  <Link className="btn btn-secondary app-hero-secondary" to="/menu">
+                  </motion.button>
+                  <MotionLink
+                    className="btn btn-secondary app-hero-secondary"
+                    initial="rest"
+                    to="/menu"
+                    variants={BUTTON_PRESS_VARIANTS}
+                    whileHover="hover"
+                    whileTap="tap"
+                  >
                     {secondaryLabel}
-                  </Link>
-                </div>
-              </div>
+                  </MotionLink>
+                </motion.div>
+              </motion.div>
 
-              <div className="app-hero-spotlight">
-                <div className="app-hero-spotlight-card">
+              <motion.div
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                className="app-hero-spotlight"
+                initial={{ opacity: 0, y: 20, scale: 0.98 }}
+                transition={{ delay: 0.12, duration: 0.34, ease: 'easeOut' }}
+              >
+                <motion.div
+                  className="app-hero-spotlight-card"
+                  whileHover={{ y: -6, scale: 1.01, transition: { duration: 0.22 } }}
+                >
                   <p className="eyebrow">Featured today</p>
                   <div className="app-hero-spotlight-top">
                     <div>
@@ -145,8 +185,8 @@ export const HeroCarousel = ({
                     </span>
                   </div>
                   {activeSlide.note ? <p className="app-hero-note">{activeSlide.note}</p> : null}
-                </div>
-              </div>
+                </motion.div>
+              </motion.div>
             </div>
           </motion.article>
         </AnimatePresence>
@@ -155,33 +195,44 @@ export const HeroCarousel = ({
           <>
             <div className="app-hero-dots" aria-label="Hero slide navigation">
               {slides.map((slide, index) => (
-                <button
+                <motion.button
                   aria-label={`Go to ${slide.title}`}
                   className={`app-hero-dot ${index === activeIndex ? 'is-active' : ''}`.trim()}
                   key={slide.id}
                   onClick={() => goToSlide(index)}
                   type="button"
+                  variants={BUTTON_PRESS_VARIANTS}
+                  whileHover="hover"
+                  whileTap="tap"
                 />
               ))}
             </div>
 
             <div className="app-hero-controls">
-              <button
+              <motion.button
                 aria-label="Previous hero slide"
                 className="app-hero-control"
+                initial="rest"
                 onClick={() => shiftSlide(-1)}
                 type="button"
+                variants={BUTTON_PRESS_VARIANTS}
+                whileHover="hover"
+                whileTap="tap"
               >
                 <ChevronLeft size={18} />
-              </button>
-              <button
+              </motion.button>
+              <motion.button
                 aria-label="Next hero slide"
                 className="app-hero-control"
+                initial="rest"
                 onClick={() => shiftSlide(1)}
                 type="button"
+                variants={BUTTON_PRESS_VARIANTS}
+                whileHover="hover"
+                whileTap="tap"
               >
                 <ChevronRight size={18} />
-              </button>
+              </motion.button>
             </div>
           </>
         ) : null}

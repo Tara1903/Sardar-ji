@@ -388,6 +388,21 @@ export const CheckoutPage = () => {
         />
         <div className="container checkout-layout">
           <div className="checkout-main">
+            <div className="panel-card checkout-page-intro">
+              <p className="eyebrow">Checkout flow</p>
+              <h1>Confirm your address, payment, and reward</h1>
+              <p>
+                Everything below updates live as you choose your address, coupon, and payment mode. Once
+                you confirm, we immediately move you into order tracking.
+              </p>
+              <div className="checkout-page-intro-chips">
+                <span className="hero-chip">{cartOfferState.baseItems.length} dishes in this order</span>
+                <span className="hero-chip">
+                  {paymentMethod === 'ONLINE' ? 'Online payment enabled' : 'Cash on delivery ready'}
+                </span>
+              </div>
+            </div>
+
             <PromoBanner
               description={
                 cartOfferState.notDeliverable
@@ -433,11 +448,11 @@ export const CheckoutPage = () => {
                   placeholder="Enter coupon code"
                   value={couponDraft}
                 />
-                <button className="btn btn-primary" onClick={handleApplyCoupon} type="button">
+                <button className="btn btn-primary coupon-action-button" onClick={handleApplyCoupon} type="button">
                   Apply coupon
                 </button>
                 {selectedRewardCoupon ? (
-                  <button className="btn btn-secondary" onClick={handleRemoveCoupon} type="button">
+                  <button className="btn btn-secondary coupon-action-button" onClick={handleRemoveCoupon} type="button">
                     Remove
                   </button>
                 ) : null}
@@ -610,7 +625,7 @@ export const CheckoutPage = () => {
             </div>
           </div>
 
-          <aside className="summary-card sticky">
+          <aside className="summary-card sticky checkout-summary-card">
             <h3>Order summary</h3>
             <div className="order-mini-list">
               {cartOfferState.displayItems.map((item) => (

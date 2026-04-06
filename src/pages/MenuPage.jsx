@@ -1,4 +1,5 @@
 import { startTransition, useDeferredValue, useMemo, useState } from 'react';
+import { motion } from 'framer-motion';
 import { Filter, MapPin, Search, ShoppingBag } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { PromoBanner } from '../components/common/PromoBanner';
@@ -16,6 +17,7 @@ import { formatCurrency } from '../utils/format';
 import { getCartOfferState } from '../utils/pricing';
 import { useStoreDistance } from '../hooks/useStoreDistance';
 import { createBreadcrumbSchema, createFaqSchema } from '../seo/siteSeo';
+import { STAGGER_CONTAINER_VARIANTS } from '../motion/variants';
 
 const priceFilters = [
   { label: 'All prices', value: 'all' },
@@ -212,11 +214,21 @@ export const MenuPage = () => {
             {loading ? (
               <SkeletonGrid count={8} />
             ) : filteredProducts.length ? (
-              <div className="grid storefront-grid">
-                {filteredProducts.map((product) => (
-                  <ProductCard key={product.id} product={product} whatsappNumber={settings?.whatsappNumber} />
+              <motion.div
+                animate="show"
+                className="grid storefront-grid"
+                initial="hidden"
+                variants={STAGGER_CONTAINER_VARIANTS}
+              >
+                {filteredProducts.map((product, index) => (
+                  <ProductCard
+                    key={product.id}
+                    motionIndex={index}
+                    product={product}
+                    whatsappNumber={settings?.whatsappNumber}
+                  />
                 ))}
-              </div>
+              </motion.div>
             ) : (
               <EmptyState
                 title="No items found"

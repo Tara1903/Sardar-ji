@@ -145,8 +145,13 @@ export const ProductDetailPage = () => {
               </div>
             </div>
             <div className="grid cards-grid">
-              {suggestions.map((item) => (
-                <ProductCard key={item.id} product={item} whatsappNumber={settings?.whatsappNumber} />
+              {suggestions.map((item, index) => (
+                <ProductCard
+                  key={item.id}
+                  motionIndex={index}
+                  product={item}
+                  whatsappNumber={settings?.whatsappNumber}
+                />
               ))}
             </div>
           </div>

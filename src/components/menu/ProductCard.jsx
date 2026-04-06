@@ -7,26 +7,37 @@ import { formatCurrency } from '../../utils/format';
 import { createProductOrderMessage, createWhatsAppLink } from '../../utils/whatsapp';
 import { STORE_AVERAGE_RATING } from '../../utils/catalog';
 import { trackWhatsAppClick } from '../../utils/analytics';
+import {
+  BUTTON_PRESS_VARIANTS,
+  CARD_IMAGE_VARIANTS,
+  CARD_MOTION_VARIANTS,
+  QUANTITY_SWAP_VARIANTS,
+} from '../../motion/variants';
 
-export const ProductCard = ({ product, whatsappNumber, variant = 'default' }) => {
+export const ProductCard = ({ product, whatsappNumber, variant = 'default', motionIndex = 0 }) => {
   const { addToCart, updateQuantity, getItemQuantity } = useCart();
   const isCompact = variant === 'compact';
   const quantity = getItemQuantity(product.id);
 
   return (
     <motion.article
-      layout
+      animate="show"
       className={`product-card ${isCompact ? 'product-card-compact' : ''}`.trim()}
-      transition={{ duration: 0.24 }}
-      whileHover={{ y: -8, scale: 1.012 }}
-      whileTap={{ scale: 0.992 }}
+      custom={motionIndex}
+      initial="hidden"
+      layout
+      variants={CARD_MOTION_VARIANTS}
+      whileHover="hover"
+      whileTap="tap"
     >
       <Link className="product-image-wrap" to={`/product/${product.id}`}>
-        <SmartImage
-          alt={`${product.name} pure veg food delivery in Indore`}
-          className="product-image"
-          src={product.image}
-        />
+        <motion.div initial="rest" variants={CARD_IMAGE_VARIANTS} whileHover="hover">
+          <SmartImage
+            alt={`${product.name} pure veg food delivery in Indore`}
+            className="product-image"
+            src={product.image}
+          />
+        </motion.div>
         <div className="product-image-topbar">
           <span className="product-image-chip">
             <Star fill="currentColor" size={13} />
@@ -66,41 +77,48 @@ export const ProductCard = ({ product, whatsappNumber, variant = 'default' }) =>
         <AnimatePresence initial={false} mode="popLayout">
           {quantity > 0 ? (
             <motion.div
-              animate={{ opacity: 1, scale: 1 }}
+              animate="animate"
               className={`qty-control product-qty-control ${isCompact ? 'is-compact' : ''}`.trim()}
-              exit={{ opacity: 0, scale: 0.92 }}
-              initial={{ opacity: 0, scale: 0.88 }}
+              exit="exit"
+              initial="initial"
               key="qty"
               layout
-              transition={{ duration: 0.2 }}
+              variants={QUANTITY_SWAP_VARIANTS}
             >
               <motion.button
+                initial="rest"
                 onClick={() => updateQuantity(product.id, quantity - 1)}
                 type="button"
-                whileTap={{ scale: 0.92 }}
+                variants={BUTTON_PRESS_VARIANTS}
+                whileHover="hover"
+                whileTap="tap"
               >
                 <Minus size={16} />
               </motion.button>
               <span className="product-qty-value">Qty {quantity}</span>
               <motion.button
+                initial="rest"
                 onClick={() => updateQuantity(product.id, quantity + 1)}
                 type="button"
-                whileTap={{ scale: 0.92 }}
+                variants={BUTTON_PRESS_VARIANTS}
+                whileHover="hover"
+                whileTap="tap"
               >
                 <Plus size={16} />
               </motion.button>
             </motion.div>
           ) : (
             <motion.button
-              animate={{ opacity: 1, scale: 1 }}
+              animate="animate"
               className="btn btn-primary product-add-button"
-              exit={{ opacity: 0, scale: 0.94 }}
-              initial={{ opacity: 0, scale: 0.94 }}
+              exit="exit"
+              initial="initial"
               key="add"
               layout
               onClick={() => addToCart(product)}
               type="button"
-              whileTap={{ scale: 0.95 }}
+              variants={QUANTITY_SWAP_VARIANTS}
+              whileTap={{ scale: 0.96 }}
             >
               <ShoppingBag size={16} />
               {isCompact ? '+ Add' : 'Add to cart'}
@@ -108,7 +126,7 @@ export const ProductCard = ({ product, whatsappNumber, variant = 'default' }) =>
           )}
         </AnimatePresence>
         {isCompact ? null : (
-          <a
+          <motion.a
             className="btn btn-secondary"
             href={createWhatsAppLink(
               whatsappNumber,
@@ -123,9 +141,13 @@ export const ProductCard = ({ product, whatsappNumber, variant = 'default' }) =>
             }
             rel="noreferrer"
             target="_blank"
+            initial="rest"
+            variants={BUTTON_PRESS_VARIANTS}
+            whileHover="hover"
+            whileTap="tap"
           >
             Order on WhatsApp
-          </a>
+          </motion.a>
         )}
       </div>
     </motion.article>

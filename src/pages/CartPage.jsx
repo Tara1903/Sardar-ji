@@ -51,6 +51,19 @@ export const CartPage = () => {
       <section className="section first-section">
         <div className="container cart-layout">
           <div className="cart-list">
+            <div className="panel-card cart-page-intro">
+              <p className="eyebrow">Cart review</p>
+              <h1>Almost there, your order looks good</h1>
+              <p>
+                Review items, update quantities, and head to checkout when you are ready. Your best
+                delivery reward is already being tracked below.
+              </p>
+              <div className="cart-page-intro-chips">
+                <span className="hero-chip">{items.length} dishes selected</span>
+                <span className="hero-chip">{cartOfferState.offerMessage}</span>
+              </div>
+            </div>
+
             <PromoBanner
               description={
                 cartOfferState.notDeliverable
@@ -96,7 +109,7 @@ export const CartPage = () => {
                       <span>Unlocked automatically with your ₹499+ order.</span>
                     </div>
                   ) : (
-                    <div className="space-between">
+                    <div className="space-between cart-item-footer">
                       <div className="qty-control">
                         <button onClick={() => updateQuantity(item.id, item.quantity - 1)} type="button">
                           <Minus size={14} />
@@ -116,7 +129,7 @@ export const CartPage = () => {
             ))}
           </div>
 
-          <aside className="summary-card sticky">
+          <aside className="summary-card sticky cart-summary-card">
             <div className="space-between">
               <h3>Bill summary</h3>
               <button className="btn btn-tertiary" onClick={clearCart} type="button">

@@ -5,8 +5,10 @@ import { useAppData } from '../../contexts/AppDataContext';
 import { useCart } from '../../contexts/CartContext';
 import { formatCurrency } from '../../utils/format';
 import { getCartOfferState } from '../../utils/pricing';
+import { BUTTON_PRESS_VARIANTS, FLOATING_CART_BADGE_VARIANTS, FLOATING_CART_VARIANTS } from '../../motion/variants';
 
 const HIDDEN_PATHS = ['/cart', '/checkout'];
+const MotionLink = motion(Link);
 
 export const FloatingCartBar = () => {
   const location = useLocation();
@@ -26,24 +28,41 @@ export const FloatingCartBar = () => {
     <AnimatePresence>
       {!isHidden ? (
         <motion.div
-          animate={{ opacity: 1, y: 0, scale: 1 }}
+          animate="show"
           className="floating-cart-bar"
-          exit={{ opacity: 0, y: 24, scale: 0.96 }}
-          initial={{ opacity: 0, y: 30, scale: 0.96 }}
-          transition={{ duration: 0.32, ease: 'easeOut' }}
+          exit="exit"
+          initial="hidden"
+          layout
+          variants={FLOATING_CART_VARIANTS}
         >
           <div className="floating-cart-bar-copy">
-            <span className="floating-cart-badge">
-              <ShoppingBag size={15} />
-              {itemCount} {itemCount === 1 ? 'item' : 'items'}
-            </span>
+            <AnimatePresence mode="popLayout">
+              <motion.span
+                animate="animate"
+                className="floating-cart-badge"
+                exit="exit"
+                initial="initial"
+                key={itemCount}
+                variants={FLOATING_CART_BADGE_VARIANTS}
+              >
+                <ShoppingBag size={15} />
+                {itemCount} {itemCount === 1 ? 'item' : 'items'}
+              </motion.span>
+            </AnimatePresence>
             <strong>{formatCurrency(cartState.total)}</strong>
             <p>{cartState.offerMessage}</p>
           </div>
-          <Link className="btn btn-primary floating-cart-bar-action" to="/cart">
+          <MotionLink
+            className="btn btn-primary floating-cart-bar-action"
+            initial="rest"
+            to="/cart"
+            variants={BUTTON_PRESS_VARIANTS}
+            whileHover="hover"
+            whileTap="tap"
+          >
             View Cart
             <ArrowRight size={16} />
-          </Link>
+          </MotionLink>
         </motion.div>
       ) : null}
     </AnimatePresence>

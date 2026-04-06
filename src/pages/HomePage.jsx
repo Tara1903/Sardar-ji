@@ -40,6 +40,7 @@ import {
 } from '../utils/catalog';
 import { trackWhatsAppClick } from '../utils/analytics';
 import { createBreadcrumbSchema, createFaqSchema } from '../seo/siteSeo';
+import { STAGGER_CONTAINER_VARIANTS } from '../motion/variants';
 
 const scrollToCatalog = () => {
   document.getElementById('home-catalog')?.scrollIntoView({
@@ -285,22 +286,28 @@ export const HomePage = () => {
             <span className="hero-chip">{topFoldProducts.length} quick picks</span>
           </div>
 
-          {loading ? (
-            <SkeletonGrid count={4} />
-          ) : (
-            <div className="grid quick-picks-grid">
-              {topFoldProducts.map((product) => (
-                <ProductCard
-                  key={product.id}
-                  product={product}
-                  variant="compact"
-                  whatsappNumber={settings?.whatsappNumber}
-                />
-              ))}
-            </div>
-          )}
-        </div>
-      </section>
+            {loading ? (
+              <SkeletonGrid count={4} />
+            ) : (
+              <motion.div
+                animate="show"
+                className="grid quick-picks-grid"
+                initial="hidden"
+                variants={STAGGER_CONTAINER_VARIANTS}
+              >
+                {topFoldProducts.map((product, index) => (
+                  <ProductCard
+                    key={product.id}
+                    motionIndex={index}
+                    product={product}
+                    variant="compact"
+                    whatsappNumber={settings?.whatsappNumber}
+                  />
+                ))}
+              </motion.div>
+            )}
+          </div>
+        </section>
 
       <section className="section storefront-section" id="home-catalog">
         <div className="container storefront-layout">
@@ -343,15 +350,21 @@ export const HomePage = () => {
             {loading ? (
               <SkeletonGrid count={8} />
             ) : (
-              <div className="grid storefront-grid">
-                {featuredProducts.map((product) => (
+              <motion.div
+                animate="show"
+                className="grid storefront-grid"
+                initial="hidden"
+                variants={STAGGER_CONTAINER_VARIANTS}
+              >
+                {featuredProducts.map((product, index) => (
                   <ProductCard
                     key={product.id}
+                    motionIndex={index}
                     product={product}
                     whatsappNumber={settings?.whatsappNumber}
                   />
                 ))}
-              </div>
+              </motion.div>
             )}
 
             {comboOffers.length ? (

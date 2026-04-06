@@ -9,9 +9,11 @@ import { WhatsAppFab } from './components/layout/WhatsAppFab';
 import { FloatingCartBar } from './components/layout/FloatingCartBar';
 import { ProtectedRoute } from './components/common/ProtectedRoute';
 import { Loader } from './components/common/Loader';
+import { CartActionToast } from './components/order/CartActionToast';
 import { CheckoutRecoveryPopup } from './components/order/CheckoutRecoveryPopup';
 import { GoogleAnalytics } from './components/seo/GoogleAnalytics';
 import { useAppData } from './contexts/AppDataContext';
+import { useCart } from './contexts/CartContext';
 import { clearCheckoutRecovery, readCheckoutRecovery } from './utils/cartRecovery';
 
 const HomePage = lazy(() => import('./pages/HomePage').then((module) => ({ default: module.HomePage })));
@@ -125,6 +127,7 @@ const NotFoundPage = lazy(() =>
 
 const CustomerLayout = () => {
   const { appConfig, settings } = useAppData();
+  const { cartToast, dismissCartToast } = useCart();
   const location = useLocation();
   const [checkoutRecovery, setCheckoutRecovery] = useState(null);
 
@@ -149,6 +152,7 @@ const CustomerLayout = () => {
       </div>
       <Footer settings={settings} />
       <FloatingCartBar />
+      <CartActionToast onDismiss={dismissCartToast} toast={cartToast} />
       <MobileNav />
       <SpecialOfferPopup
         config={appConfig.popup}
