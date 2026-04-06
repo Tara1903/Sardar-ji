@@ -31,9 +31,12 @@ export const SeoMeta = ({
   const pageTitle = createSeoTitle(title);
   const canonicalUrl = getCanonicalUrl(path);
   const robots = noIndex ? 'noindex, nofollow' : 'index, follow, max-image-preview:large';
-  const resolvedImage = settings?.storefront?.logoUrl
-    ? new URL(settings.storefront.logoUrl, canonicalUrl).toString()
-    : image;
+  const resolvedLogoUrl =
+    settings?.storefront?.logoLightUrl ||
+    (settings?.storefront?.logoUrl && settings.storefront.logoUrl !== '/brand-logo.png'
+      ? settings.storefront.logoUrl
+      : '');
+  const resolvedImage = resolvedLogoUrl ? new URL(resolvedLogoUrl, canonicalUrl).toString() : image;
   const normalizedSchema = [
     ...(includeWebsiteSchema ? [createWebsiteSchema()] : []),
     ...(includeLocalBusiness ? [createLocalBusinessSchema(settings || {})] : []),

@@ -44,7 +44,11 @@ export const AppDataProvider = ({ children }) => {
     }
 
     const favicon = document.querySelector("link[rel='icon']");
-    const nextLogoUrl = settings?.storefront?.logoUrl || '/brand-logo.png';
+    const nextLogoUrl =
+      settings?.storefront?.logoLightUrl ||
+      (settings?.storefront?.logoUrl && settings.storefront.logoUrl !== '/brand-logo.png'
+        ? settings.storefront.logoUrl
+        : '/brand-logo-light.png');
 
     if (favicon) {
       favicon.setAttribute('href', nextLogoUrl);

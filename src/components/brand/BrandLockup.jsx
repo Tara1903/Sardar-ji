@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useAppData } from '../../contexts/AppDataContext';
+import { useTheme } from '../../contexts/ThemeContext';
 
 export const BrandLockup = ({
   className = '',
@@ -9,10 +10,14 @@ export const BrandLockup = ({
   title = 'Sardar Ji Food Corner',
   tagline = 'Swad Bhi, Budget Bhi',
 }) => {
-  const { settings } = useAppData();
+  const { appConfig, settings } = useAppData();
+  const { resolvedTheme } = useTheme();
   const Wrapper = linkTo ? Link : 'div';
   const accessibleLabel = showTagline ? `${title} - ${tagline}` : title;
-  const logoSrc = settings?.storefront?.logoUrl || '/brand-logo.png';
+  const logoSrc =
+    resolvedTheme === 'dark'
+      ? appConfig?.logoDarkUrl || settings?.storefront?.logoDarkUrl || settings?.storefront?.logoUrl || '/brand-logo-dark.png'
+      : appConfig?.logoLightUrl || settings?.storefront?.logoLightUrl || settings?.storefront?.logoUrl || '/brand-logo-light.png';
 
   return (
     <Wrapper

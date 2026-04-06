@@ -17,15 +17,27 @@ export const AdminThemePage = () => {
   }
 
   const theme = settingsDraft.storefront?.theme || {};
-  const logoUrl = settingsDraft.storefront?.logoUrl || '/brand-logo.png';
+  const hasThemeSpecificLogos =
+    Boolean(settingsDraft.storefront?.logoLightUrl) || Boolean(settingsDraft.storefront?.logoDarkUrl);
+  const sharedLogoUrl =
+    settingsDraft.storefront?.logoUrl && settingsDraft.storefront.logoUrl !== '/brand-logo.png'
+      ? settingsDraft.storefront.logoUrl
+      : '/brand-logo-light.png';
+  const logoUrl = sharedLogoUrl;
+  const logoLightUrl = hasThemeSpecificLogos
+    ? settingsDraft.storefront?.logoLightUrl || sharedLogoUrl
+    : '/brand-logo-light.png';
+  const logoDarkUrl = hasThemeSpecificLogos
+    ? settingsDraft.storefront?.logoDarkUrl || sharedLogoUrl
+    : '/brand-logo-dark.png';
 
-  const handleLogoUpload = async (file) => {
+  const handleLogoUpload = async (key, file) => {
     if (!file) {
       return;
     }
 
     const upload = await uploadAsset(file);
-    updateStorefrontSection('logoUrl', upload.url);
+    updateStorefrontSection(key, upload.url);
   };
 
   return (
@@ -41,7 +53,7 @@ export const AdminThemePage = () => {
 
         <div className="admin-form-stack">
           <label>
-            Logo image URL
+            Shared logo image URL
             <input
               onChange={(event) => updateStorefrontSection('logoUrl', event.target.value)}
               value={logoUrl}
@@ -49,8 +61,37 @@ export const AdminThemePage = () => {
           </label>
 
           <label>
-            Upload logo image
-            <input accept="image/*" onChange={(event) => handleLogoUpload(event.target.files?.[0])} type="file" />
+            Light theme logo URL
+            <input
+              onChange={(event) => updateStorefrontSection('logoLightUrl', event.target.value)}
+              value={logoLightUrl}
+            />
+          </label>
+
+          <label>
+            Upload light theme logo
+            <input
+              accept="image/*"
+              onChange={(event) => handleLogoUpload('logoLightUrl', event.target.files?.[0])}
+              type="file"
+            />
+          </label>
+
+          <label>
+            Dark theme logo URL
+            <input
+              onChange={(event) => updateStorefrontSection('logoDarkUrl', event.target.value)}
+              value={logoDarkUrl}
+            />
+          </label>
+
+          <label>
+            Upload dark theme logo
+            <input
+              accept="image/*"
+              onChange={(event) => handleLogoUpload('logoDarkUrl', event.target.files?.[0])}
+              type="file"
+            />
           </label>
 
           {themeFields.map(([key, label]) => (
@@ -102,7 +143,11 @@ export const AdminThemePage = () => {
         </div>
 
         <div className="image-preview wide admin-preview-frame admin-logo-preview">
-          <img alt="Website logo preview" src={logoUrl} />
+          <img alt="Light theme logo preview" src={logoLightUrl} />
+        </div>
+
+        <div className="image-preview wide admin-preview-frame admin-logo-preview dark-preview">
+          <img alt="Dark theme logo preview" src={logoDarkUrl} />
         </div>
 
         <div className="admin-theme-preview">

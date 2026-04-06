@@ -97,7 +97,9 @@ export const defaultStorefrontConfig = {
   theme: {
     ...designTokens.colors,
   },
-  logoUrl: '/brand-logo.png',
+  logoUrl: '/brand-logo-light.png',
+  logoLightUrl: '/brand-logo-light.png',
+  logoDarkUrl: '/brand-logo-dark.png',
   hero: defaultHeroConfig,
   offers: defaultOffersConfig,
   popup: defaultPopupConfig,
@@ -208,10 +210,21 @@ export const mergeTheme = (theme = {}) => ({
 
 export const mergeStorefrontConfig = (storefront = {}) => {
   const mergedTheme = mergeTheme(storefront.theme);
+  const legacyLogoUrl = storefront.logoUrl || defaultStorefrontConfig.logoUrl;
+  const useThemeSpecificDefaults =
+    !storefront.logoLightUrl &&
+    !storefront.logoDarkUrl &&
+    (!storefront.logoUrl || storefront.logoUrl === '/brand-logo.png');
 
   return {
     theme: mergedTheme,
-    logoUrl: storefront.logoUrl || defaultStorefrontConfig.logoUrl,
+    logoUrl: legacyLogoUrl,
+    logoLightUrl:
+      storefront.logoLightUrl ||
+      (useThemeSpecificDefaults ? defaultStorefrontConfig.logoLightUrl : legacyLogoUrl),
+    logoDarkUrl:
+      storefront.logoDarkUrl ||
+      (useThemeSpecificDefaults ? defaultStorefrontConfig.logoDarkUrl : legacyLogoUrl),
     hero: {
       ...defaultHeroConfig,
       ...(storefront.hero || {}),
@@ -333,6 +346,8 @@ export const createAppConfig = ({ categories = [], products = [], settings = nul
   return {
     theme: storefront.theme,
     logoUrl: storefront.logoUrl,
+    logoLightUrl: storefront.logoLightUrl,
+    logoDarkUrl: storefront.logoDarkUrl,
     hero: storefront.hero,
     offers: {
       ...storefront.offers,

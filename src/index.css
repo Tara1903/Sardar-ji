@@ -4424,6 +4424,10 @@ body {
   background: #f8f4ee;
 }
 
+.admin-logo-preview.dark-preview img {
+  background: linear-gradient(135deg, #171411, #070707);
+}
+
 .admin-preview-copy.is-compact {
   padding: 1rem;
   border-radius: 20px;
