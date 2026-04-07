@@ -5063,6 +5063,9 @@ html.dark .panel-card,
 html.dark .summary-card,
 html.dark .auth-card,
 html.dark .product-card,
+html.dark .review-card,
+html.dark .visit-copy,
+html.dark .visit-map-frame,
 html.dark .promo-banner,
 html.dark .hero-card,
 html.dark .panel-header,
@@ -5091,6 +5094,8 @@ html.dark .auth-card h3,
 html.dark .product-card h3,
 html.dark .order-row strong,
 html.dark .review-card strong,
+html.dark .visit-copy h2,
+html.dark .visit-copy strong,
 html.dark .referral-entry-row strong,
 html.dark .coupon-row strong,
 html.dark .subscription-detail-list strong,
@@ -5110,6 +5115,7 @@ html.dark .auth-card p:not(.eyebrow):not(.error-text):not(.success-text),
 html.dark .product-card p:not(.eyebrow):not(.error-text):not(.success-text),
 html.dark .order-row p:not(.eyebrow):not(.error-text):not(.success-text),
 html.dark .review-card p:not(.eyebrow):not(.error-text):not(.success-text),
+html.dark .visit-copy p:not(.eyebrow):not(.error-text):not(.success-text),
 html.dark .referral-entry-row p:not(.eyebrow):not(.error-text):not(.success-text),
 html.dark .coupon-row p:not(.eyebrow):not(.error-text):not(.success-text),
 html.dark .subscription-detail-list span,
@@ -5126,9 +5132,16 @@ html.dark .admin-card-section small,
 html.dark .admin-list-card p,
 html.dark .admin-list-card small,
 html.dark .credentials-card p,
-html.dark .referral-card > p {
+html.dark .referral-card > p,
+html.dark .visit-copy small {
   color: #c4d0c7;
   opacity: 1;
+}
+
+html.dark .visit-address-card {
+  background: rgba(23, 31, 27, 0.9);
+  border: 1px solid rgba(244, 247, 242, 0.12);
+  color: var(--text);
 }
 
 html.dark .referral-entry-row,
