@@ -4,17 +4,18 @@
   "webDir": "dist",
   "plugins": {
     "SplashScreen": {
-      "launchAutoHide": true,
-      "launchShowDuration": 1800,
+      "launchAutoHide": false,
+      "launchShowDuration": 0,
       "backgroundColor": "#f7f8ef",
       "showSpinner": false,
       "androidScaleType": "CENTER_INSIDE",
+      "launchFadeOutDuration": 250,
       "splashFullScreen": true,
       "splashImmersive": true
     },
     "StatusBar": {
-      "overlaysWebView": true,
-      "backgroundColor": "#00000000",
+      "overlaysWebView": false,
+      "backgroundColor": "#F7F8EF",
       "style": "DARK"
     }
   }

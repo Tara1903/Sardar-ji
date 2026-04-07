@@ -87,6 +87,12 @@ body {
     linear-gradient(180deg, var(--page-top) 0%, var(--bg) 100%);
 }
 
+.native-app body {
+  overscroll-behavior-y: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
 a {
   color: inherit;
   text-decoration: none;
@@ -151,8 +157,90 @@ textarea {
   min-height: 100vh;
 }
 
+.native-app .app-shell {
+  min-height: 100svh;
+}
+
 .page-stack {
   padding-bottom: 6.25rem;
+}
+
+.native-app .page-stack {
+  padding-bottom: calc(6.25rem + env(safe-area-inset-bottom));
+}
+
+.native-app .site-header {
+  padding-top: env(safe-area-inset-top);
+}
+
+.native-app .mobile-nav {
+  padding-bottom: calc(0.7rem + env(safe-area-inset-bottom));
+}
+
+.native-app .btn,
+.native-app .icon-btn,
+.native-app .mobile-nav-link,
+.native-app .category-scroll-chip,
+.native-app .drawer-link {
+  transition:
+    transform 0.22s ease,
+    box-shadow 0.22s ease,
+    background-color 0.22s ease,
+    border-color 0.22s ease,
+    color 0.22s ease;
+  transform: translate3d(0, 0, 0);
+  will-change: transform;
+}
+
+.native-app .btn:active,
+.native-app .icon-btn:active,
+.native-app .mobile-nav-link:active,
+.native-app .category-scroll-chip:active,
+.native-app .drawer-link:active {
+  transform: translate3d(0, 1px, 0) scale(0.985);
+}
+
+.native-app .panel-card,
+.native-app .summary-card,
+.native-app .product-card,
+.native-app .promo-banner,
+.native-app .cart-item,
+.native-app .checkout-summary-card {
+  transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
+}
+
+.native-offline-banner {
+  position: fixed;
+  top: calc(0.75rem + env(safe-area-inset-top));
+  left: 50%;
+  z-index: 1001;
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  width: min(calc(100% - 1.5rem), 32rem);
+  padding: 0.92rem 1rem;
+  border: 1px solid rgba(244, 247, 242, 0.08);
+  border-radius: 1rem;
+  color: #f4f7f2;
+  background: rgba(16, 23, 19, 0.94);
+  box-shadow: 0 24px 55px rgba(0, 0, 0, 0.28);
+  backdrop-filter: blur(16px);
+  transform: translateX(-50%);
+}
+
+.native-offline-banner strong,
+.native-offline-banner span {
+  display: block;
+}
+
+.native-offline-banner strong {
+  font-size: 0.95rem;
+}
+
+.native-offline-banner span {
+  color: rgba(244, 247, 242, 0.78);
+  font-size: 0.82rem;
 }
 
 .hero-section {

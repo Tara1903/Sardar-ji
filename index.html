@@ -13,6 +13,139 @@
       content="tiffin service in Indore, monthly thali plan Indore, food delivery in Indore, affordable tiffin near me, Sardar Ji Food Corner"
     />
     <meta name="theme-color" content="#e23744" />
+    <style>
+      #native-app-loader {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+        background:
+          radial-gradient(circle at top right, rgba(243, 202, 66, 0.18), transparent 24%),
+          linear-gradient(180deg, #f7f8ef 0%, #eef3df 100%);
+      }
+
+      #native-app-loader::before,
+      #native-app-loader::after {
+        content: '';
+        position: absolute;
+        border-radius: 999px;
+        filter: blur(14px);
+        pointer-events: none;
+      }
+
+      #native-app-loader::before {
+        top: 14%;
+        left: 8%;
+        width: 160px;
+        height: 160px;
+        background: rgba(255, 107, 0, 0.18);
+      }
+
+      #native-app-loader::after {
+        right: 10%;
+        bottom: 12%;
+        width: 180px;
+        height: 180px;
+        background: rgba(23, 116, 58, 0.16);
+      }
+
+      .native-loader-shell {
+        position: relative;
+        width: min(100%, 320px);
+        border-radius: 32px;
+        padding: 28px 24px;
+        text-align: center;
+        background: rgba(255, 255, 255, 0.82);
+        border: 1px solid rgba(255, 255, 255, 0.48);
+        box-shadow: 0 28px 70px rgba(15, 23, 42, 0.16);
+        backdrop-filter: blur(16px);
+      }
+
+      .native-loader-logo {
+        width: min(100%, 228px);
+        margin: 0 auto 18px;
+      }
+
+      .native-loader-logo-dark {
+        display: none;
+      }
+
+      .native-loader-title {
+        margin: 0;
+        color: #182316;
+        font: 800 22px/1.05 'Poppins', 'Inter', system-ui, sans-serif;
+      }
+
+      .native-loader-copy {
+        margin: 10px 0 0;
+        color: #5d6d5a;
+        font: 500 14px/1.6 'Inter', system-ui, sans-serif;
+      }
+
+      .native-loader-bar {
+        position: relative;
+        width: 100%;
+        height: 10px;
+        overflow: hidden;
+        margin-top: 18px;
+        border-radius: 999px;
+        background: rgba(24, 35, 22, 0.1);
+      }
+
+      .native-loader-bar span {
+        position: absolute;
+        inset: 0 auto 0 0;
+        width: 42%;
+        border-radius: inherit;
+        background: linear-gradient(135deg, #ff8d2b, #ff6b00);
+        animation: native-loader-slide 1.15s ease-in-out infinite;
+      }
+
+      @keyframes native-loader-slide {
+        0% { transform: translateX(-110%); }
+        50% { transform: translateX(120%); }
+        100% { transform: translateX(220%); }
+      }
+
+      html.native-app.app-booting #native-app-loader {
+        display: flex;
+      }
+
+      html.native-app.app-booting body {
+        overflow: hidden;
+      }
+
+      html.dark.native-app #native-app-loader {
+        background:
+          radial-gradient(circle at top right, rgba(243, 202, 66, 0.12), transparent 26%),
+          linear-gradient(180deg, #101713 0%, #0f1512 100%);
+      }
+
+      html.dark.native-app .native-loader-shell {
+        background: rgba(20, 25, 23, 0.86);
+        border-color: rgba(255, 255, 255, 0.08);
+        box-shadow: 0 30px 80px rgba(0, 0, 0, 0.35);
+      }
+
+      html.dark.native-app .native-loader-logo-light {
+        display: none;
+      }
+
+      html.dark.native-app .native-loader-logo-dark {
+        display: block;
+      }
+
+      html.dark.native-app .native-loader-title {
+        color: #f4f7f2;
+      }
+
+      html.dark.native-app .native-loader-copy {
+        color: #a8b4aa;
+      }
+    </style>
     <script>
       (() => {
         try {
@@ -24,13 +157,27 @@
           const prefersDark =
             window.matchMedia &&
             window.matchMedia('(prefers-color-scheme: dark)').matches;
+          const isNativeShell =
+            window.location.protocol === 'capacitor:' ||
+            (window.location.hostname === 'localhost' &&
+              (!window.location.port || window.location.port === '80'));
           const resolvedTheme =
             theme === 'dark' || (theme === 'system' && prefersDark) ? 'dark' : 'light';
           const root = document.documentElement;
           const metaThemeColor = document.querySelector("meta[name='theme-color']");
+          const viewportMeta = document.querySelector("meta[name='viewport']");
 
           root.classList.toggle('dark', resolvedTheme === 'dark');
           root.style.colorScheme = resolvedTheme;
+          if (isNativeShell) {
+            root.classList.add('native-app', 'app-booting');
+            if (viewportMeta) {
+              viewportMeta.setAttribute(
+                'content',
+                'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover',
+              );
+            }
+          }
           if (metaThemeColor) {
             metaThemeColor.setAttribute('content', resolvedTheme === 'dark' ? '#101713' : '#e23744');
           }
@@ -44,6 +191,15 @@
     <title>Tiffin Service in Indore | Monthly Thali Plan | Sardar Ji Food Corner</title>
   </head>
   <body>
+    <div id="native-app-loader" aria-hidden="true">
+      <div class="native-loader-shell">
+        <img class="native-loader-logo native-loader-logo-light" src="/brand-logo-light.png" alt="" />
+        <img class="native-loader-logo native-loader-logo-dark" src="/brand-logo-dark.png" alt="" />
+        <p class="native-loader-title">Opening the app</p>
+        <p class="native-loader-copy">Preparing your meals, rewards, and live order flow.</p>
+        <div class="native-loader-bar"><span></span></div>
+      </div>
+    </div>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>

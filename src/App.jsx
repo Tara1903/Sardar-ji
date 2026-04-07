@@ -12,6 +12,7 @@ import { Loader } from './components/common/Loader';
 import { CartActionToast } from './components/order/CartActionToast';
 import { CheckoutRecoveryPopup } from './components/order/CheckoutRecoveryPopup';
 import { GoogleAnalytics } from './components/seo/GoogleAnalytics';
+import { NativeOfflineNotice } from './components/common/NativeOfflineNotice';
 import { useAppData } from './contexts/AppDataContext';
 import { useCart } from './contexts/CartContext';
 import { clearCheckoutRecovery, readCheckoutRecovery } from './utils/cartRecovery';
@@ -275,6 +276,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <GoogleAnalytics />
+      <NativeOfflineNotice />
       <AnimatedRoutes />
     </BrowserRouter>
   );
