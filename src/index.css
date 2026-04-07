@@ -1808,6 +1808,7 @@ textarea {
   margin: 0 auto 1rem;
   padding: 1.4rem;
   border-radius: 28px;
+  color: #182316;
   background:
     radial-gradient(circle at top right, rgba(243, 202, 66, 0.26), transparent 30%),
     rgba(255, 255, 255, 0.98);
@@ -1817,14 +1818,27 @@ textarea {
 
 .offer-popup-sheet h3 {
   margin: 0;
+  color: #182316;
   font-family: 'Sora', sans-serif;
   font-size: clamp(1.6rem, 3vw, 2rem);
+  line-height: 1.1;
 }
 
 .offer-popup-sheet p,
 .offer-popup-sheet small {
   display: block;
   margin: 0.45rem 0 0;
+  color: #5d6b62;
+  opacity: 1;
+}
+
+.offer-popup-sheet .spaced {
+  color: #6d7a72;
+}
+
+.offer-popup-sheet small {
+  color: #e23744;
+  font-weight: 700;
 }
 
 .offer-popup-actions {
