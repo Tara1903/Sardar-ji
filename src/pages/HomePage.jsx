@@ -476,7 +476,7 @@ export const HomePage = () => {
 
       {!itemCount ? (
         <div className="home-primary-cta">
-          <button className="btn btn-primary home-primary-cta-button" onClick={scrollToCatalog} type="button">
+          <button className="btn btn-primary home-primary-cta-button" onClick={handleOrderNow} type="button">
             <ShoppingBag size={18} />
             Order Now
           </button>
