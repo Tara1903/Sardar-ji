@@ -71,3 +71,9 @@ export const trackReviewIntent = ({ orderId, source }) =>
     order_id: orderId || '',
     source: source || 'website',
   });
+
+export const trackAppDownloadClick = ({ source = 'website' }) =>
+  trackEvent('app_download_click', {
+    source,
+    file_type: 'apk',
+  });

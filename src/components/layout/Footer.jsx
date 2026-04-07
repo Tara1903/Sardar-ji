@@ -63,6 +63,7 @@ export const Footer = ({ settings }) => {
           <Link to="/">Home</Link>
           <Link to="/menu">Menu</Link>
           <Link to="/monthly-thali-plan-indore">Monthly Plan</Link>
+          <Link to="/download-app">Download App</Link>
           <Link to="/tiffin-service-indore">Tiffin Service</Link>
           <Link to="/punjabi-food-restaurant-indore">Punjabi Food</Link>
           <Link to="/veg-tiffin-service-indore">Veg Tiffin</Link>

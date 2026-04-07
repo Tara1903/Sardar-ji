@@ -71,6 +71,11 @@ const DailyThaliNearSiliconRoadPage = lazy(() =>
     default: module.DailyThaliNearSiliconRoadPage,
   })),
 );
+const DownloadAppPage = lazy(() =>
+  import('./pages/DownloadAppPage').then((module) => ({
+    default: module.DownloadAppPage,
+  })),
+);
 const AdminPage = lazy(() => import('./pages/AdminPage').then((module) => ({ default: module.AdminPage })));
 const AdminIndexRedirect = lazy(() =>
   import('./pages/AdminPage').then((module) => ({ default: module.AdminIndexRedirect })),
@@ -189,6 +194,7 @@ const AnimatedRoutes = () => {
             <Route path="/veg-tiffin-service-indore" element={<VegTiffinServiceIndorePage />} />
             <Route path="/office-lunch-delivery-indore" element={<OfficeLunchDeliveryIndorePage />} />
             <Route path="/daily-thali-near-silicon-road" element={<DailyThaliNearSiliconRoadPage />} />
+            <Route path="/download-app" element={<DownloadAppPage />} />
             <Route path="/product/:id" element={<ProductDetailPage />} />
             <Route path="/cart" element={<CartPage />} />
             <Route

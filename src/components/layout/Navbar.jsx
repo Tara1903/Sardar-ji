@@ -22,6 +22,7 @@ export const Navbar = ({ businessName }) => {
     { to: '/', label: 'Home' },
     { to: '/menu', label: 'Menu' },
     { to: '/my-subscription', label: 'Monthly Plan' },
+    { to: '/download-app', label: 'Download App' },
     { to: '/track', label: 'Track order' },
   ];
 

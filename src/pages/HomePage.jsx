@@ -41,6 +41,7 @@ import {
 import { trackWhatsAppClick } from '../utils/analytics';
 import { createBreadcrumbSchema, createFaqSchema } from '../seo/siteSeo';
 import { STAGGER_CONTAINER_VARIANTS } from '../motion/variants';
+import { APP_DOWNLOAD_LABEL } from '../utils/appDownload';
 
 export const HomePage = () => {
   const navigate = useNavigate();
@@ -258,6 +259,28 @@ export const HomePage = () => {
               </motion.article>
             ))}
           </div>
+        </div>
+      </section>
+
+      <section className="section app-download-teaser-section">
+        <div className="container">
+          <PromoBanner
+            actions={
+              <>
+                <Link className="btn btn-primary" to="/download-app">
+                  {APP_DOWNLOAD_LABEL}
+                </Link>
+                <Link className="btn btn-secondary" to="/menu">
+                  Keep ordering on web
+                </Link>
+              </>
+            }
+            className="app-download-teaser"
+            description="Install the Android app for a faster food ordering flow, cleaner live tracking, and quick access to your monthly plan."
+            eyebrow="App now available"
+            title="Prefer a proper app experience? Get Sardar Ji Food Corner on your phone"
+            tone="success"
+          />
         </div>
       </section>
 
