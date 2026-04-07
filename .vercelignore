@@ -1,0 +1,8 @@
+.agents
+.git
+.vercel
+android
+dist
+node_modules
+plugins
+tools
