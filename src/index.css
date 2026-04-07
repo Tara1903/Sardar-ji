@@ -6598,8 +6598,44 @@ html.dark .customer-app-shell .cart-page-intro,
 html.dark .customer-app-shell .checkout-page-intro {
   border-color: rgba(255, 166, 92, 0.1);
   background:
-    radial-gradient(circle at top right, rgba(255, 145, 77, 0.18), transparent 34%),
-    linear-gradient(180deg, rgba(24, 30, 36, 0.94), rgba(17, 24, 39, 0.9));
+    radial-gradient(circle at top right, rgba(255, 145, 77, 0.12), transparent 34%),
+    linear-gradient(180deg, rgba(20, 25, 30, 0.97), rgba(12, 16, 20, 0.95));
+}
+
+html.dark .customer-app-shell .panel-card,
+html.dark .customer-app-shell .summary-card,
+html.dark .customer-app-shell .product-card,
+html.dark .customer-app-shell .promo-banner,
+html.dark .customer-app-shell .cart-item,
+html.dark .customer-app-shell .address-card,
+html.dark .customer-app-shell .hero-support-card,
+html.dark .customer-app-shell .category-orb,
+html.dark .customer-app-shell .checkout-recovery-popup {
+  background: linear-gradient(180deg, rgba(18, 23, 28, 0.96), rgba(12, 16, 20, 0.94));
+}
+
+html.dark .customer-app-shell .cart-page-intro p:not(.eyebrow),
+html.dark .customer-app-shell .checkout-page-intro p:not(.eyebrow),
+html.dark .customer-app-shell .product-copy p:last-child,
+html.dark .customer-app-shell .storefront-offer-row span,
+html.dark .customer-app-shell .hero-support-card span {
+  color: #cdd6db;
+  opacity: 1;
+}
+
+html.dark .customer-app-shell .storefront-offer-row,
+html.dark .coupon-chip,
+html.dark .category-orb.active,
+html.dark .detail-list-premium span,
+html.dark .profile-summary-pill:not(.is-success) {
+  background: rgba(29, 34, 39, 0.94);
+  border-color: rgba(255, 255, 255, 0.1);
+  color: var(--text);
+}
+
+html.dark .coupon-chip.active {
+  border-color: rgba(50, 183, 104, 0.28);
+  background: rgba(22, 163, 74, 0.16);
 }
 
 html.dark .customer-app-shell .nav-link {
