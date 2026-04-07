@@ -17,6 +17,7 @@ const MotionLink = motion(Link);
 export const HeroCarousel = ({
   onPrimaryAction,
   primaryLabel = 'Order Now',
+  searchNode = null,
   secondaryLabel = 'View Menu',
   slides = [],
 }) => {
@@ -121,6 +122,9 @@ export const HeroCarousel = ({
                 </motion.div>
                 <motion.h1 variants={HERO_CONTENT_ITEM_VARIANTS}>{activeSlide.title}</motion.h1>
                 <motion.p variants={HERO_CONTENT_ITEM_VARIANTS}>{activeSlide.description}</motion.p>
+                {searchNode ? (
+                  <motion.div variants={HERO_CONTENT_ITEM_VARIANTS}>{searchNode}</motion.div>
+                ) : null}
 
                 <motion.div className="app-hero-chip-row" variants={HERO_CONTENT_ITEM_VARIANTS}>
                   {(activeSlide.highlights || []).map((highlight) => (

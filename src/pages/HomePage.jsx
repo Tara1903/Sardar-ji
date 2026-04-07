@@ -154,26 +154,27 @@ export const HomePage = () => {
               </span>
             </div>
 
-            <motion.div
-              animate={{ opacity: 1, y: 0 }}
-              className="home-hero-search-bar"
-              initial={{ opacity: 0, y: 12 }}
-              transition={{ duration: 0.28, ease: 'easeOut' }}
-            >
-              <p className="eyebrow hero-search-eyebrow">Search your favourite dishes right from home</p>
-              <label className="search-bar landing-search-bar premium-search-bar">
-                <Search size={18} />
-                <input
-                  onChange={(event) => startTransition(() => setSearch(event.target.value))}
-                  placeholder="Search Paneer, Thali..."
-                  value={search}
-                />
-              </label>
-            </motion.div>
-
             <HeroCarousel
               onPrimaryAction={handleOrderNow}
               primaryLabel={heroConfig.primaryCta}
+              searchNode={
+                <motion.div
+                  animate={{ opacity: 1, y: 0 }}
+                  className="home-hero-search-bar"
+                  initial={{ opacity: 0, y: 12 }}
+                  transition={{ duration: 0.28, ease: 'easeOut' }}
+                >
+                  <p className="eyebrow hero-search-eyebrow">Search your favourite dishes right from home</p>
+                  <label className="search-bar landing-search-bar premium-search-bar">
+                    <Search size={18} />
+                    <input
+                      onChange={(event) => startTransition(() => setSearch(event.target.value))}
+                      placeholder="Search Paneer, Thali..."
+                      value={search}
+                    />
+                  </label>
+                </motion.div>
+              }
               secondaryLabel={heroConfig.secondaryCta}
               slides={heroSlides}
             />
