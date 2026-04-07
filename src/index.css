@@ -7447,24 +7447,40 @@ html.dark .detail-media-overlay-card {
   }
 
   .customer-app-shell .floating-cart-bar {
-    width: auto;
-    padding: 0.85rem 0.9rem;
-    border-radius: 24px;
+    left: 50%;
+    right: auto;
+    bottom: calc(70px + env(safe-area-inset-bottom, 0px));
+    width: calc(100% - 24px);
+    max-width: 500px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.85rem;
+    padding: 12px 16px;
+    border-radius: 16px;
+    transform: translateX(-50%);
+    box-sizing: border-box;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(18px);
   }
 
-  .customer-app-shell .floating-cart-bar,
   .customer-app-shell .floating-cart-bar-copy {
-    align-items: stretch;
-  }
-
-  .customer-app-shell .floating-cart-bar {
-    flex-direction: column;
-    gap: 0.8rem;
+    flex: 1 1 auto;
+    min-width: 0;
+    align-items: flex-start;
   }
 
   .customer-app-shell .floating-cart-bar-action {
-    width: 100%;
+    flex: 0 0 auto;
+    width: auto;
     justify-content: center;
+    white-space: nowrap;
+  }
+
+  .customer-app-shell .floating-cart-bar-copy p {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
   }
 
   .otp-success-popup {

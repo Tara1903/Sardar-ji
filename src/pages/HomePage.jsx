@@ -9,7 +9,7 @@ import {
   ShoppingBag,
   Star,
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { PageTransition } from '../components/common/PageTransition';
 import { PromoBanner } from '../components/common/PromoBanner';
 import { SkeletonGrid } from '../components/common/Loader';
@@ -42,14 +42,8 @@ import { trackWhatsAppClick } from '../utils/analytics';
 import { createBreadcrumbSchema, createFaqSchema } from '../seo/siteSeo';
 import { STAGGER_CONTAINER_VARIANTS } from '../motion/variants';
 
-const scrollToCatalog = () => {
-  document.getElementById('home-catalog')?.scrollIntoView({
-    behavior: 'smooth',
-    block: 'start',
-  });
-};
-
 export const HomePage = () => {
+  const navigate = useNavigate();
   const { appConfig, products, categories, settings, loading } = useAppData();
   const { addItemsToCart, items, itemCount } = useCart();
   const { isAuthenticated } = useAuth();
@@ -96,6 +90,9 @@ export const HomePage = () => {
   const dynamicHeroLine = itemCount
     ? liveCartState.offerMessage
     : 'Add your favourites and unlock the best delivery reward automatically.';
+  const handleOrderNow = () => {
+    navigate('/menu');
+  };
   const faqItems = [
     {
       question: 'Do you offer tiffin service in Indore for daily orders?',
@@ -175,7 +172,7 @@ export const HomePage = () => {
             </motion.div>
 
             <HeroCarousel
-              onPrimaryAction={scrollToCatalog}
+              onPrimaryAction={handleOrderNow}
               primaryLabel={heroConfig.primaryCta}
               secondaryLabel={heroConfig.secondaryCta}
               slides={heroSlides}
