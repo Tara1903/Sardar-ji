@@ -33,8 +33,11 @@ import {
   APP_DOWNLOAD_BADGE,
   APP_DOWNLOAD_FILE_NAME,
   APP_DOWNLOAD_LABEL,
-  APP_DOWNLOAD_PATH,
   APP_DOWNLOAD_SUPPORT_NOTE,
+  APP_LATEST_VERSION,
+  APP_RELEASE_DATE,
+  APP_RELEASE_HIGHLIGHTS,
+  getAppDownloadUrl,
 } from '../utils/appDownload';
 import { trackAppDownloadClick } from '../utils/analytics';
 
@@ -238,6 +241,7 @@ export const DownloadAppPage = () => {
   const reviews = (appConfig.reviews?.length ? appConfig.reviews : CUSTOMER_REVIEWS).slice(0, 3);
   const activeSlide = previewSlides[activeIndex];
   const businessName = settings?.businessName || 'Sardar Ji Food Corner';
+  const downloadUrl = getAppDownloadUrl();
 
   const handleDownloadClick = (source) => {
     trackAppDownloadClick({ source });
@@ -305,7 +309,7 @@ export const DownloadAppPage = () => {
                 <MotionAnchor
                   className="btn btn-primary download-app-primary"
                   download={APP_DOWNLOAD_FILE_NAME}
-                  href={APP_DOWNLOAD_PATH}
+                  href={downloadUrl}
                   initial="rest"
                   onClick={() => handleDownloadClick('download-page-hero')}
                   variants={BUTTON_PRESS_VARIANTS}
@@ -331,6 +335,20 @@ export const DownloadAppPage = () => {
               <motion.p className="download-support-note" variants={CONTENT_FADE_VARIANTS}>
                 {APP_DOWNLOAD_SUPPORT_NOTE}
               </motion.p>
+
+              <motion.div className="download-release-strip" variants={CONTENT_FADE_VARIANTS}>
+                <div className="download-release-meta">
+                  <strong>Latest app build</strong>
+                  <span>
+                    v{APP_LATEST_VERSION} • Updated {APP_RELEASE_DATE}
+                  </span>
+                </div>
+                <ul className="download-release-points">
+                  {APP_RELEASE_HIGHLIGHTS.map((highlight) => (
+                    <li key={highlight}>{highlight}</li>
+                  ))}
+                </ul>
+              </motion.div>
             </motion.div>
 
             <motion.div
@@ -530,7 +548,7 @@ export const DownloadAppPage = () => {
               <MotionAnchor
                 className="btn btn-primary"
                 download={APP_DOWNLOAD_FILE_NAME}
-                href={APP_DOWNLOAD_PATH}
+                href={downloadUrl}
                 initial="rest"
                 onClick={() => handleDownloadClick('download-page-final-cta')}
                 variants={BUTTON_PRESS_VARIANTS}
