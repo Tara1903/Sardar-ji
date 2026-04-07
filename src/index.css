@@ -4707,14 +4707,12 @@ body {
 
   .menu-page-shell .menu-sidebar .category-showcase {
     display: grid;
-    grid-auto-flow: column;
-    grid-auto-columns: 132px;
-    gap: 0.9rem;
-    overflow-x: auto;
-    overflow-y: hidden;
-    padding: 0.1rem 0.1rem 0.45rem;
-    scroll-snap-type: x proximity;
-    scrollbar-width: none;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-auto-flow: row;
+    gap: 0.65rem;
+    overflow: visible;
+    padding: 0.1rem 0;
+    scroll-snap-type: none;
   }
 
   .menu-page-shell .menu-sidebar .category-showcase::-webkit-scrollbar {
@@ -4722,22 +4720,25 @@ body {
   }
 
   .menu-page-shell .menu-sidebar .category-orb {
-    width: 132px;
-    min-width: 132px;
+    width: 100%;
+    min-width: 0;
     align-content: start;
-    gap: 0.55rem;
-    scroll-snap-align: start;
+    gap: 0.45rem;
+    padding: 0.65rem 0.3rem 0.8rem;
+    border-radius: 20px;
+    scroll-snap-align: none;
   }
 
   .menu-page-shell .menu-sidebar .category-orb-image-wrap {
-    width: 72px;
-    height: 72px;
+    width: 54px;
+    height: 54px;
+    border-radius: 18px;
   }
 
   .menu-page-shell .menu-sidebar .category-orb-label {
-    max-width: 11ch;
-    font-size: 0.88rem;
-    line-height: 1.12;
+    max-width: 7ch;
+    font-size: 0.76rem;
+    line-height: 1.08;
     text-align: center;
     text-wrap: balance;
   }
