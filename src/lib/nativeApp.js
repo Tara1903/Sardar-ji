@@ -143,6 +143,21 @@ const bindBackButton = async (App) => {
   }
 };
 
+const bindAppResume = async (App, StatusBar, Style) => {
+  try {
+    await App.addListener('appStateChange', ({ isActive }) => {
+      if (!isActive) {
+        return;
+      }
+
+      toggleConnectivityClasses();
+      void applyStatusBarAppearance(StatusBar, Style);
+    });
+  } catch {
+    // Ignore resume support on unsupported native shells.
+  }
+};
+
 export const initializeNativeAppShell = async () => {
   if (hasInitialized || !isNativeAppShell()) {
     return;
@@ -161,6 +176,7 @@ export const initializeNativeAppShell = async () => {
   await applyStatusBarAppearance(StatusBar, Style);
   observeThemeForStatusBar(StatusBar, Style);
   await bindBackButton(App);
+  await bindAppResume(App, StatusBar, Style);
   await registerNativeServiceWorker();
   await waitForAppReady();
   setBootComplete();

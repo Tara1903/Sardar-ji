@@ -4,26 +4,25 @@ import { Download, Sparkles } from 'lucide-react';
 import { isNativeAppShell } from '../../lib/nativeApp';
 import { BUTTON_PRESS_VARIANTS, FLOATING_CART_VARIANTS } from '../../motion/variants';
 import {
-  APP_LATEST_VERSION,
-  APP_RELEASE_DATE,
+  APP_RELEASE,
   APP_UPDATE_LABEL,
+  fetchLatestAppRelease,
   getAppDownloadUrl,
   isAppUpdateRequired,
 } from '../../utils/appDownload';
 import { trackAppDownloadClick } from '../../utils/analytics';
 
-const DISMISS_KEY = `sjfc-app-update-dismissed:${APP_LATEST_VERSION}`;
-
 export const NativeAppUpdatePrompt = () => {
   const [appVersion, setAppVersion] = useState('');
+  const [appBuild, setAppBuild] = useState(0);
   const [needsUpdate, setNeedsUpdate] = useState(false);
-  const [dismissed, setDismissed] = useState(() => {
-    if (typeof window === 'undefined') {
-      return false;
-    }
+  const [releaseInfo, setReleaseInfo] = useState(APP_RELEASE);
+  const [dismissed, setDismissed] = useState(false);
 
-    return window.localStorage.getItem(DISMISS_KEY) === 'true';
-  });
+  const dismissKey = useMemo(
+    () => `sjfc-app-update-dismissed:${releaseInfo.version}:${releaseInfo.build}`,
+    [releaseInfo.build, releaseInfo.version],
+  );
 
   useEffect(() => {
     if (!isNativeAppShell()) {
@@ -31,19 +30,26 @@ export const NativeAppUpdatePrompt = () => {
     }
 
     let cancelled = false;
+    const controller = new AbortController();
 
     const loadVersion = async () => {
       try {
         const { App } = await import('@capacitor/app');
-        const info = await App.getInfo();
+        const [info, latestRelease] = await Promise.all([
+          App.getInfo(),
+          fetchLatestAppRelease({ signal: controller.signal }),
+        ]);
 
         if (cancelled) {
           return;
         }
 
         const currentVersion = info.version || '0.0.0';
+        const currentBuild = Number.parseInt(info.build || '0', 10) || 0;
         setAppVersion(currentVersion);
-        setNeedsUpdate(isAppUpdateRequired(currentVersion));
+        setAppBuild(currentBuild);
+        setReleaseInfo(latestRelease);
+        setNeedsUpdate(isAppUpdateRequired(currentVersion, currentBuild, latestRelease));
       } catch {
         if (!cancelled) {
           setNeedsUpdate(false);
@@ -52,11 +58,29 @@ export const NativeAppUpdatePrompt = () => {
     };
 
     void loadVersion();
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        void loadVersion();
+      }
+    };
+    window.addEventListener('focus', handleVisibility);
+    document.addEventListener('visibilitychange', handleVisibility);
 
     return () => {
       cancelled = true;
+      window.removeEventListener('focus', handleVisibility);
+      document.removeEventListener('visibilitychange', handleVisibility);
+      controller.abort();
     };
   }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    setDismissed(window.localStorage.getItem(dismissKey) === 'true');
+  }, [dismissKey]);
 
   const shouldShow = useMemo(
     () => isNativeAppShell() && needsUpdate && !dismissed,
@@ -67,13 +91,13 @@ export const NativeAppUpdatePrompt = () => {
     setDismissed(true);
 
     if (typeof window !== 'undefined') {
-      window.localStorage.setItem(DISMISS_KEY, 'true');
+      window.localStorage.setItem(dismissKey, 'true');
     }
   };
 
   const handleUpdate = () => {
     trackAppDownloadClick({ source: 'native-app-update-prompt' });
-    window.location.assign(getAppDownloadUrl());
+    window.location.assign(getAppDownloadUrl(releaseInfo));
   };
 
   return (
@@ -92,9 +116,13 @@ export const NativeAppUpdatePrompt = () => {
               New app build available
             </span>
             <strong>
-              Update from v{appVersion || 'older build'} to v{APP_LATEST_VERSION}
+              Update from v{appVersion || 'older build'}{appBuild ? ` (${appBuild})` : ''} to v
+              {releaseInfo.version}
             </strong>
-            <p>Get the latest design, features, and smoother app startup. Updated {APP_RELEASE_DATE}.</p>
+            <p>
+              Get the latest website design, features, and smoother native startup. Updated{' '}
+              {releaseInfo.releaseDate}.
+            </p>
           </div>
 
           <div className="native-app-update-actions">
