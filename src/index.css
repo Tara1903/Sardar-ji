@@ -4707,26 +4707,35 @@ body {
 
   .menu-page-shell .menu-sidebar .category-showcase {
     display: grid;
-    grid-auto-flow: row;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 1rem 0.7rem;
-    overflow: visible;
-    padding-bottom: 0;
+    grid-auto-flow: column;
+    grid-auto-columns: 132px;
+    gap: 0.9rem;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 0.1rem 0.1rem 0.45rem;
+    scroll-snap-type: x proximity;
+    scrollbar-width: none;
+  }
+
+  .menu-page-shell .menu-sidebar .category-showcase::-webkit-scrollbar {
+    display: none;
   }
 
   .menu-page-shell .menu-sidebar .category-orb {
-    min-width: 0;
+    width: 132px;
+    min-width: 132px;
     align-content: start;
     gap: 0.55rem;
+    scroll-snap-align: start;
   }
 
   .menu-page-shell .menu-sidebar .category-orb-image-wrap {
-    width: 64px;
-    height: 64px;
+    width: 72px;
+    height: 72px;
   }
 
   .menu-page-shell .menu-sidebar .category-orb-label {
-    max-width: 100%;
+    max-width: 11ch;
     font-size: 0.88rem;
     line-height: 1.12;
     text-align: center;
