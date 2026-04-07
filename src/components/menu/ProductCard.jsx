@@ -37,6 +37,11 @@ export const ProductCard = ({ product, whatsappNumber, variant = 'default', moti
             alt={`${product.name} pure veg food delivery in Indore`}
             className="product-image"
             fallbackSrc={getFallbackImage(product.category)}
+            sizes={
+              isCompact
+                ? '(max-width: 768px) 88vw, (max-width: 1180px) 42vw, 24vw'
+                : '(max-width: 768px) 92vw, (max-width: 1180px) 42vw, 28vw'
+            }
             src={product.image}
           />
         </motion.div>

@@ -89,6 +89,7 @@ export const ProductDetailPage = () => {
                   alt={`${product.name} home style thali and veg food in Indore`}
                   className="detail-media-image"
                   fallbackSrc={getFallbackImage(product.category)}
+                  sizes="(max-width: 768px) 100vw, 52vw"
                   src={product.image}
                 />
               </motion.div>

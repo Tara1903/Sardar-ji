@@ -1,5 +1,46 @@
 import { useEffect, useMemo, useState } from 'react';
 
+const UNSPLASH_WIDTHS = [120, 240, 360, 480, 640, 768, 960, 1200, 1600];
+
+const isUnsplashUrl = (src) => {
+  try {
+    const url = new URL(src);
+    return url.hostname.includes('images.unsplash.com');
+  } catch {
+    return false;
+  }
+};
+
+const buildUnsplashUrl = (src, width, quality = 82) => {
+  try {
+    const url = new URL(src);
+    if (!url.hostname.includes('images.unsplash.com')) {
+      return src;
+    }
+
+    url.searchParams.set('w', String(width));
+    url.searchParams.set('q', String(quality));
+    url.searchParams.set('auto', 'format');
+    return url.toString();
+  } catch {
+    return src;
+  }
+};
+
+export const getResponsiveImageProps = (
+  src,
+  sizes = '(max-width: 768px) 100vw, (max-width: 1180px) 50vw, 33vw',
+) => {
+  if (!isUnsplashUrl(src)) {
+    return {};
+  }
+
+  return {
+    sizes,
+    srcSet: UNSPLASH_WIDTHS.map((width) => `${buildUnsplashUrl(src, width)} ${width}w`).join(', '),
+  };
+};
+
 const buildPlaceholderSrc = (src) => {
   try {
     const url = new URL(src);
@@ -22,6 +63,7 @@ export const SmartImage = ({
   className = '',
   fallbackSrc = '',
   loading = 'lazy',
+  sizes = '(max-width: 768px) 100vw, (max-width: 1180px) 50vw, 33vw',
   src,
   wrapperClassName = '',
 }) => {
@@ -30,6 +72,10 @@ export const SmartImage = ({
   const placeholderSrc = useMemo(
     () => buildPlaceholderSrc(activeSrc || fallbackSrc || src || ''),
     [activeSrc, fallbackSrc, src],
+  );
+  const responsiveImageProps = useMemo(
+    () => getResponsiveImageProps(activeSrc || fallbackSrc || src || '', sizes),
+    [activeSrc, fallbackSrc, sizes, src],
   );
 
   useEffect(() => {
@@ -64,6 +110,7 @@ export const SmartImage = ({
         onLoad={() => setLoaded(true)}
         referrerPolicy="no-referrer"
         src={activeSrc || fallbackSrc}
+        {...responsiveImageProps}
       />
     </span>
   );

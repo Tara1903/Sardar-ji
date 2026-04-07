@@ -90,6 +90,7 @@ export const CartPage = () => {
                   alt={item.name}
                   className="cart-item-image"
                   fallbackSrc={getFallbackImage(item.category)}
+                  sizes="(max-width: 768px) 100vw, 140px"
                   src={item.image}
                 />
                 <div className="cart-copy">

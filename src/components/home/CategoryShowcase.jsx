@@ -49,6 +49,7 @@ export const CategoryShowcase = ({
                 className="category-orb-image"
                 fallbackSrc={getFallbackImage(category.name)}
                 loading="lazy"
+                sizes="80px"
                 wrapperClassName="category-orb-image-frame"
                 src={category.image}
               />
