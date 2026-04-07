@@ -130,15 +130,6 @@ export const MenuPage = () => {
             </div>
 
             <div className="menu-filter-block">
-              <strong>Categories</strong>
-              <CategoryShowcase
-                activeCategory={activeCategory}
-                categories={appConfig.categories}
-                onSelectCategory={setActiveCategory}
-              />
-            </div>
-
-            <div className="menu-filter-block">
               <strong>
                 <Filter size={15} />
                 Price filters
@@ -173,6 +164,15 @@ export const MenuPage = () => {
                 </p>
               </div>
               <span className="hero-chip">Veg only</span>
+            </div>
+
+            <div className="menu-inline-categories">
+              <strong>Categories</strong>
+              <CategoryShowcase
+                activeCategory={activeCategory}
+                categories={appConfig.categories}
+                onSelectCategory={setActiveCategory}
+              />
             </div>
 
             <PromoBanner
