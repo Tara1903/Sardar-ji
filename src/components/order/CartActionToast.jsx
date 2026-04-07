@@ -7,7 +7,7 @@ export const CartActionToast = ({ toast, onDismiss }) => (
     {toast ? (
       <motion.aside
         animate={{ opacity: 1, y: 0, scale: 1 }}
-        className="cart-action-toast"
+        className="cart-action-toast mobile-popup-base mobile-popup-bottom mobile-popup-nav-clear"
         exit={{ opacity: 0, y: 18, scale: 0.98 }}
         initial={{ opacity: 0, y: 24, scale: 0.96 }}
         role="status"

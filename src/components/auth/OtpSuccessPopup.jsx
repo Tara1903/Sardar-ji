@@ -22,7 +22,7 @@ export const OtpSuccessPopup = ({ open, title, message, onClose }) => {
       {open ? (
         <motion.div
           animate={{ opacity: 1, y: 0, scale: 1 }}
-          className="otp-success-popup"
+          className="otp-success-popup mobile-popup-base mobile-popup-top"
           exit={{ opacity: 0, y: 18, scale: 0.98 }}
           initial={{ opacity: 0, y: 18, scale: 0.98 }}
           role="status"

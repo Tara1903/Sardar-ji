@@ -6,13 +6,13 @@ export const OrderPlacedPopup = ({ open, orderNumber, redirectSeconds, totalLabe
     {open ? (
       <motion.div
         animate={{ opacity: 1 }}
-        className="order-placed-popup-overlay"
+        className="order-placed-popup-overlay mobile-popup-center-overlay"
         exit={{ opacity: 0 }}
         initial={{ opacity: 0 }}
       >
         <motion.div
           animate={{ opacity: 1, y: 0, scale: 1 }}
-          className="order-placed-popup-sheet"
+          className="order-placed-popup-sheet mobile-popup-sheet"
           exit={{ opacity: 0, y: 20, scale: 0.98 }}
           initial={{ opacity: 0, y: 20, scale: 0.98 }}
           role="dialog"

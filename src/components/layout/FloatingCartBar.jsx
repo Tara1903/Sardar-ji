@@ -29,7 +29,7 @@ export const FloatingCartBar = () => {
       {!isHidden ? (
         <motion.div
           animate="show"
-          className="floating-cart-bar"
+          className="floating-cart-bar mobile-popup-base mobile-popup-bottom mobile-popup-nav-clear"
           exit="exit"
           initial="hidden"
           layout

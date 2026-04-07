@@ -8,7 +8,7 @@ export const CheckoutRecoveryPopup = ({ onDismiss, recovery }) => {
   }
 
   return (
-    <div className="checkout-recovery-popup" role="status">
+    <div className="checkout-recovery-popup mobile-popup-base mobile-popup-bottom mobile-popup-nav-clear" role="status">
       <div className="checkout-recovery-copy">
         <p className="eyebrow">Checkout saved</p>
         <strong>Finish your order from where you left off</strong>

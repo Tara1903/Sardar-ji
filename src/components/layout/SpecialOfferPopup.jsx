@@ -38,14 +38,14 @@ export const SpecialOfferPopup = ({ config, enabled = false, phoneNumber }) => {
       {isOpen ? (
         <motion.div
           animate={{ opacity: 1 }}
-          className="offer-popup-overlay"
+          className="offer-popup-overlay mobile-popup-bottom-overlay"
           exit={{ opacity: 0 }}
           initial={{ opacity: 0 }}
           onClick={closePopup}
         >
           <motion.aside
             animate={{ opacity: 1, y: 0 }}
-            className="offer-popup-sheet"
+            className="offer-popup-sheet mobile-popup-sheet"
             exit={{ opacity: 0, y: 32 }}
             initial={{ opacity: 0, y: 48 }}
             onClick={(event) => event.stopPropagation()}
