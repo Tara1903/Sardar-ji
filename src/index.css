@@ -5608,7 +5608,7 @@ html.dark .admin-day-pill span {
 }
 
 .customer-app-shell .first-section {
-  padding-top: 7.8rem;
+  padding-top: 9.15rem;
 }
 
 .customer-app-shell .section h1,
@@ -5665,6 +5665,10 @@ html.dark .admin-day-pill span {
   backdrop-filter: blur(22px);
   border-bottom: 1px solid rgba(255, 125, 41, 0.1);
   box-shadow: 0 10px 34px rgba(27, 17, 11, 0.08);
+}
+
+.customer-app-shell .landing-stage.premium-home-hero {
+  padding-top: 9.7rem;
 }
 
 .customer-app-shell .premium-nav-shell {
@@ -6677,6 +6681,14 @@ html.dark .customer-app-shell .floating-cart-bar {
 }
 
 @media (max-width: 900px) {
+  .customer-app-shell .first-section {
+    padding-top: 7.25rem;
+  }
+
+  .customer-app-shell .landing-stage.premium-home-hero {
+    padding-top: 7.35rem;
+  }
+
   .customer-app-shell .premium-nav-shell {
     padding: 0.5rem 0 0.56rem;
   }
@@ -6769,6 +6781,14 @@ html.dark .customer-app-shell .floating-cart-bar {
 }
 
 @media (max-width: 700px) {
+  .customer-app-shell .first-section {
+    padding-top: 6.85rem;
+  }
+
+  .customer-app-shell .landing-stage.premium-home-hero {
+    padding-top: 7rem;
+  }
+
   .customer-app-shell .container {
     width: min(100% - 1rem, 100%);
   }
