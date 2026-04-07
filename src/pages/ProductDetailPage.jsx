@@ -9,6 +9,7 @@ import { ProductCard } from '../components/menu/ProductCard';
 import { SeoMeta } from '../components/seo/SeoMeta';
 import { useAppData } from '../contexts/AppDataContext';
 import { useCart } from '../contexts/CartContext';
+import { getFallbackImage } from '../data/fallbackImages';
 import {
   BUTTON_PRESS_VARIANTS,
   CARD_IMAGE_VARIANTS,
@@ -87,6 +88,7 @@ export const ProductDetailPage = () => {
                 <SmartImage
                   alt={`${product.name} home style thali and veg food in Indore`}
                   className="detail-media-image"
+                  fallbackSrc={getFallbackImage(product.category)}
                   src={product.image}
                 />
               </motion.div>

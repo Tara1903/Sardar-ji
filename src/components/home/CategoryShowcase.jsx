@@ -1,4 +1,6 @@
 import { motion } from 'framer-motion';
+import { getFallbackImage } from '../../data/fallbackImages';
+import { SmartImage } from '../common/SmartImage';
 
 export const CategoryShowcase = ({
   categories = [],
@@ -42,10 +44,12 @@ export const CategoryShowcase = ({
             transition={{ delay: index * 0.03, duration: 0.22 }}
           >
             <span className="category-orb-image-wrap">
-              <img
+              <SmartImage
                 alt={`${category.name} pure veg dishes in Indore`}
                 className="category-orb-image"
+                fallbackSrc={getFallbackImage(category.name)}
                 loading="lazy"
+                wrapperClassName="category-orb-image-frame"
                 src={category.image}
               />
             </span>

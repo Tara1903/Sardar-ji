@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { ArrowRight, ChevronLeft, ChevronRight, Clock3, MapPin, Sparkles, Star } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { getFallbackImage } from '../../data/fallbackImages';
 import { formatCurrency } from '../../utils/format';
 import {
   BUTTON_PRESS_VARIANTS,
@@ -13,6 +14,32 @@ import {
 
 const AUTO_ADVANCE_MS = 5200;
 const MotionLink = motion(Link);
+
+const HeroSlideImage = ({ slide }) => {
+  const [imageSrc, setImageSrc] = useState(slide.image || slide.fallbackImage || '');
+
+  useEffect(() => {
+    setImageSrc(slide.image || slide.fallbackImage || '');
+  }, [slide.fallbackImage, slide.image]);
+
+  return (
+    <motion.img
+      alt={slide.imageAlt || slide.title}
+      animate="animate"
+      className="app-hero-slide-image"
+      fetchPriority="high"
+      initial="initial"
+      onError={() => {
+        if (slide.fallbackImage && imageSrc !== slide.fallbackImage) {
+          setImageSrc(slide.fallbackImage);
+        }
+      }}
+      src={imageSrc}
+      variants={HERO_IMAGE_VARIANTS}
+      whileHover="hover"
+    />
+  );
+};
 
 export const HeroCarousel = ({
   onPrimaryAction,
@@ -92,16 +119,7 @@ export const HeroCarousel = ({
             variants={HERO_SLIDE_VARIANTS}
             {...dragHandlers}
           >
-            <motion.img
-              alt={activeSlide.imageAlt || activeSlide.title}
-              animate="animate"
-              className="app-hero-slide-image"
-              fetchPriority="high"
-              initial="initial"
-              src={activeSlide.image}
-              variants={HERO_IMAGE_VARIANTS}
-              whileHover="hover"
-            />
+            <HeroSlideImage slide={activeSlide} />
             <div className="app-hero-slide-overlay" />
             <div className="app-hero-content">
               <motion.div
@@ -251,6 +269,7 @@ export const createHeroSlides = ({ heroConfig, products = [] }) => {
   const coreSlide = {
     id: 'hero-default',
     image: heroConfig.backgroundImage,
+    fallbackImage: getFallbackImage('Thali Specials'),
     imageAlt: 'Premium pure veg food delivery from Sardar Ji Food Corner',
     kicker: 'Fresh from Sardar Ji Food Corner',
     title: heroConfig.headline,
@@ -264,6 +283,7 @@ export const createHeroSlides = ({ heroConfig, products = [] }) => {
   const productSlides = topProducts.map((product) => ({
     id: `hero-${product.id}`,
     image: product.image,
+    fallbackImage: getFallbackImage(product.category),
     imageAlt: `${product.name} from Sardar Ji Food Corner`,
     kicker: product.badge || 'Best Seller',
     title: product.name,

@@ -2,6 +2,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { Clock3, Minus, Plus, ShoppingBag, Sparkles, Star } from 'lucide-react';
 import { useCart } from '../../contexts/CartContext';
+import { getFallbackImage } from '../../data/fallbackImages';
 import { SmartImage } from '../common/SmartImage';
 import { formatCurrency } from '../../utils/format';
 import { createProductOrderMessage, createWhatsAppLink } from '../../utils/whatsapp';
@@ -35,6 +36,7 @@ export const ProductCard = ({ product, whatsappNumber, variant = 'default', moti
           <SmartImage
             alt={`${product.name} pure veg food delivery in Indore`}
             className="product-image"
+            fallbackSrc={getFallbackImage(product.category)}
             src={product.image}
           />
         </motion.div>

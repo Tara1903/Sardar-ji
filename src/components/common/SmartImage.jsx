@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 const buildPlaceholderSrc = (src) => {
   try {
@@ -20,12 +20,32 @@ const buildPlaceholderSrc = (src) => {
 export const SmartImage = ({
   alt,
   className = '',
+  fallbackSrc = '',
   loading = 'lazy',
   src,
   wrapperClassName = '',
 }) => {
+  const [activeSrc, setActiveSrc] = useState(src || fallbackSrc || '');
   const [loaded, setLoaded] = useState(false);
-  const placeholderSrc = useMemo(() => buildPlaceholderSrc(src), [src]);
+  const placeholderSrc = useMemo(
+    () => buildPlaceholderSrc(activeSrc || fallbackSrc || src || ''),
+    [activeSrc, fallbackSrc, src],
+  );
+
+  useEffect(() => {
+    setActiveSrc(src || fallbackSrc || '');
+    setLoaded(false);
+  }, [fallbackSrc, src]);
+
+  const handleError = () => {
+    if (fallbackSrc && activeSrc !== fallbackSrc) {
+      setActiveSrc(fallbackSrc);
+      setLoaded(false);
+      return;
+    }
+
+    setLoaded(true);
+  };
 
   return (
     <span className={`smart-image-frame ${loaded ? 'is-loaded' : ''} ${wrapperClassName}`.trim()}>
@@ -40,9 +60,10 @@ export const SmartImage = ({
         className={`smart-image-real ${className}`.trim()}
         decoding="async"
         loading={loading}
+        onError={handleError}
         onLoad={() => setLoaded(true)}
         referrerPolicy="no-referrer"
-        src={src}
+        src={activeSrc || fallbackSrc}
       />
     </span>
   );

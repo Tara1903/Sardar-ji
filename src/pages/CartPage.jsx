@@ -7,6 +7,7 @@ import { SmartImage } from '../components/common/SmartImage';
 import { SeoMeta } from '../components/seo/SeoMeta';
 import { useCart } from '../contexts/CartContext';
 import { useAppData } from '../contexts/AppDataContext';
+import { getFallbackImage } from '../data/fallbackImages';
 import { getCartOfferState } from '../utils/pricing';
 import { formatCurrency } from '../utils/format';
 import { createCartOrderMessage, createWhatsAppLink } from '../utils/whatsapp';
@@ -85,7 +86,12 @@ export const CartPage = () => {
 
             {cartOfferState.displayItems.map((item) => (
               <article className="cart-item" key={item.id}>
-                <SmartImage alt={item.name} className="cart-item-image" src={item.image} />
+                <SmartImage
+                  alt={item.name}
+                  className="cart-item-image"
+                  fallbackSrc={getFallbackImage(item.category)}
+                  src={item.image}
+                />
                 <div className="cart-copy">
                   <div className="space-between">
                     <div>
