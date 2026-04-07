@@ -5058,9 +5058,109 @@ html.dark .cart-item,
 html.dark .track-step,
 html.dark .image-preview {
   color: var(--text);
-  background: rgba(20, 29, 25, 0.92);
+  background: rgba(16, 22, 19, 0.96);
   border-color: var(--line);
   box-shadow: 0 22px 50px rgba(0, 0, 0, 0.32);
+}
+
+html.dark .panel-card h1,
+html.dark .panel-card h2,
+html.dark .panel-card h3,
+html.dark .panel-card h4,
+html.dark .summary-card h1,
+html.dark .summary-card h2,
+html.dark .summary-card h3,
+html.dark .summary-card h4,
+html.dark .auth-card h1,
+html.dark .auth-card h2,
+html.dark .auth-card h3,
+html.dark .product-card h3,
+html.dark .order-row strong,
+html.dark .review-card strong,
+html.dark .referral-entry-row strong,
+html.dark .coupon-row strong,
+html.dark .subscription-detail-list strong,
+html.dark .subscription-benefit-row,
+html.dark .subscription-checkbox,
+html.dark .user-detail-grid strong,
+html.dark .delivery-stats-row strong,
+html.dark .user-row-card strong,
+html.dark .admin-list-card strong,
+html.dark .admin-card-section strong {
+  color: var(--text);
+}
+
+html.dark .panel-card p:not(.eyebrow):not(.error-text):not(.success-text),
+html.dark .summary-card p:not(.eyebrow):not(.error-text):not(.success-text),
+html.dark .auth-card p:not(.eyebrow):not(.error-text):not(.success-text),
+html.dark .product-card p:not(.eyebrow):not(.error-text):not(.success-text),
+html.dark .order-row p:not(.eyebrow):not(.error-text):not(.success-text),
+html.dark .review-card p:not(.eyebrow):not(.error-text):not(.success-text),
+html.dark .referral-entry-row p:not(.eyebrow):not(.error-text):not(.success-text),
+html.dark .coupon-row p:not(.eyebrow):not(.error-text):not(.success-text),
+html.dark .subscription-detail-list span,
+html.dark .subscription-price-row span,
+html.dark .subscription-highlight-card p,
+html.dark .subscription-highlight-side span,
+html.dark .user-detail-grid span,
+html.dark .delivery-stats-meta,
+html.dark .delivery-stats-meta span,
+html.dark .admin-card-copy p,
+html.dark .admin-card-copy span,
+html.dark .admin-card-section p,
+html.dark .admin-card-section small,
+html.dark .admin-list-card p,
+html.dark .admin-list-card small,
+html.dark .credentials-card p,
+html.dark .referral-card > p {
+  color: #c4d0c7;
+  opacity: 1;
+}
+
+html.dark .referral-entry-row,
+html.dark .coupon-row,
+html.dark .milestone,
+html.dark .subscription-checkbox,
+html.dark .user-detail-grid > div,
+html.dark .delivery-stats-row,
+html.dark .user-row-card,
+html.dark .admin-list-card,
+html.dark .admin-preview-copy.is-compact,
+html.dark .admin-toggle-row,
+html.dark .admin-preview-frame,
+html.dark .subtle-card,
+html.dark .helper-note,
+html.dark .otp-panel,
+html.dark .credentials-card,
+html.dark .frequently-bought-item,
+html.dark .summary-line-freebie {
+  background: rgba(23, 31, 27, 0.9);
+  border-color: rgba(244, 247, 242, 0.12);
+  color: var(--text);
+}
+
+html.dark .user-row-card.active,
+html.dark .address-card.active,
+html.dark .milestone.unlocked,
+html.dark .summary-line-freebie,
+html.dark .helper-note {
+  background: rgba(23, 116, 58, 0.18);
+  border-color: rgba(50, 183, 104, 0.24);
+}
+
+html.dark .cart-offer-hint.is-warning {
+  color: #f4d46e;
+  background: rgba(243, 202, 66, 0.16);
+}
+
+html.dark .cart-offer-hint.is-success {
+  color: #9fe5ba;
+  background: rgba(23, 116, 58, 0.18);
+}
+
+html.dark .cart-offer-hint.is-danger {
+  color: #f5aaaa;
+  background: rgba(182, 58, 58, 0.18);
 }
 
 html.dark input,
