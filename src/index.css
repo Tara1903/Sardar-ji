@@ -6799,6 +6799,10 @@ html.dark .customer-app-shell .floating-cart-bar {
     display: inline-flex;
   }
 
+  .customer-app-shell .mobile-header-search {
+    display: none;
+  }
+
   .customer-app-shell .brand-mark.compact .brand-logo {
     height: 42px;
     max-width: min(100%, 196px);
@@ -6877,31 +6881,31 @@ html.dark .customer-app-shell .floating-cart-bar {
     width: min(100% - 1rem, 100%);
   }
 
-  .customer-app-shell .premium-nav-shell {
-    padding: 0.46rem 0 0.5rem;
-  }
+    .customer-app-shell .premium-nav-shell {
+      padding: 0.46rem 0 0.5rem;
+    }
 
-  .customer-app-shell .nav-actions .icon-btn:not(.mobile-only) {
-    display: none;
-  }
+    .customer-app-shell .nav-actions .icon-btn:not(.mobile-only) {
+      display: none;
+    }
 
-  .customer-app-shell .header-brand-block {
-    gap: 0.22rem;
-  }
+    .customer-app-shell .header-brand-block {
+      gap: 0;
+    }
 
-  .customer-app-shell .brand-mark.compact .brand-logo {
-    height: 38px;
-    max-width: min(100%, 172px);
-  }
+    .customer-app-shell .brand-mark.compact .brand-logo {
+      height: 38px;
+      max-width: min(100%, 172px);
+    }
 
-  .customer-app-shell .location-pill {
-    padding: 0.36rem 0.62rem;
-    font-size: 0.74rem;
-  }
+    .customer-app-shell .mobile-header-search {
+      min-height: 2.42rem;
+      padding: 0 0.74rem;
+    }
 
-  .customer-app-shell .nav-actions {
-    gap: 0.32rem;
-  }
+    .customer-app-shell .nav-actions {
+      gap: 0.32rem;
+    }
 
   .customer-app-shell .nav-actions .icon-btn,
   .customer-app-shell .nav-actions .mobile-only {
@@ -6974,6 +6978,53 @@ html.dark .customer-app-shell .floating-cart-bar {
 
   .customer-app-shell .summary-card.sticky {
     position: static;
+  }
+}
+
+@media (max-width: 768px) {
+  .customer-app-shell .premium-nav-top {
+    align-items: center;
+    gap: 0.48rem;
+    flex-wrap: nowrap;
+  }
+
+  .customer-app-shell .header-brand-block {
+    flex: 0 0 auto;
+    flex-direction: row;
+    align-items: center;
+    gap: 0;
+  }
+
+  .customer-app-shell .location-pill {
+    display: none;
+  }
+
+  .customer-app-shell .mobile-header-search {
+    display: inline-flex;
+    flex: 1 1 auto;
+    min-width: 0;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 0.45rem;
+    min-height: 2.48rem;
+    padding: 0 0.76rem;
+    border-radius: 999px;
+    overflow: hidden;
+  }
+
+  .customer-app-shell .mobile-header-search span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .customer-app-shell .nav-actions {
+    align-items: center;
+    flex: 0 0 auto;
+  }
+
+  .customer-app-shell .nav-actions .icon-btn:not(.mobile-only) {
+    display: none;
   }
 }
 

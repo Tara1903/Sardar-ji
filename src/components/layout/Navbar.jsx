@@ -42,6 +42,11 @@ export const Navbar = ({ businessName }) => {
             </button>
           </div>
 
+          <Link className="nav-search-trigger mobile-header-search mobile-only" to="/menu">
+            <Search size={15} />
+            <span>Search Paneer, Thali...</span>
+          </Link>
+
           <div className="nav-actions">
             <ThemeSwitcher className="desktop-only" label="Site theme" />
             <Link className="icon-btn" to="/cart">
@@ -62,6 +67,7 @@ export const Navbar = ({ businessName }) => {
             )}
             <button
               className="icon-btn mobile-only"
+              aria-label={open ? 'Close menu' : 'Open menu'}
               onClick={() => setOpen((current) => !current)}
               type="button"
             >
