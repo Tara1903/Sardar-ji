@@ -32,7 +32,12 @@ export const ProductCard = ({ product, whatsappNumber, variant = 'default', moti
       whileTap="tap"
     >
       <Link className="product-image-wrap" to={`/product/${product.id}`}>
-        <motion.div initial="rest" variants={CARD_IMAGE_VARIANTS} whileHover="hover">
+        <motion.div
+          className="product-image-motion"
+          initial="rest"
+          variants={CARD_IMAGE_VARIANTS}
+          whileHover="hover"
+        >
           <SmartImage
             alt={`${product.name} pure veg food delivery in Indore`}
             className="product-image"

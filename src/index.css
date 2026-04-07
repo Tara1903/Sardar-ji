@@ -3348,6 +3348,18 @@ body {
   aspect-ratio: 1.18 / 1;
 }
 
+.product-image-motion {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.product-image-motion .smart-image-frame,
+.product-image-motion .smart-image-real,
+.product-image-motion .smart-image-placeholder {
+  height: 100%;
+}
+
 .product-image,
 .smart-image-frame,
 .smart-image-real {
