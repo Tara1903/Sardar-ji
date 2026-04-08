@@ -28,7 +28,7 @@ export const restRequest = async ({ path, token = '', method = 'GET', body, head
   const response = await fetch(`${url}/rest/v1${path}`, {
     method,
     headers: {
-      apikey: anonKey,
+      apikey: headers.apikey || anonKey,
       Authorization: `Bearer ${token || anonKey}`,
       'Content-Type': 'application/json',
       Prefer: 'return=representation',
@@ -48,12 +48,13 @@ export const restRequest = async ({ path, token = '', method = 'GET', body, head
   return payload;
 };
 
-export const callSupabaseRpc = ({ fn, body, token }) =>
+export const callSupabaseRpc = ({ fn, body, token, headers = {} }) =>
   restRequest({
     path: `/rpc/${fn}`,
     method: 'POST',
     body,
     token,
+    headers,
   });
 
 export const getSupabaseRows = ({ path, token }) =>

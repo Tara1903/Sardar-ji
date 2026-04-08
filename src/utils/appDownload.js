@@ -1,8 +1,8 @@
 const APP_DOWNLOAD_HOST = 'https://www.sardarjifoodcorner.shop';
 
 export const APP_RELEASE = Object.freeze({
-  version: '1.5.1',
-  build: 9,
+  version: '1.5.2',
+  build: 10,
   minimumSupportedBuild: 5,
   minimumSupportedVersion: '1.3.1',
   forceUpdate: false,
@@ -14,8 +14,8 @@ export const APP_RELEASE = Object.freeze({
   updateLabel: 'Update App',
   supportNote: 'Android 8.0+ supported • Native-feel app shell • Fast install • Pure veg ordering app',
   releaseHighlights: [
-    'Stability fixes now clean up notification tokens correctly on logout and prevent stale account alerts on shared devices',
-    'Location, checkout distance, admin refresh, delivery polling, and tracking refresh now behave more reliably and efficiently',
+    'Razorpay amounts are now recomputed on the server and payments finalize through a hardened verified fulfillment path',
+    'Webhook-ready payment state, smarter capture handling, and stronger order/subscription reliability are now included',
     'Background Android push, deep links, latest premium website design, subscriptions, referrals, reorder, and offline recovery remain included',
   ],
 });

@@ -1,5 +1,14 @@
 import { createRazorpayOrder, getRazorpayConfig } from '../_lib/razorpay.js';
-import { readJsonBody, requireAuthenticatedUser, sendJson } from '../_lib/server.js';
+import {
+  buildFoodOrderPaymentIntent,
+  buildSubscriptionPaymentIntent,
+} from '../_lib/payment-intents.js';
+import {
+  getBearerToken,
+  readJsonBody,
+  requireAuthenticatedUser,
+  sendJson,
+} from '../_lib/server.js';
 
 const normalizePhone = (value = '') => String(value).replace(/\D/g, '').slice(-10);
 
@@ -10,13 +19,26 @@ export default async function handler(req, res) {
 
   try {
     const user = await requireAuthenticatedUser(req);
+    const token = getBearerToken(req);
     const body = await readJsonBody(req);
     const purpose = body.purpose === 'monthly-subscription' ? 'monthly-subscription' : 'food-order';
-    const amount = Number(body.amount || 0);
     const { keyId } = getRazorpayConfig();
+    const paymentIntent =
+      purpose === 'food-order'
+        ? await buildFoodOrderPaymentIntent({
+            authUser: user,
+            authToken: token,
+            payload: body.payload,
+            customerName: body.customerName,
+            phoneNumber: body.phoneNumber,
+          })
+        : buildSubscriptionPaymentIntent({
+            authUser: user,
+            authToken: token,
+          });
 
     const order = await createRazorpayOrder({
-      amount,
+      amount: paymentIntent.amount,
       receipt: `${purpose === 'food-order' ? 'food' : 'plan'}-${Date.now()}`,
       notes: {
         purpose,
@@ -24,6 +46,7 @@ export default async function handler(req, res) {
         customer_email: user.email || '',
         customer_name: body.customerName || user.user_metadata?.name || '',
         customer_phone: body.phoneNumber || user.user_metadata?.phoneNumber || '',
+        ...paymentIntent.notes,
       },
     });
 
@@ -34,6 +57,7 @@ export default async function handler(req, res) {
         amount: order.amount,
         currency: order.currency,
       },
+      amount: paymentIntent.amount,
       business: {
         name: 'Sardar Ji Food Corner',
         description:

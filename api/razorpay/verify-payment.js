@@ -1,11 +1,15 @@
 import {
+  ensureCapturedPayment,
   getRazorpayConfig,
+  getRazorpayOrder,
   getRazorpayPayment,
   verifyRazorpaySignature,
 } from '../_lib/razorpay.js';
 import {
+  buildFoodOrderPayloadFromPaymentState,
   finalizeFoodOrderPayment,
   finalizeSubscriptionPayment,
+  getWebhookFulfillmentInput,
 } from '../_lib/payment-finalizer.js';
 import { readJsonBody, requireAuthenticatedUser, sendJson } from '../_lib/server.js';
 
@@ -20,11 +24,8 @@ export default async function handler(req, res) {
     const razorpayPaymentId = String(body.razorpayPaymentId || '').trim();
     const razorpayOrderId = String(body.razorpayOrderId || '').trim();
     const razorpaySignature = String(body.razorpaySignature || '').trim();
-    const expectedAmount = Number(body.amount || 0);
     const authorization = req.headers.authorization || req.headers.Authorization || '';
-    const token = authorization.toLowerCase().startsWith('bearer ')
-      ? authorization.slice(7).trim()
-      : '';
+    const token = authorization.toLowerCase().startsWith('bearer ') ? authorization.slice(7).trim() : '';
 
     if (!razorpayPaymentId || !razorpayOrderId || !razorpaySignature) {
       return sendJson(res, 400, { message: 'Payment verification details are incomplete.' });
@@ -40,7 +41,27 @@ export default async function handler(req, res) {
       return sendJson(res, 400, { message: 'Razorpay signature verification failed.' });
     }
 
-    const payment = await getRazorpayPayment(razorpayPaymentId);
+    let payment = await getRazorpayPayment(razorpayPaymentId);
+    payment = await ensureCapturedPayment(payment);
+    const order = await getRazorpayOrder(payment.order_id);
+    const notes = {
+      ...(order?.notes || {}),
+      ...(payment?.notes || {}),
+    };
+    let fulfillmentInput = null;
+
+    try {
+      fulfillmentInput = getWebhookFulfillmentInput({
+        notes,
+        payment,
+      });
+    } catch (error) {
+      if (!error?.deferred) {
+        throw error;
+      }
+    }
+
+    const expectedAmount = Number(fulfillmentInput?.paymentState?.am || order?.amount || 0);
 
     if (payment.order_id !== razorpayOrderId) {
       return sendJson(res, 400, { message: 'Payment order ID mismatch.' });
@@ -50,29 +71,42 @@ export default async function handler(req, res) {
       return sendJson(res, 400, { message: 'Paid amount does not match the order amount.' });
     }
 
-    if (!['authorized', 'captured'].includes(payment.status)) {
+    if (payment.status !== 'captured') {
       return sendJson(res, 400, {
         message: 'The payment is not completed yet. Please try again after the payment succeeds.',
       });
     }
 
     let fulfillment = null;
-    const purpose = body.purpose === 'monthly-subscription' ? 'monthly-subscription' : body.purpose === 'food-order' ? 'food-order' : '';
+    const purpose =
+      fulfillmentInput?.paymentState?.p === 'monthly-subscription'
+        ? 'monthly-subscription'
+        : fulfillmentInput?.paymentState?.p === 'food-order'
+          ? 'food-order'
+          : body.purpose === 'monthly-subscription'
+            ? 'monthly-subscription'
+            : body.purpose === 'food-order'
+              ? 'food-order'
+              : '';
 
-    if (purpose === 'food-order' && body.payload && token) {
+    if (purpose === 'food-order' && token) {
       fulfillment = await finalizeFoodOrderPayment({
-        authUser,
+        authUser: fulfillmentInput?.authUser || authUser,
         payment,
-        payload: body.payload,
-        token,
+        payload: fulfillmentInput?.paymentState?.f
+          ? buildFoodOrderPayloadFromPaymentState(fulfillmentInput.paymentState)
+          : body.payload,
+        token: fulfillmentInput?.token || token,
+        headers: fulfillmentInput?.headers || {},
       });
     }
 
     if (purpose === 'monthly-subscription' && token) {
       fulfillment = await finalizeSubscriptionPayment({
-        authUser,
+        authUser: fulfillmentInput?.authUser || authUser,
         payment,
-        token,
+        token: fulfillmentInput?.token || token,
+        headers: fulfillmentInput?.headers || {},
       });
     }
 

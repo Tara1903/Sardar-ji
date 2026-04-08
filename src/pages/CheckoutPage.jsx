@@ -351,10 +351,17 @@ export const CheckoutPage = () => {
         const paymentOrder = await api.createRazorpayOrder(
           {
             purpose: 'food-order',
-            amount: amountInPaise,
             customerName: chosenAddress.name || user?.name || '',
             phoneNumber: chosenAddress.phoneNumber || user?.phoneNumber || '',
             logoUrl: storefrontLogoUrl,
+            payload: {
+              items: cartOfferState.orderItems,
+              address: chosenAddress,
+              couponCode: selectedRewardCoupon?.code || '',
+              pricing: {
+                distanceKm: cartOfferState.distanceKm,
+              },
+            },
           },
           token,
         );

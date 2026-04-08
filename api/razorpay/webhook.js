@@ -1,5 +1,16 @@
 import { getEnv, sendJson } from '../_lib/server.js';
-import { verifyRazorpayWebhookSignature } from '../_lib/razorpay.js';
+import {
+  ensureCapturedPayment,
+  getRazorpayOrder,
+  getRazorpayPayment,
+  verifyRazorpayWebhookSignature,
+} from '../_lib/razorpay.js';
+import {
+  buildFoodOrderPayloadFromPaymentState,
+  finalizeFoodOrderPayment,
+  finalizeSubscriptionPayment,
+  getWebhookFulfillmentInput,
+} from '../_lib/payment-finalizer.js';
 
 const readRawBody = async (req) => {
   const chunks = [];
@@ -43,11 +54,90 @@ export default async function handler(req, res) {
     }
 
     const payload = JSON.parse(rawBody || '{}');
+    const event = String(payload?.event || '').trim();
+    const paymentEntity =
+      payload?.payload?.payment?.entity ||
+      payload?.payload?.payment?.payment ||
+      payload?.payload?.order?.entity?.payment ||
+      null;
+    const paymentId = String(paymentEntity?.id || '').trim();
 
-    return sendJson(res, 200, {
-      received: true,
-      event: payload?.event || '',
-    });
+    if (!paymentId || !['payment.authorized', 'payment.captured', 'order.paid'].includes(event)) {
+      return sendJson(res, 200, {
+        received: true,
+        ignored: true,
+        event,
+      });
+    }
+
+    let payment = await getRazorpayPayment(paymentId);
+
+    if (event === 'payment.authorized') {
+      payment = await ensureCapturedPayment(payment);
+    }
+
+    if (payment.status !== 'captured') {
+      return sendJson(res, 200, {
+        received: true,
+        event,
+        deferred: true,
+        reason: 'payment_not_captured_yet',
+      });
+    }
+
+    const order = await getRazorpayOrder(payment.order_id);
+    const notes = {
+      ...(order?.notes || {}),
+      ...(payment?.notes || {}),
+    };
+
+    try {
+      const fulfillmentInput = getWebhookFulfillmentInput({
+        notes,
+        payment,
+      });
+      let fulfillment = null;
+
+      if (fulfillmentInput.paymentState?.p === 'food-order') {
+        fulfillment = await finalizeFoodOrderPayment({
+          authUser: fulfillmentInput.authUser,
+          payment,
+          payload: buildFoodOrderPayloadFromPaymentState(fulfillmentInput.paymentState),
+          token: fulfillmentInput.token,
+          headers: fulfillmentInput.headers,
+        });
+      } else if (fulfillmentInput.paymentState?.p === 'monthly-subscription') {
+        fulfillment = await finalizeSubscriptionPayment({
+          authUser: fulfillmentInput.authUser,
+          payment,
+          token: fulfillmentInput.token,
+          headers: fulfillmentInput.headers,
+        });
+      }
+
+      return sendJson(res, 200, {
+        received: true,
+        event,
+        captured: true,
+        fulfilled: true,
+        alreadyProcessed: Boolean(fulfillment?.alreadyProcessed),
+        orderId: fulfillment?.order?.id || '',
+        subscriptionId: fulfillment?.subscription?.id || '',
+      });
+    } catch (error) {
+      if (error?.deferred) {
+        return sendJson(res, 200, {
+          received: true,
+          event,
+          captured: true,
+          fulfilled: false,
+          deferred: true,
+          message: error.message,
+        });
+      }
+
+      throw error;
+    }
   } catch (error) {
     return sendJson(res, 500, {
       message: error.message || 'Unable to process the Razorpay webhook.',

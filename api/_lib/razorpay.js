@@ -65,7 +65,45 @@ export const createRazorpayOrder = async ({ amount, receipt, notes = {} }) => {
   });
 };
 
+export const getRazorpayOrder = async (orderId) => razorpayRequest(`/orders/${orderId}`);
+
 export const getRazorpayPayment = async (paymentId) => razorpayRequest(`/payments/${paymentId}`);
+
+export const captureRazorpayPayment = async (paymentId, { amount, currency = 'INR' }) =>
+  razorpayRequest(`/payments/${paymentId}/capture`, {
+    method: 'POST',
+    body: {
+      amount,
+      currency,
+    },
+  });
+
+export const ensureCapturedPayment = async (payment) => {
+  if (!payment?.id) {
+    throw createHttpError('Payment details are incomplete.', 400);
+  }
+
+  if (payment.status === 'captured' || payment.captured) {
+    return payment;
+  }
+
+  if (payment.status !== 'authorized') {
+    return payment;
+  }
+
+  try {
+    return await captureRazorpayPayment(payment.id, {
+      amount: payment.amount,
+      currency: payment.currency || 'INR',
+    });
+  } catch (error) {
+    if (/already been captured|already paid|has been captured/i.test(error.message || '')) {
+      return getRazorpayPayment(payment.id);
+    }
+
+    throw error;
+  }
+};
 
 export const verifyRazorpaySignature = ({ orderId, paymentId, signature }) => {
   const { keySecret } = getRazorpayConfig();
