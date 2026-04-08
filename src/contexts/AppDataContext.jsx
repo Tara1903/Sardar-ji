@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { api } from '../api/client';
 import { applyThemeToDocument, createAppConfig } from '../theme/theme';
 import { applyProductAvailabilitySchedule } from '../utils/availability';
@@ -57,8 +57,9 @@ export const AppDataProvider = ({ children }) => {
   const [settings, setSettings] = useState(cachedAppData?.settings || null);
   const [loading, setLoading] = useState(!cachedAppData);
   const [error, setError] = useState('');
+  const hasCachedAppData = Boolean(cachedAppData);
 
-  const loadAppData = async () => {
+  const loadAppData = useCallback(async () => {
     setLoading(true);
     try {
       const [productsResponse, categoriesResponse, settingsResponse] = await Promise.all([
@@ -80,17 +81,17 @@ export const AppDataProvider = ({ children }) => {
       });
       setError('');
     } catch (loadError) {
-      if (!cachedAppData) {
+      if (!hasCachedAppData) {
         setError(loadError.message);
       }
     } finally {
       setLoading(false);
     }
-  };
+  }, [hasCachedAppData]);
 
   useEffect(() => {
-    loadAppData();
-  }, []);
+    void loadAppData();
+  }, [loadAppData]);
 
   useEffect(() => {
     if (!canUseBrowser()) {
@@ -103,7 +104,7 @@ export const AppDataProvider = ({ children }) => {
 
     window.addEventListener('online', reloadOnReconnect);
     return () => window.removeEventListener('online', reloadOnReconnect);
-  }, []);
+  }, [loadAppData]);
 
   useEffect(() => {
     if (!products.length) {
@@ -156,18 +157,23 @@ export const AppDataProvider = ({ children }) => {
       refreshCatalog: loadAppData,
       refreshSettings: async () => {
         const nextSettings = await api.getSettings();
-        setProducts((current) =>
-          current.map((product) =>
-            applyProductAvailabilitySchedule(
-              {
-                ...product,
-                isAvailable: product.baseIsAvailable ?? product.isAvailable,
-              },
-              nextSettings?.storefront?.productAvailabilitySchedules || {},
-            ),
+        const nextProducts = products.map((product) =>
+          applyProductAvailabilitySchedule(
+            {
+              ...product,
+              isAvailable: product.baseIsAvailable ?? product.isAvailable,
+            },
+            nextSettings?.storefront?.productAvailabilitySchedules || {},
           ),
         );
+        setProducts(nextProducts);
         setSettings(nextSettings);
+        writeAppDataCache({
+          products: nextProducts,
+          categories,
+          settings: nextSettings,
+        });
+        setError('');
         return nextSettings;
       },
       setProducts,

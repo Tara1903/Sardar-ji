@@ -53,22 +53,64 @@ export const TrackOrderPage = () => {
   const [error, setError] = useState('');
 
   useEffect(() => {
+    let isMounted = true;
+    let intervalId = 0;
+
     const loadTracking = async () => {
       try {
         const response = await api.getTracking(orderId);
+        if (!isMounted) {
+          return;
+        }
         setOrder(response);
         writeTrackingCache(orderId, response);
         setError('');
       } catch (trackingError) {
-        if (!cachedTracking) {
+        if (isMounted && !cachedTracking) {
           setError(trackingError.message);
         }
       }
     };
 
-    loadTracking();
-    const intervalId = window.setInterval(loadTracking, 4000);
-    return () => window.clearInterval(intervalId);
+    const stopPolling = () => {
+      if (intervalId) {
+        window.clearInterval(intervalId);
+        intervalId = 0;
+      }
+    };
+
+    const canPoll = () =>
+      typeof document === 'undefined' ||
+      (document.visibilityState === 'visible' && navigator.onLine !== false);
+
+    const startPolling = () => {
+      stopPolling();
+      if (!canPoll()) {
+        return;
+      }
+
+      void loadTracking();
+      intervalId = window.setInterval(() => {
+        if (canPoll()) {
+          void loadTracking();
+        }
+      }, 4000);
+    };
+
+    const handleResume = () => {
+      startPolling();
+    };
+
+    startPolling();
+    window.addEventListener('online', handleResume);
+    document.addEventListener('visibilitychange', handleResume);
+
+    return () => {
+      isMounted = false;
+      stopPolling();
+      window.removeEventListener('online', handleResume);
+      document.removeEventListener('visibilitychange', handleResume);
+    };
   }, [orderId]);
 
   if (error) {

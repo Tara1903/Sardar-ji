@@ -30,9 +30,45 @@ export const DeliveryPage = () => {
   };
 
   useEffect(() => {
-    loadOrders();
-    const intervalId = window.setInterval(loadOrders, 4000);
-    return () => window.clearInterval(intervalId);
+    let intervalId = 0;
+    const canPoll = () =>
+      typeof document === 'undefined' ||
+      (document.visibilityState === 'visible' && navigator.onLine !== false);
+
+    const stopPolling = () => {
+      if (intervalId) {
+        window.clearInterval(intervalId);
+        intervalId = 0;
+      }
+    };
+
+    const startPolling = () => {
+      stopPolling();
+      if (!canPoll()) {
+        return;
+      }
+
+      void loadOrders();
+      intervalId = window.setInterval(() => {
+        if (canPoll()) {
+          void loadOrders();
+        }
+      }, 4000);
+    };
+
+    const handleResume = () => {
+      startPolling();
+    };
+
+    startPolling();
+    window.addEventListener('online', handleResume);
+    document.addEventListener('visibilitychange', handleResume);
+
+    return () => {
+      stopPolling();
+      window.removeEventListener('online', handleResume);
+      document.removeEventListener('visibilitychange', handleResume);
+    };
   }, [token]);
 
   useEffect(() => {
@@ -45,7 +81,16 @@ export const DeliveryPage = () => {
       return undefined;
     }
 
+    let intervalId = 0;
+    const canTrack = () =>
+      typeof document === 'undefined' ||
+      (document.visibilityState === 'visible' && navigator.onLine !== false);
+
     const sendLocation = () => {
+      if (!canTrack()) {
+        return;
+      }
+
       navigator.geolocation.getCurrentPosition(
         async (position) => {
           try {
@@ -72,9 +117,36 @@ export const DeliveryPage = () => {
       );
     };
 
-    sendLocation();
-    const intervalId = window.setInterval(sendLocation, 4000);
-    return () => window.clearInterval(intervalId);
+    const stopTracking = () => {
+      if (intervalId) {
+        window.clearInterval(intervalId);
+        intervalId = 0;
+      }
+    };
+
+    const startTracking = () => {
+      stopTracking();
+      if (!canTrack()) {
+        return;
+      }
+
+      sendLocation();
+      intervalId = window.setInterval(sendLocation, 4000);
+    };
+
+    const handleResume = () => {
+      startTracking();
+    };
+
+    startTracking();
+    window.addEventListener('online', handleResume);
+    document.addEventListener('visibilitychange', handleResume);
+
+    return () => {
+      stopTracking();
+      window.removeEventListener('online', handleResume);
+      document.removeEventListener('visibilitychange', handleResume);
+    };
   }, [token, trackingOrderId]);
 
   const handleStatusChange = async (orderId, status) => {

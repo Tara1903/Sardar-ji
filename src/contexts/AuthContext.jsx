@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { api } from '../api/client';
 import { getSupabaseBrowserClient } from '../lib/supabase';
 
@@ -32,7 +32,7 @@ export const AuthProvider = ({ children }) => {
     syncSession();
   }, [token]);
 
-  const persistSession = (nextToken, nextUser) => {
+  const persistSession = useCallback((nextToken, nextUser) => {
     setToken(nextToken);
     setUser(nextUser);
     localStorage.setItem(
@@ -42,40 +42,61 @@ export const AuthProvider = ({ children }) => {
         user: nextUser,
       }),
     );
-  };
+  }, []);
 
-  const authenticateCredentials = async (payload) => api.login(payload);
+  const authenticateCredentials = useCallback(async (payload) => api.login(payload), []);
 
-  const login = async (payload) => {
+  const login = useCallback(async (payload) => {
     const response = await authenticateCredentials(payload);
     persistSession(response.token, response.user);
     return response.user;
-  };
+  }, [authenticateCredentials, persistSession]);
 
-  const acceptAuthSession = (response) => {
+  const acceptAuthSession = useCallback((response) => {
     if (!response?.token || !response?.user) {
       throw new Error('A valid authenticated session is required.');
     }
 
     persistSession(response.token, response.user);
     return response.user;
-  };
+  }, [persistSession]);
 
-  const register = async (payload) => {
+  const register = useCallback(async (payload) => {
     const response = await api.register(payload);
     persistSession(response.token, response.user);
     return response.user;
-  };
+  }, [persistSession]);
 
-  const logout = () => {
+  const logout = useCallback(() => {
+    const activeToken = token;
+    const pushSubscriptions = user?.pushSubscriptions || [];
+    const nativePushTokens = user?.nativePushTokens || [];
     const supabase = getSupabaseBrowserClient();
+
+    if (activeToken) {
+      const cleanupRequests = [
+        ...pushSubscriptions
+          .map((subscription) => subscription?.endpoint)
+          .filter(Boolean)
+          .map((endpoint) => api.removePushSubscription(endpoint, activeToken)),
+        ...nativePushTokens
+          .map((entry) => entry?.token)
+          .filter(Boolean)
+          .map((nativeToken) => api.removeNativePushToken(nativeToken, activeToken)),
+      ];
+
+      if (cleanupRequests.length) {
+        Promise.allSettled(cleanupRequests).catch(() => {});
+      }
+    }
+
     supabase?.auth.signOut().catch(() => {});
     setToken('');
     setUser(null);
     localStorage.removeItem(STORAGE_KEY);
-  };
+  }, [token, user]);
 
-  const refreshUser = async () => {
+  const refreshUser = useCallback(async () => {
     if (!token) {
       return null;
     }
@@ -83,21 +104,21 @@ export const AuthProvider = ({ children }) => {
     setUser(response.user);
     localStorage.setItem(STORAGE_KEY, JSON.stringify({ token, user: response.user }));
     return response.user;
-  };
+  }, [token]);
 
-  const updateAddresses = async (addresses) => {
+  const updateAddresses = useCallback(async (addresses) => {
     const response = await api.updateAddresses(addresses, token);
     setUser(response.user);
     localStorage.setItem(STORAGE_KEY, JSON.stringify({ token, user: response.user }));
     return response.user;
-  };
+  }, [token]);
 
-  const updateSubscriptionPreferences = async (payload) => {
+  const updateSubscriptionPreferences = useCallback(async (payload) => {
     const response = await api.updateSubscriptionPreferences(payload, token);
     setUser(response.user);
     localStorage.setItem(STORAGE_KEY, JSON.stringify({ token, user: response.user }));
     return response.user;
-  };
+  }, [token]);
 
   const value = useMemo(
     () => ({
@@ -114,7 +135,19 @@ export const AuthProvider = ({ children }) => {
       updateAddresses,
       updateSubscriptionPreferences,
     }),
-    [loading, token, user],
+    [
+      acceptAuthSession,
+      authenticateCredentials,
+      loading,
+      login,
+      logout,
+      refreshUser,
+      register,
+      token,
+      updateAddresses,
+      updateSubscriptionPreferences,
+      user,
+    ],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

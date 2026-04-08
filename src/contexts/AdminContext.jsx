@@ -82,11 +82,48 @@ export const AdminProvider = ({ children }) => {
       return undefined;
     }
 
-    const intervalId = window.setInterval(() => {
-      refreshAdminData({ silent: true });
-    }, 15000);
+    let intervalId = 0;
 
-    return () => window.clearInterval(intervalId);
+    const canPoll = () =>
+      typeof document === 'undefined' ||
+      (document.visibilityState === 'visible' && navigator.onLine !== false);
+
+    const stopPolling = () => {
+      if (intervalId) {
+        window.clearInterval(intervalId);
+        intervalId = 0;
+      }
+    };
+
+    const startPolling = () => {
+      stopPolling();
+      if (!canPoll()) {
+        return;
+      }
+
+      intervalId = window.setInterval(() => {
+        if (canPoll()) {
+          void refreshAdminData({ silent: true });
+        }
+      }, 15000);
+    };
+
+    const handleResume = () => {
+      startPolling();
+      if (canPoll()) {
+        void refreshAdminData({ silent: true });
+      }
+    };
+
+    startPolling();
+    window.addEventListener('online', handleResume);
+    document.addEventListener('visibilitychange', handleResume);
+
+    return () => {
+      stopPolling();
+      window.removeEventListener('online', handleResume);
+      document.removeEventListener('visibilitychange', handleResume);
+    };
   }, [refreshAdminData, token]);
 
   useEffect(() => {

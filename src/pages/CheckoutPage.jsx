@@ -39,7 +39,7 @@ export const CheckoutPage = () => {
   const { items, clearCart } = useCart();
   const { user, token, refreshUser } = useAuth();
   const { products, settings } = useAppData();
-  const { distanceKm, locationStatus, isLocating } = useStoreDistance();
+  const { distanceKm, locationStatus, isLocating, refreshDistance } = useStoreDistance();
   const [selectedAddressId, setSelectedAddressId] = useState(user?.addresses?.[0]?.id || 'new');
   const [addressDraft, setAddressDraft] = useState(user?.addresses?.[0] || emptyAddress);
   const [paymentMethod, setPaymentMethod] = useState('COD');
@@ -303,7 +303,8 @@ export const CheckoutPage = () => {
     setLocationAssistMessage('');
 
     try {
-      const location = await getUserLocation();
+      const location = await getUserLocation({ forceFresh: true });
+      void refreshDistance({ location });
 
       setAddressDraft((current) => ({
         ...current,

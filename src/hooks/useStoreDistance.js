@@ -1,10 +1,13 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   calculateDistanceFromStore,
   formatDistanceLabel,
   getCachedUserLocation,
   getUserLocation,
+  USER_LOCATION_UPDATED_EVENT,
 } from '../utils/location';
+
+const LOCATION_CACHE_KEY = 'sjfc-user-location-v1';
 
 export const useStoreDistance = () => {
   const [distanceKm, setDistanceKm] = useState(() => {
@@ -21,49 +24,79 @@ export const useStoreDistance = () => {
   );
   const [isLocating, setIsLocating] = useState(distanceKm === null);
 
-  useEffect(() => {
-    let isMounted = true;
+  const applyLocation = useCallback((location) => {
+    const nextDistance = calculateDistanceFromStore(location);
+    setDistanceKm(nextDistance);
+    setStatus(formatDistanceLabel(nextDistance));
+  }, []);
 
+  const refreshDistance = useCallback(async ({ forceFresh = false, location = null } = {}) => {
+    setIsLocating(true);
+
+    try {
+      const nextLocation = location || (await getUserLocation({ forceFresh }));
+      applyLocation(nextLocation);
+      return nextLocation;
+    } catch (error) {
+      setDistanceKm(null);
+      setStatus(error.message || 'Location not enabled');
+      return null;
+    } finally {
+      setIsLocating(false);
+    }
+  }, [applyLocation]);
+
+  useEffect(() => {
     if (distanceKm !== null) {
       setIsLocating(false);
-      return () => {
-        isMounted = false;
-      };
+      return;
     }
 
-    getUserLocation()
-      .then((location) => {
-        if (!isMounted) {
-          return;
-        }
+    void refreshDistance();
+  }, [distanceKm, refreshDistance]);
 
-        const nextDistance = calculateDistanceFromStore(location);
-        setDistanceKm(nextDistance);
-        setStatus(formatDistanceLabel(nextDistance));
-      })
-      .catch((error) => {
-        if (!isMounted) {
-          return;
-        }
+  useEffect(() => {
+    const syncFromStorage = () => {
+      const cachedLocation = getCachedUserLocation();
 
-        setDistanceKm(null);
-        setStatus(error.message || 'Location not enabled');
-      })
-      .finally(() => {
-        if (isMounted) {
-          setIsLocating(false);
-        }
-      });
+      if (cachedLocation) {
+        applyLocation(cachedLocation);
+      }
+    };
+
+    const handleLocationUpdate = (event) => {
+      if (
+        Number.isFinite(Number(event?.detail?.lat)) &&
+        Number.isFinite(Number(event?.detail?.lng))
+      ) {
+        applyLocation(event.detail);
+        setIsLocating(false);
+        return;
+      }
+
+      syncFromStorage();
+    };
+
+    const handleStorage = (event) => {
+      if (event.key === LOCATION_CACHE_KEY) {
+        syncFromStorage();
+      }
+    };
+
+    window.addEventListener(USER_LOCATION_UPDATED_EVENT, handleLocationUpdate);
+    window.addEventListener('storage', handleStorage);
 
     return () => {
-      isMounted = false;
+      window.removeEventListener(USER_LOCATION_UPDATED_EVENT, handleLocationUpdate);
+      window.removeEventListener('storage', handleStorage);
     };
-  }, [distanceKm]);
+  }, [applyLocation]);
 
   return {
     distanceKm,
     distanceLabel: distanceKm === null ? 'Location not enabled' : formatDistanceLabel(distanceKm),
     locationStatus: status,
     isLocating,
+    refreshDistance,
   };
 };

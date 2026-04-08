@@ -4,9 +4,12 @@ import { getNativeCurrentLocation } from '../lib/nativeFeatures';
 const LOCATION_CACHE_KEY = 'sjfc-user-location-v1';
 const LOCATION_CACHE_TTL_MS = 15 * 60 * 1000;
 const GEOLOCATION_TIMEOUT_MS = 10000;
+export const USER_LOCATION_UPDATED_EVENT = 'sjfc:user-location-updated';
+
+const canUseBrowser = () => typeof window !== 'undefined';
 
 const readCachedLocation = () => {
-  if (typeof window === 'undefined') {
+  if (!canUseBrowser()) {
     return null;
   }
 
@@ -42,16 +45,20 @@ const readCachedLocation = () => {
 };
 
 const writeCachedLocation = (location) => {
-  if (typeof window === 'undefined') {
+  if (!canUseBrowser()) {
     return;
   }
 
   try {
-    window.localStorage.setItem(
-      LOCATION_CACHE_KEY,
-      JSON.stringify({
-        ...location,
-        cachedAt: Date.now(),
+    const nextLocation = {
+      ...location,
+      cachedAt: Date.now(),
+    };
+
+    window.localStorage.setItem(LOCATION_CACHE_KEY, JSON.stringify(nextLocation));
+    window.dispatchEvent(
+      new CustomEvent(USER_LOCATION_UPDATED_EVENT, {
+        detail: nextLocation,
       }),
     );
   } catch {
@@ -76,9 +83,36 @@ const mapGeolocationError = (error) => {
 
 export const getCachedUserLocation = () => readCachedLocation();
 
-export const getUserLocation = () =>
+const requestBrowserLocation = ({ forceFresh = false, resolve, reject }) => {
+  if (typeof navigator === 'undefined' || !navigator.geolocation) {
+    reject(new Error('Location not enabled'));
+    return;
+  }
+
+  navigator.geolocation.getCurrentPosition(
+    (position) => {
+      const nextLocation = {
+        lat: position.coords.latitude,
+        lng: position.coords.longitude,
+      };
+
+      writeCachedLocation(nextLocation);
+      resolve(nextLocation);
+    },
+    (error) => {
+      reject(new Error(mapGeolocationError(error)));
+    },
+    {
+      enableHighAccuracy: true,
+      maximumAge: forceFresh ? 0 : 2 * 60 * 1000,
+      timeout: GEOLOCATION_TIMEOUT_MS,
+    },
+  );
+};
+
+export const getUserLocation = ({ forceFresh = false } = {}) =>
   new Promise((resolve, reject) => {
-    const cachedLocation = readCachedLocation();
+    const cachedLocation = forceFresh ? null : readCachedLocation();
 
     if (cachedLocation) {
       resolve(cachedLocation);
@@ -87,62 +121,19 @@ export const getUserLocation = () =>
 
     getNativeCurrentLocation()
       .then((nativeLocation) => {
-        if (nativeLocation?.lat && nativeLocation?.lng) {
+        if (
+          Number.isFinite(Number(nativeLocation?.lat)) &&
+          Number.isFinite(Number(nativeLocation?.lng))
+        ) {
           writeCachedLocation(nativeLocation);
           resolve(nativeLocation);
           return;
         }
 
-        if (typeof navigator === 'undefined' || !navigator.geolocation) {
-          reject(new Error('Location not enabled'));
-          return;
-        }
-
-        navigator.geolocation.getCurrentPosition(
-          (position) => {
-            const nextLocation = {
-              lat: position.coords.latitude,
-              lng: position.coords.longitude,
-            };
-
-            writeCachedLocation(nextLocation);
-            resolve(nextLocation);
-          },
-          (error) => {
-            reject(new Error(mapGeolocationError(error)));
-          },
-          {
-            enableHighAccuracy: true,
-            maximumAge: 2 * 60 * 1000,
-            timeout: GEOLOCATION_TIMEOUT_MS,
-          },
-        );
+        requestBrowserLocation({ forceFresh, resolve, reject });
       })
       .catch(() => {
-        if (typeof navigator === 'undefined' || !navigator.geolocation) {
-          reject(new Error('Location not enabled'));
-          return;
-        }
-
-        navigator.geolocation.getCurrentPosition(
-          (position) => {
-            const nextLocation = {
-              lat: position.coords.latitude,
-              lng: position.coords.longitude,
-            };
-
-            writeCachedLocation(nextLocation);
-            resolve(nextLocation);
-          },
-          (error) => {
-            reject(new Error(mapGeolocationError(error)));
-          },
-          {
-            enableHighAccuracy: true,
-            maximumAge: 2 * 60 * 1000,
-            timeout: GEOLOCATION_TIMEOUT_MS,
-          },
-        );
+        requestBrowserLocation({ forceFresh, resolve, reject });
       });
   });
 
