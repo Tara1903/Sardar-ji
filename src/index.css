@@ -87,10 +87,18 @@ body {
     linear-gradient(180deg, var(--page-top) 0%, var(--bg) 100%);
 }
 
+html.native-app,
+html.native-app body {
+  min-height: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
 .native-app body {
-  overscroll-behavior-y: none;
+  overscroll-behavior-y: auto;
   -webkit-tap-highlight-color: transparent;
-  touch-action: manipulation;
+  touch-action: auto;
 }
 
 a {
@@ -159,6 +167,7 @@ textarea {
 
 .native-app .app-shell {
   min-height: 100svh;
+  overflow: visible;
 }
 
 .page-stack {
@@ -167,6 +176,7 @@ textarea {
 
 .native-app .page-stack {
   padding-bottom: calc(6.25rem + env(safe-area-inset-bottom));
+  overflow: visible;
 }
 
 .native-app .site-header {
