@@ -304,6 +304,7 @@ const normalizeSettings = (row = {}) => {
 const USER_META_ENTRY_TYPES = Object.freeze({
   subscription: 'subscription-meta',
   pushSubscription: 'push-subscription',
+  nativePushToken: 'native-push-token',
 });
 
 const normalizePushSubscription = (row = {}) => {
@@ -329,6 +330,24 @@ const extractPushSubscriptionsFromAddresses = (addresses = []) =>
     .map(normalizePushSubscription)
     .filter((subscription) => subscription.endpoint && subscription.keys?.auth && subscription.keys?.p256dh);
 
+const normalizeNativePushToken = (row = {}) => {
+  const payload = row?.payload || row;
+
+  return {
+    token: payload.token || '',
+    platform: payload.platform || '',
+    provider: payload.provider || 'fcm',
+    createdAt: payload.createdAt || '',
+    updatedAt: payload.updatedAt || '',
+  };
+};
+
+const extractNativePushTokensFromAddresses = (addresses = []) =>
+  (addresses || [])
+    .filter((entry) => entry?._type === USER_META_ENTRY_TYPES.nativePushToken)
+    .map(normalizeNativePushToken)
+    .filter((entry) => entry.token);
+
 const normalizeUser = (row) => ({
   id: row.id,
   name: row.name,
@@ -341,7 +360,8 @@ const normalizeUser = (row) => ({
   addresses: (row.addresses || []).filter(
     (entry) =>
       entry?._type !== USER_META_ENTRY_TYPES.subscription &&
-      entry?._type !== USER_META_ENTRY_TYPES.pushSubscription,
+      entry?._type !== USER_META_ENTRY_TYPES.pushSubscription &&
+      entry?._type !== USER_META_ENTRY_TYPES.nativePushToken,
   ),
   subscriptionMeta:
     (row.addresses || []).find((entry) => entry?._type === USER_META_ENTRY_TYPES.subscription)?.payload || {
@@ -350,6 +370,7 @@ const normalizeUser = (row) => ({
       holidayDates: [],
     },
   pushSubscriptions: extractPushSubscriptionsFromAddresses(row.addresses || []),
+  nativePushTokens: extractNativePushTokensFromAddresses(row.addresses || []),
   avatarUrl: row.avatar_url || '',
   createdAt: row.created_at,
   updatedAt: row.updated_at,
@@ -464,11 +485,17 @@ const normalizeRewardCoupon = (row) => ({
   createdAt: row.created_at || row.createdAt || '',
 });
 
-const serializeUserAddresses = (addresses = [], subscriptionMeta = null, pushSubscriptions = []) => {
+const serializeUserAddresses = (
+  addresses = [],
+  subscriptionMeta = null,
+  pushSubscriptions = [],
+  nativePushTokens = [],
+) => {
   const sanitizedAddresses = (addresses || []).filter(
     (entry) =>
       entry?._type !== USER_META_ENTRY_TYPES.subscription &&
-      entry?._type !== USER_META_ENTRY_TYPES.pushSubscription,
+      entry?._type !== USER_META_ENTRY_TYPES.pushSubscription &&
+      entry?._type !== USER_META_ENTRY_TYPES.nativePushToken,
   );
   const serializedPushSubscriptions = (pushSubscriptions || [])
     .map(normalizePushSubscription)
@@ -489,9 +516,23 @@ const serializeUserAddresses = (addresses = [], subscriptionMeta = null, pushSub
         updatedAt: subscription.updatedAt || new Date().toISOString(),
       },
     }));
+  const serializedNativePushTokens = (nativePushTokens || [])
+    .map(normalizeNativePushToken)
+    .filter((entry) => entry.token)
+    .map((entry, index) => ({
+      id: `__native_push_token__${index}`,
+      _type: USER_META_ENTRY_TYPES.nativePushToken,
+      payload: {
+        token: entry.token,
+        platform: entry.platform || '',
+        provider: entry.provider || 'fcm',
+        createdAt: entry.createdAt || new Date().toISOString(),
+        updatedAt: entry.updatedAt || new Date().toISOString(),
+      },
+    }));
 
   if (!subscriptionMeta) {
-    return [...sanitizedAddresses, ...serializedPushSubscriptions];
+    return [...sanitizedAddresses, ...serializedPushSubscriptions, ...serializedNativePushTokens];
   }
 
   return [
@@ -506,6 +547,7 @@ const serializeUserAddresses = (addresses = [], subscriptionMeta = null, pushSub
       },
     },
     ...serializedPushSubscriptions,
+    ...serializedNativePushTokens,
   ];
 };
 
@@ -639,7 +681,12 @@ const saveAddressIfNew = async (supabase, user, address) => {
   const { data, error } = await supabase
     .from('users')
     .update({
-      addresses: serializeUserAddresses(nextAddresses, user.subscriptionMeta, user.pushSubscriptions),
+      addresses: serializeUserAddresses(
+        nextAddresses,
+        user.subscriptionMeta,
+        user.pushSubscriptions,
+        user.nativePushTokens,
+      ),
     })
     .eq('id', user.id)
     .select('*')
@@ -1233,6 +1280,7 @@ const direct = {
           addresses,
           currentUser.subscriptionMeta,
           currentUser.pushSubscriptions,
+          currentUser.nativePushTokens,
         ),
       })
       .eq('id', authUser.id)
@@ -1263,6 +1311,7 @@ const direct = {
           currentUser.addresses,
           nextMeta,
           currentUser.pushSubscriptions,
+          currentUser.nativePushTokens,
         ),
       })
       .eq('id', authUser.id)
@@ -1300,6 +1349,7 @@ const direct = {
           currentUser.addresses,
           currentUser.subscriptionMeta,
           nextPushSubscriptions,
+          currentUser.nativePushTokens,
         ),
       })
       .eq('id', authUser.id)
@@ -1325,6 +1375,7 @@ const direct = {
           currentUser.addresses,
           currentUser.subscriptionMeta,
           currentUser.pushSubscriptions.filter((entry) => entry.endpoint !== endpoint),
+          currentUser.nativePushTokens,
         ),
       })
       .eq('id', authUser.id)
@@ -1333,6 +1384,70 @@ const direct = {
 
     if (error) {
       throw createError(error, 'Unable to remove your browser notification subscription.');
+    }
+
+    return { user: normalizeUser(data) };
+  },
+
+  saveNativePushToken: async (payload, token) => {
+    const supabase = await getSupabaseForToken(token);
+    const authUser = await getCurrentUser(supabase, token);
+    const currentUser = await getProfile(supabase, authUser.id);
+    const existingEntry = currentUser.nativePushTokens.find((entry) => entry.token === payload?.token);
+    const normalizedEntry = normalizeNativePushToken({
+      ...payload,
+      provider: payload?.provider || 'fcm',
+      createdAt: existingEntry?.createdAt || new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    });
+
+    const nextNativePushTokens = [
+      ...currentUser.nativePushTokens.filter((entry) => entry.token !== normalizedEntry.token),
+      normalizedEntry,
+    ];
+
+    const { data, error } = await supabase
+      .from('users')
+      .update({
+        addresses: serializeUserAddresses(
+          currentUser.addresses,
+          currentUser.subscriptionMeta,
+          currentUser.pushSubscriptions,
+          nextNativePushTokens,
+        ),
+      })
+      .eq('id', authUser.id)
+      .select('*')
+      .single();
+
+    if (error) {
+      throw createError(error, 'Unable to save your app notification token.');
+    }
+
+    return { user: normalizeUser(data) };
+  },
+
+  removeNativePushToken: async (nativeToken, token) => {
+    const supabase = await getSupabaseForToken(token);
+    const authUser = await getCurrentUser(supabase, token);
+    const currentUser = await getProfile(supabase, authUser.id);
+
+    const { data, error } = await supabase
+      .from('users')
+      .update({
+        addresses: serializeUserAddresses(
+          currentUser.addresses,
+          currentUser.subscriptionMeta,
+          currentUser.pushSubscriptions,
+          currentUser.nativePushTokens.filter((entry) => entry.token !== nativeToken),
+        ),
+      })
+      .eq('id', authUser.id)
+      .select('*')
+      .single();
+
+    if (error) {
+      throw createError(error, 'Unable to remove your app notification token.');
     }
 
     return { user: normalizeUser(data) };
@@ -1689,6 +1804,8 @@ export const api = {
       : direct.updateAddresses(addresses, token),
   savePushSubscription: (subscription, token) => direct.savePushSubscription(subscription, token),
   removePushSubscription: (endpoint, token) => direct.removePushSubscription(endpoint, token),
+  saveNativePushToken: (payload, token) => direct.saveNativePushToken(payload, token),
+  removeNativePushToken: (nativeToken, token) => direct.removeNativePushToken(nativeToken, token),
   updateSubscriptionPreferences: (payload, token) => direct.updateSubscriptionPreferences(payload, token),
   getUsers: (role, token) =>
     USE_API_SERVER

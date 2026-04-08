@@ -60,6 +60,9 @@ if exist "C:\Sardar ji\android\app\build\intermediates\assets" (
   rmdir /s /q "C:\Sardar ji\android\app\build\intermediates\assets"
 )
 
+powershell -ExecutionPolicy Bypass -File "C:\Sardar ji\tools\ensure-android-push-plugin.ps1"
+if errorlevel 1 exit /b %ERRORLEVEL%
+
 pushd C:\Sardar ji\android
 call gradlew.bat assembleRelease bundleRelease
 set "GRADLE_EXIT=%ERRORLEVEL%"

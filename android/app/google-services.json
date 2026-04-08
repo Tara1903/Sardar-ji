@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "837298853278",
+    "project_id": "sardar-ji-food-corner",
+    "storage_bucket": "sardar-ji-food-corner.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:837298853278:android:1efa81b5b90e6b64d7328f",
+        "android_client_info": {
+          "package_name": "com.sardarjifood.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB1zdkPmBMnTktPd2zYvAVc2E7ZV6psd2M"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

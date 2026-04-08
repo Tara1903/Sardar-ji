@@ -11,6 +11,7 @@ apply from: "../capacitor-cordova-android-plugins/cordova.variables.gradle"
 dependencies {
     implementation project(':capacitor-splash-screen')
     implementation project(':capacitor-status-bar')
+    implementation project(':capacitor-push-notifications')
 
 }
 
@@ -18,3 +19,4 @@ dependencies {
 if (hasProperty('postBuildExtras')) {
   postBuildExtras()
 }
+

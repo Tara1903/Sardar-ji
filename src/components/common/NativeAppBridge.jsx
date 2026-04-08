@@ -49,6 +49,7 @@ export const NativeAppBridge = () => {
 
     let appUrlOpenListener = null;
     let notificationActionListener = null;
+    let pushNotificationActionListener = null;
 
     const handleDeepLink = (targetPath) => {
       if (!targetPath) {
@@ -92,6 +93,23 @@ export const NativeAppBridge = () => {
         );
       } catch {
         // Ignore notification click routing on unsupported shells.
+      }
+    };
+
+    const setupPushNotificationRouting = async () => {
+      try {
+        const { PushNotifications } = await import('@capacitor/push-notifications');
+        pushNotificationActionListener = await PushNotifications.addListener(
+          'pushNotificationActionPerformed',
+          (event) => {
+            const data = event?.notification?.data || {};
+            const targetUrl = data.url || (data.orderId ? `/track/${data.orderId}` : '');
+
+            handleDeepLink(parseDeepLinkPath(targetUrl));
+          },
+        );
+      } catch {
+        // Ignore push click routing on unsupported shells.
       }
     };
 
@@ -144,6 +162,7 @@ export const NativeAppBridge = () => {
 
     void setupAppUrlOpen();
     void setupLocalNotificationRouting();
+    void setupPushNotificationRouting();
     window.addEventListener(NATIVE_BACK_EVENT, handleNativeBack);
     window.addEventListener(NATIVE_BOOT_METRIC_EVENT, handleBootMetric, { once: true });
 
@@ -152,6 +171,7 @@ export const NativeAppBridge = () => {
       window.removeEventListener(NATIVE_BOOT_METRIC_EVENT, handleBootMetric);
       appUrlOpenListener?.remove?.();
       notificationActionListener?.remove?.();
+      pushNotificationActionListener?.remove?.();
     };
   }, [location.hash, location.pathname, location.search, navigate]);
 

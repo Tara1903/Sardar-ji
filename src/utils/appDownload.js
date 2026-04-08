@@ -1,8 +1,8 @@
 const APP_DOWNLOAD_HOST = 'https://www.sardarjifoodcorner.shop';
 
 export const APP_RELEASE = Object.freeze({
-  version: '1.4.1',
-  build: 7,
+  version: '1.5.0',
+  build: 8,
   minimumSupportedBuild: 5,
   minimumSupportedVersion: '1.3.1',
   forceUpdate: false,
@@ -14,9 +14,9 @@ export const APP_RELEASE = Object.freeze({
   updateLabel: 'Update App',
   supportNote: 'Android 8.0+ supported • Native-feel app shell • Fast install • Pure veg ordering app',
   releaseHighlights: [
-    'Deep links now open menu, cart, tracking, and product screens directly inside the app',
-    'Native-style local notifications, haptic feedback, share actions, and faster offline recovery',
-    'Latest premium website design, subscriptions, referrals, reorder, Razorpay checkout, and startup fix included',
+    'True background Android push notifications now arrive for order updates even when the app is closed',
+    'Deep links still open menu, cart, product, and tracking screens directly inside the app',
+    'Latest premium website design, subscriptions, referrals, reorder, Razorpay checkout, and offline recovery included',
   ],
 });
 

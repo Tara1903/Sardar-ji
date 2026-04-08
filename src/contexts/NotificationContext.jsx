@@ -24,6 +24,7 @@ import {
 } from '../utils/pushNotifications';
 import { useAuth } from './AuthContext';
 import {
+  registerNativePushNotifications,
   requestNativeNotificationPermission,
   showNativeLocalNotification,
 } from '../lib/nativeFeatures';
@@ -75,6 +76,8 @@ export const NotificationProvider = ({ children }) => {
   const orderStatusCacheRef = useRef(readStatusCache(user?.id));
   const audioContextRef = useRef(null);
   const alertsUnlockedRef = useRef(false);
+  const nativePushReadyRef = useRef(false);
+  const nativePushTokenRef = useRef('');
 
   const dismissToast = useCallback((toastId) => {
     const timer = toastTimersRef.current.get(toastId);
@@ -233,7 +236,7 @@ export const NotificationProvider = ({ children }) => {
 
       if (user.role === 'customer') {
         if (isNativeAppShell()) {
-          void requestNativeNotificationPermission();
+          void requestNativeNotificationPermission().then(setPushPermission);
         }
         void ensurePushSubscription({ requestPermission: true });
       }
@@ -254,11 +257,62 @@ export const NotificationProvider = ({ children }) => {
     }
 
     if (isNativeAppShell()) {
-      void requestNativeNotificationPermission();
+      void requestNativeNotificationPermission().then(setPushPermission);
     }
 
     void ensurePushSubscription({ requestPermission: false });
   }, [ensurePushSubscription, token, user?.role]);
+
+  useEffect(() => {
+    if (!token || user?.role !== 'customer' || !isNativeAppShell()) {
+      nativePushReadyRef.current = false;
+      nativePushTokenRef.current = '';
+      return undefined;
+    }
+
+    let isMounted = true;
+    let removeListeners = () => {};
+
+    const setupNativePush = async () => {
+      removeListeners = await registerNativePushNotifications({
+        onRegistration: async (nativeToken) => {
+          const cleanedToken = String(nativeToken || '').trim();
+
+          if (!cleanedToken || !isMounted) {
+            return;
+          }
+
+          nativePushTokenRef.current = cleanedToken;
+          nativePushReadyRef.current = true;
+          setPushPermission('granted');
+
+          try {
+            await api.saveNativePushToken(
+              {
+                token: cleanedToken,
+                platform: 'android',
+                provider: 'fcm',
+              },
+              token,
+            );
+            await refreshUser().catch(() => null);
+          } catch {
+            nativePushReadyRef.current = false;
+          }
+        },
+        onRegistrationError: () => {
+          nativePushReadyRef.current = false;
+        },
+      });
+    };
+
+    void setupNativePush();
+
+    return () => {
+      isMounted = false;
+      removeListeners?.();
+    };
+  }, [refreshUser, token, user?.id, user?.role]);
 
   useEffect(() => {
     if (!token || user?.role !== 'customer') {
@@ -287,7 +341,7 @@ export const NotificationProvider = ({ children }) => {
         const nextStatusMap = Object.fromEntries(orders.map((order) => [order.id, order.status]));
         const previousStatusMap = orderStatusCacheRef.current || {};
 
-        if (isNativeAppShell()) {
+        if (isNativeAppShell() && !nativePushReadyRef.current) {
           orders.forEach((order) => {
             const previousStatus = previousStatusMap[order.id];
 
@@ -360,9 +414,7 @@ export const NotificationProvider = ({ children }) => {
             actionTo: notification.url,
           });
 
-          if (
-            isNativeAppShell()
-          ) {
+          if (isNativeAppShell() && !nativePushReadyRef.current) {
             void showNativeLocalNotification({
               id: Number(String(nextOrder.id).replace(/\D/g, '').slice(-8)) || undefined,
               title: notification.title,

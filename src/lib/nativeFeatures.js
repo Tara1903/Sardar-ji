@@ -74,6 +74,33 @@ export const requestNativeNotificationPermission = async () => {
     return 'unsupported';
   }
 
+  const PushNotifications = await loadNativePlugin(
+    '@capacitor/push-notifications',
+    'PushNotifications',
+  );
+
+  if (PushNotifications) {
+    try {
+      const current = await PushNotifications.checkPermissions();
+
+      if (current.receive === 'granted') {
+        return 'granted';
+      }
+
+      const requested = await PushNotifications.requestPermissions();
+
+      if (requested.receive === 'granted') {
+        return 'granted';
+      }
+
+      if (requested.receive === 'denied') {
+        return 'denied';
+      }
+    } catch {
+      // Fall back to local notifications permission if push registration is unavailable.
+    }
+  }
+
   const LocalNotifications = await loadNativePlugin(
     '@capacitor/local-notifications',
     'LocalNotifications',
@@ -95,6 +122,82 @@ export const requestNativeNotificationPermission = async () => {
   } catch {
     return 'denied';
   }
+};
+
+export const registerNativePushNotifications = async ({
+  onRegistration = () => {},
+  onRegistrationError = () => {},
+  onNotification = () => {},
+} = {}) => {
+  if (!isNativeAppShell()) {
+    return () => {};
+  }
+
+  const PushNotifications = await loadNativePlugin(
+    '@capacitor/push-notifications',
+    'PushNotifications',
+  );
+
+  if (!PushNotifications) {
+    return () => {};
+  }
+
+  const permission = await requestNativeNotificationPermission();
+
+  if (permission !== 'granted') {
+    return () => {};
+  }
+
+  const listeners = [];
+
+  const safelyAddListener = async (eventName, handler) => {
+    try {
+      const listener = await PushNotifications.addListener(eventName, handler);
+
+      if (listener?.remove) {
+        listeners.push(listener);
+      }
+    } catch {
+      // Ignore listener registration failures so app boot is never blocked.
+    }
+  };
+
+  try {
+    await PushNotifications.createChannel({
+      id: 'order-updates',
+      name: 'Order updates',
+      description: 'Order placed and status update alerts',
+      importance: 5,
+      visibility: 1,
+      sound: 'default',
+      vibration: true,
+      lights: true,
+    });
+  } catch {
+    // Ignore duplicate or unsupported notification channel creation.
+  }
+
+  await safelyAddListener('registration', ({ value }) => {
+    onRegistration(String(value || '').trim());
+  });
+
+  await safelyAddListener('registrationError', (error) => {
+    onRegistrationError(error);
+  });
+
+  await safelyAddListener('pushNotificationReceived', (notification) => {
+    onNotification(notification);
+  });
+
+  try {
+    await PushNotifications.register();
+  } catch (error) {
+    onRegistrationError(error);
+  }
+
+  return () => {
+    listeners.forEach((listener) => listener.remove?.());
+  };
 };
 
 export const showNativeLocalNotification = async ({

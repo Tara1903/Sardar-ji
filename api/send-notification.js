@@ -1,11 +1,13 @@
 import nodemailer from 'nodemailer';
 import webpush from 'web-push';
 import { getEnv, getBearerToken, readJsonBody, requireAuthenticatedUser, sendJson } from './_lib/server.js';
+import { getFirebaseMessaging } from './_lib/firebase.js';
 import { getSupabaseRows, mutateSupabaseRows } from './_lib/supabase.js';
 import { buildOrderStatusNotification } from '../src/utils/orderNotifications.js';
 
 const APP_BASE_URL = 'https://www.sardarjifoodcorner.shop';
 const PUSH_META_TYPE = 'push-subscription';
+const NATIVE_PUSH_META_TYPE = 'native-push-token';
 
 const createHttpError = (message, statusCode = 500) => {
   const error = new Error(message);
@@ -60,6 +62,16 @@ const extractPushSubscriptions = (addresses = []) =>
     .filter((entry) => entry?._type === PUSH_META_TYPE)
     .map((entry) => entry?.payload || {})
     .filter((subscription) => subscription.endpoint && subscription.keys?.auth && subscription.keys?.p256dh);
+
+const extractNativePushTokens = (addresses = []) =>
+  Array.from(
+    new Set(
+      (addresses || [])
+        .filter((entry) => entry?._type === NATIVE_PUSH_META_TYPE)
+        .map((entry) => entry?.payload?.token || '')
+        .filter(Boolean),
+    ),
+  );
 
 const safeInsertNotification = async ({ token, userId, orderId, message }) => {
   try {
@@ -215,6 +227,53 @@ const sendPushNotifications = async ({ subscriptions, message, orderId }) => {
   };
 };
 
+const sendNativePushNotifications = async ({
+  nativePushTokens,
+  title,
+  message,
+  orderId,
+  orderNumber,
+  status,
+}) => {
+  const messaging = getFirebaseMessaging();
+
+  if (!messaging || !nativePushTokens.length) {
+    return { sent: 0, skipped: nativePushTokens.length, configured: false };
+  }
+
+  const data = {
+    title: String(title || 'Order Update'),
+    message: String(message || ''),
+    orderId: String(orderId || ''),
+    orderNumber: String(orderNumber || ''),
+    status: String(status || ''),
+    url: orderId ? `${APP_BASE_URL}/track/${orderId}` : `${APP_BASE_URL}/profile`,
+  };
+
+  const response = await messaging.sendEachForMulticast({
+    tokens: nativePushTokens,
+    notification: {
+      title: data.title,
+      body: data.message,
+    },
+    data,
+    android: {
+      priority: 'high',
+      notification: {
+        channelId: 'order-updates',
+        sound: 'default',
+        visibility: 'public',
+      },
+    },
+  });
+
+  return {
+    sent: response.successCount,
+    failed: response.failureCount,
+    configured: true,
+  };
+};
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return sendJson(res, 405, { message: 'Method not allowed.' });
@@ -263,6 +322,14 @@ export default async function handler(req, res) {
       message: notification.message,
       orderId: recipient.orderId || body.orderId || '',
     });
+    const nativePushResult = await sendNativePushNotifications({
+      nativePushTokens: extractNativePushTokens(recipient.addresses),
+      title: notification.title,
+      message: notification.message,
+      orderId: recipient.orderId || body.orderId || '',
+      orderNumber: recipient.orderNumber || body.orderNumber || '',
+      status: body.status || '',
+    });
 
     const emailResult = await sendEmailNotification({
       recipientEmail: recipient.email,
@@ -274,6 +341,7 @@ export default async function handler(req, res) {
       ok: true,
       stored,
       push: pushResult,
+      nativePush: nativePushResult,
       email: emailResult,
     });
   } catch (error) {

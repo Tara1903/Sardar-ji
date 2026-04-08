@@ -8,6 +8,7 @@ dist
 .env.vercel.pull2
 .vercel
 .env.development.local
+secrets
 android/.gradle
 android/.idea
 android/build
