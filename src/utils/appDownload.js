@@ -1,8 +1,8 @@
 const APP_DOWNLOAD_HOST = 'https://www.sardarjifoodcorner.shop';
 
 export const APP_RELEASE = Object.freeze({
-  version: '1.4.0',
-  build: 6,
+  version: '1.4.1',
+  build: 7,
   minimumSupportedBuild: 5,
   minimumSupportedVersion: '1.3.1',
   forceUpdate: false,
@@ -16,7 +16,7 @@ export const APP_RELEASE = Object.freeze({
   releaseHighlights: [
     'Deep links now open menu, cart, tracking, and product screens directly inside the app',
     'Native-style local notifications, haptic feedback, share actions, and faster offline recovery',
-    'Latest premium website design, subscriptions, referrals, reorder, and Razorpay checkout included',
+    'Latest premium website design, subscriptions, referrals, reorder, Razorpay checkout, and startup fix included',
   ],
 });
 

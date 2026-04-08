@@ -28,11 +28,32 @@ if not exist "%ANDROID_HOME%\platform-tools" (
   exit /b 1
 )
 
+if not exist "C:\Sardar ji\dist\index.html" (
+  echo Web build not found at dist\index.html. Run npm run build first.
+  exit /b 1
+)
+
 set "ANDROID_SDK_ROOT=%ANDROID_HOME%"
 set "PATH=%JAVA_HOME%\bin;%ANDROID_HOME%\platform-tools;%PATH%"
 
 echo Using JAVA_HOME=%JAVA_HOME%
 echo Using ANDROID_HOME=%ANDROID_HOME%
+echo Mirroring latest web assets into Android app bundle...
+
+if not exist "C:\Sardar ji\android\app\src\main\assets\public" (
+  mkdir "C:\Sardar ji\android\app\src\main\assets\public"
+)
+
+robocopy "C:\Sardar ji\dist" "C:\Sardar ji\android\app\src\main\assets\public" /MIR >nul
+set "ROBOCOPY_EXIT=%ERRORLEVEL%"
+if %ROBOCOPY_EXIT% GEQ 8 (
+  echo Failed to mirror latest web assets into Android app bundle.
+  exit /b %ROBOCOPY_EXIT%
+)
+
+if exist "C:\Sardar ji\android\app\build\intermediates\assets" (
+  rmdir /s /q "C:\Sardar ji\android\app\build\intermediates\assets"
+)
 
 pushd C:\Sardar ji\android
 call gradlew.bat assembleDebug
