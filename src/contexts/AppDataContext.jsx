@@ -2,14 +2,60 @@ import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { api } from '../api/client';
 import { applyThemeToDocument, createAppConfig } from '../theme/theme';
 import { applyProductAvailabilitySchedule } from '../utils/availability';
+import { isNativeAppShell } from '../lib/nativeApp';
 
 const AppDataContext = createContext(null);
+const APP_DATA_CACHE_KEY = 'sjfc-app-data-cache-v1';
+
+const canUseBrowser = () => typeof window !== 'undefined';
+
+const readAppDataCache = () => {
+  if (!canUseBrowser()) {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(window.localStorage.getItem(APP_DATA_CACHE_KEY) || 'null');
+
+    if (!parsed || !Array.isArray(parsed.products) || !Array.isArray(parsed.categories)) {
+      return null;
+    }
+
+    return {
+      products: parsed.products,
+      categories: parsed.categories,
+      settings: parsed.settings || null,
+      updatedAt: parsed.updatedAt || '',
+    };
+  } catch {
+    return null;
+  }
+};
+
+const writeAppDataCache = (payload) => {
+  if (!canUseBrowser()) {
+    return;
+  }
+
+  try {
+    window.localStorage.setItem(
+      APP_DATA_CACHE_KEY,
+      JSON.stringify({
+        ...payload,
+        updatedAt: new Date().toISOString(),
+      }),
+    );
+  } catch {
+    // Ignore storage limits so catalog still renders.
+  }
+};
 
 export const AppDataProvider = ({ children }) => {
-  const [products, setProducts] = useState([]);
-  const [categories, setCategories] = useState([]);
-  const [settings, setSettings] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const cachedAppData = readAppDataCache();
+  const [products, setProducts] = useState(cachedAppData?.products || []);
+  const [categories, setCategories] = useState(cachedAppData?.categories || []);
+  const [settings, setSettings] = useState(cachedAppData?.settings || null);
+  const [loading, setLoading] = useState(!cachedAppData);
   const [error, setError] = useState('');
 
   const loadAppData = async () => {
@@ -21,12 +67,22 @@ export const AppDataProvider = ({ children }) => {
         api.getSettings(),
       ]);
       const scheduleMap = settingsResponse?.storefront?.productAvailabilitySchedules || {};
-      setProducts(productsResponse.map((product) => applyProductAvailabilitySchedule(product, scheduleMap)));
+      const nextProducts = productsResponse.map((product) =>
+        applyProductAvailabilitySchedule(product, scheduleMap),
+      );
+      setProducts(nextProducts);
       setCategories(categoriesResponse);
       setSettings(settingsResponse);
+      writeAppDataCache({
+        products: nextProducts,
+        categories: categoriesResponse,
+        settings: settingsResponse,
+      });
       setError('');
     } catch (loadError) {
-      setError(loadError.message);
+      if (!cachedAppData) {
+        setError(loadError.message);
+      }
     } finally {
       setLoading(false);
     }
@@ -35,6 +91,37 @@ export const AppDataProvider = ({ children }) => {
   useEffect(() => {
     loadAppData();
   }, []);
+
+  useEffect(() => {
+    if (!canUseBrowser()) {
+      return undefined;
+    }
+
+    const reloadOnReconnect = () => {
+      void loadAppData();
+    };
+
+    window.addEventListener('online', reloadOnReconnect);
+    return () => window.removeEventListener('online', reloadOnReconnect);
+  }, []);
+
+  useEffect(() => {
+    if (!products.length) {
+      return;
+    }
+
+    const imageUrls = products
+      .slice(0, isNativeAppShell() ? 10 : 6)
+      .map((product) => product.image)
+      .filter(Boolean);
+
+    imageUrls.forEach((url) => {
+      const image = new Image();
+      image.decoding = 'async';
+      image.loading = 'eager';
+      image.src = url;
+    });
+  }, [products]);
 
   useEffect(() => {
     applyThemeToDocument(settings?.storefront?.theme);

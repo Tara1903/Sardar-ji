@@ -23,33 +23,36 @@ import {
   urlBase64ToUint8Array,
 } from '../utils/pushNotifications';
 import { useAuth } from './AuthContext';
+import {
+  requestNativeNotificationPermission,
+  showNativeLocalNotification,
+} from '../lib/nativeFeatures';
 
 const NotificationContext = createContext(null);
-const ORDER_STATUS_CACHE_KEY = 'sjfc-order-status-cache';
 const MAX_TOASTS = 4;
 const TOAST_DURATION_MS = 5200;
 
 const canUseBrowser = () => typeof window !== 'undefined' && typeof document !== 'undefined';
 
-const readStatusCache = () => {
+const readStatusCache = (userId = '') => {
   if (!canUseBrowser()) {
     return {};
   }
 
   try {
-    return JSON.parse(window.localStorage.getItem(ORDER_STATUS_CACHE_KEY) || '{}');
+    return JSON.parse(window.localStorage.getItem(`sjfc-order-status-cache:${userId}`) || '{}');
   } catch {
     return {};
   }
 };
 
-const writeStatusCache = (cache) => {
+const writeStatusCache = (userId, cache) => {
   if (!canUseBrowser()) {
     return;
   }
 
   try {
-    window.localStorage.setItem(ORDER_STATUS_CACHE_KEY, JSON.stringify(cache));
+    window.localStorage.setItem(`sjfc-order-status-cache:${userId}`, JSON.stringify(cache));
   } catch {
     // Ignore local storage errors so notifications never block the UI.
   }
@@ -69,7 +72,7 @@ export const NotificationProvider = ({ children }) => {
   const [toasts, setToasts] = useState([]);
   const [pushPermission, setPushPermission] = useState(getNotificationPermission);
   const toastTimersRef = useRef(new Map());
-  const orderStatusCacheRef = useRef(readStatusCache());
+  const orderStatusCacheRef = useRef(readStatusCache(user?.id));
   const audioContextRef = useRef(null);
   const alertsUnlockedRef = useRef(false);
 
@@ -229,6 +232,9 @@ export const NotificationProvider = ({ children }) => {
       }
 
       if (user.role === 'customer') {
+        if (isNativeAppShell()) {
+          void requestNativeNotificationPermission();
+        }
         void ensurePushSubscription({ requestPermission: true });
       }
     };
@@ -247,6 +253,10 @@ export const NotificationProvider = ({ children }) => {
       return;
     }
 
+    if (isNativeAppShell()) {
+      void requestNativeNotificationPermission();
+    }
+
     void ensurePushSubscription({ requestPermission: false });
   }, [ensurePushSubscription, token, user?.role]);
 
@@ -254,6 +264,8 @@ export const NotificationProvider = ({ children }) => {
     if (!token || user?.role !== 'customer') {
       return undefined;
     }
+
+    orderStatusCacheRef.current = readStatusCache(user.id);
 
     let isMounted = true;
     const supabase = createTokenSupabaseClient(token);
@@ -272,10 +284,37 @@ export const NotificationProvider = ({ children }) => {
           return;
         }
 
-        orderStatusCacheRef.current = Object.fromEntries(
-          orders.map((order) => [order.id, order.status]),
-        );
-        writeStatusCache(orderStatusCacheRef.current);
+        const nextStatusMap = Object.fromEntries(orders.map((order) => [order.id, order.status]));
+        const previousStatusMap = orderStatusCacheRef.current || {};
+
+        if (isNativeAppShell()) {
+          orders.forEach((order) => {
+            const previousStatus = previousStatusMap[order.id];
+
+            if (!previousStatus || previousStatus === order.status) {
+              return;
+            }
+
+            const notification = buildOrderStatusNotification(order);
+
+            if (!notification) {
+              return;
+            }
+
+            void showNativeLocalNotification({
+              id: Number(String(order.id).replace(/\D/g, '').slice(-8)) || undefined,
+              title: notification.title,
+              body: notification.message,
+              extra: {
+                orderId: order.id,
+                url: notification.url,
+              },
+            });
+          });
+        }
+
+        orderStatusCacheRef.current = nextStatusMap;
+        writeStatusCache(user.id, orderStatusCacheRef.current);
       } catch {
         // Ignore bootstrap failures and keep realtime notifications working.
       }
@@ -301,7 +340,7 @@ export const NotificationProvider = ({ children }) => {
             ...orderStatusCacheRef.current,
             [nextOrder.id]: nextOrder.status,
           };
-          writeStatusCache(orderStatusCacheRef.current);
+          writeStatusCache(user.id, orderStatusCacheRef.current);
 
           if (!previousStatus || previousStatus === nextOrder.status) {
             return;
@@ -322,7 +361,18 @@ export const NotificationProvider = ({ children }) => {
           });
 
           if (
-            !isNativeAppShell() &&
+            isNativeAppShell()
+          ) {
+            void showNativeLocalNotification({
+              id: Number(String(nextOrder.id).replace(/\D/g, '').slice(-8)) || undefined,
+              title: notification.title,
+              body: notification.message,
+              extra: {
+                orderId: nextOrder.id,
+                url: notification.url,
+              },
+            });
+          } else if (
             typeof document !== 'undefined' &&
             document.visibilityState === 'hidden' &&
             'Notification' in window &&

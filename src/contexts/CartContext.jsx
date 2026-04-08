@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { isMonthlySubscriptionProduct } from '../utils/subscription';
 import { trackAddToCart } from '../utils/analytics';
+import { triggerNativeHaptic } from '../lib/nativeFeatures';
 
 const CartContext = createContext(null);
 const CART_KEY = 'sardar-ji-cart';
@@ -34,6 +35,23 @@ export const CartProvider = ({ children }) => {
     localStorage.setItem(CART_KEY, JSON.stringify(sanitizeCartItems(items)));
   }, [items]);
 
+  useEffect(() => {
+    const syncCart = (event) => {
+      if (event.key !== CART_KEY || !event.newValue) {
+        return;
+      }
+
+      try {
+        setItems(sanitizeCartItems(JSON.parse(event.newValue)).map(normalizeCartItem));
+      } catch {
+        // Ignore malformed cart snapshots from older sessions.
+      }
+    };
+
+    window.addEventListener('storage', syncCart);
+    return () => window.removeEventListener('storage', syncCart);
+  }, []);
+
   useEffect(
     () => () => {
       if (toastTimeoutRef.current) {
@@ -59,6 +77,7 @@ export const CartProvider = ({ children }) => {
 
       return [...current, { ...product, quantity: 1 }];
     });
+    void triggerNativeHaptic('light');
     showCartToast({
       title: `${product.name} added`,
       message: 'Ready in your cart whenever you want to check out.',
@@ -78,10 +97,12 @@ export const CartProvider = ({ children }) => {
         .map((item) => (item.id === id ? { ...item, quantity } : item))
         .filter((item) => item.quantity > 0),
     );
+    void triggerNativeHaptic(quantity > 0 ? 'light' : 'medium');
   };
 
   const removeFromCart = (id) => {
     setItems((current) => current.filter((item) => item.id !== id));
+    void triggerNativeHaptic('medium');
   };
 
   const clearCart = () => setItems([]);

@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowRight, BadgeCheck, MessageCircleMore, Minus, Plus, ShoppingBag } from 'lucide-react';
+import { ArrowRight, BadgeCheck, MessageCircleMore, Minus, Plus, Share2, ShoppingBag } from 'lucide-react';
 import { Link, useParams } from 'react-router-dom';
 import { PageTransition } from '../components/common/PageTransition';
 import { EmptyState } from '../components/common/EmptyState';
@@ -23,6 +23,7 @@ import { formatCurrency } from '../utils/format';
 import { createProductOrderMessage, createWhatsAppLink } from '../utils/whatsapp';
 import { createBreadcrumbSchema } from '../seo/siteSeo';
 import { trackWhatsAppClick } from '../utils/analytics';
+import { shareNativeContent, triggerNativeHaptic } from '../lib/nativeFeatures';
 
 export const ProductDetailPage = () => {
   const { id } = useParams();
@@ -55,6 +56,19 @@ export const ProductDetailPage = () => {
       return rightScore - leftScore;
     })
     .slice(0, 2);
+
+  const handleShareProduct = async () => {
+    const productUrl = `${window.location.origin}/product/${product.id}`;
+    const shared = await shareNativeContent({
+      title: product.name,
+      text: `Check out ${product.name} from Sardar Ji Food Corner for ${formatCurrency(product.price)}.`,
+      url: productUrl,
+    });
+
+    if (shared) {
+      void triggerNativeHaptic('light');
+    }
+  };
 
   return (
     <PageTransition>
@@ -211,6 +225,19 @@ export const ProductDetailPage = () => {
                     <MessageCircleMore size={16} />
                     Order on WhatsApp
                   </motion.a>
+                  <motion.button
+                    animate="rest"
+                    className="btn btn-secondary"
+                    initial="rest"
+                    onClick={handleShareProduct}
+                    type="button"
+                    variants={BUTTON_PRESS_VARIANTS}
+                    whileHover="hover"
+                    whileTap="tap"
+                  >
+                    <Share2 size={16} />
+                    Share
+                  </motion.button>
                 </motion.div>
 
                 <motion.div variants={CONTENT_FADE_VARIANTS}>

@@ -1,10 +1,13 @@
 import { Capacitor } from '@capacitor/core';
 
 const NATIVE_READY_EVENT = 'sjfc:native-ready';
+const NATIVE_BACK_EVENT = 'sjfc:native-back';
+const NATIVE_BOOT_METRIC_EVENT = 'sjfc:native-boot-metric';
 const NATIVE_HOST_NAME = 'localhost';
 const NATIVE_BOOT_FALLBACK_MS = 4200;
 let hasInitialized = false;
 let statusBarObserver = null;
+let nativeBootStartedAt = 0;
 
 const canUseBrowser = () => typeof window !== 'undefined' && typeof document !== 'undefined';
 
@@ -39,6 +42,13 @@ const setBootComplete = () => {
   const root = document.documentElement;
   root.classList.add('native-ready');
   root.classList.remove('app-booting');
+  window.dispatchEvent(
+    new CustomEvent(NATIVE_BOOT_METRIC_EVENT, {
+      detail: {
+        bootDurationMs: nativeBootStartedAt ? Date.now() - nativeBootStartedAt : 0,
+      },
+    }),
+  );
   window.dispatchEvent(new CustomEvent(NATIVE_READY_EVENT));
 };
 
@@ -165,6 +175,22 @@ const bindBackButton = async (App) => {
 
   try {
     await App.addListener('backButton', ({ canGoBack }) => {
+      if (canUseBrowser()) {
+        const backEvent = new CustomEvent(NATIVE_BACK_EVENT, {
+          cancelable: true,
+          detail: {
+            canGoBack,
+            pathname: window.location.pathname,
+          },
+        });
+
+        const shouldContinue = window.dispatchEvent(backEvent);
+
+        if (!shouldContinue || backEvent.defaultPrevented) {
+          return;
+        }
+      }
+
       if (canGoBack || window.history.length > 1) {
         window.history.back();
         return;
@@ -202,6 +228,7 @@ export const initializeNativeAppShell = async () => {
   }
 
   hasInitialized = true;
+  nativeBootStartedAt = Date.now();
   document.documentElement.classList.add('native-app');
   let SplashScreen = null;
   let fallbackTimeout = 0;
@@ -242,4 +269,4 @@ export const initializeNativeAppShell = async () => {
   }
 };
 
-export { NATIVE_READY_EVENT };
+export { NATIVE_BACK_EVENT, NATIVE_BOOT_METRIC_EVENT, NATIVE_READY_EVENT };

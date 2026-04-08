@@ -1,0 +1,14 @@
+[
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.sardarjifood.app",
+      "sha256_cert_fingerprints": [
+        "45:F5:D7:0A:27:BE:9C:93:D3:18:7B:D5:E8:1E:CF:CE:4D:E2:C6:B7:12:CC:40:35:62:80:45:85:9C:27:C3:48"
+      ]
+    }
+  }
+]

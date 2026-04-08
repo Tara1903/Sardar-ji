@@ -36,9 +36,9 @@ export const NativeOfflineNotice = () => {
           variants={FLOATING_CART_VARIANTS}
         >
           <WifiOff size={18} />
-          <div>
+                  <div>
             <strong>You’re offline</strong>
-            <span>Saved app screens stay available. Reconnect to place fresh orders.</span>
+            <span>Saved menu, cart, profile, and tracking screens stay available. Reconnect to sync fresh orders.</span>
           </div>
         </motion.div>
       ) : null}

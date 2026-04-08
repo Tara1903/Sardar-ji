@@ -20,19 +20,51 @@ import {
 } from '../motion/variants';
 import { formatCurrency, formatDateOnly, formatDateTime, initials } from '../utils/format';
 import { STORE_GOOGLE_REVIEW_URL } from '../utils/storefront';
+import { triggerNativeHaptic } from '../lib/nativeFeatures';
+
+const readProfileCache = (userId) => {
+  if (typeof window === 'undefined' || !userId) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(window.localStorage.getItem(`sjfc-profile-cache:${userId}`) || 'null');
+  } catch {
+    return null;
+  }
+};
+
+const writeProfileCache = (userId, payload) => {
+  if (typeof window === 'undefined' || !userId) {
+    return;
+  }
+
+  try {
+    window.localStorage.setItem(
+      `sjfc-profile-cache:${userId}`,
+      JSON.stringify({
+        ...payload,
+        updatedAt: new Date().toISOString(),
+      }),
+    );
+  } catch {
+    // Ignore storage limits so profile stays usable.
+  }
+};
 
 export const ProfilePage = () => {
   const navigate = useNavigate();
   const { user, token, logout, refreshUser } = useAuth();
   const { products } = useAppData();
   const { addItemsToCart } = useCart();
-  const [orders, setOrders] = useState([]);
-  const [progress, setProgress] = useState(null);
-  const [subscription, setSubscription] = useState(null);
-  const [rewardCoupons, setRewardCoupons] = useState([]);
+  const cachedProfile = readProfileCache(user?.id);
+  const [orders, setOrders] = useState(cachedProfile?.orders || []);
+  const [progress, setProgress] = useState(cachedProfile?.progress || null);
+  const [subscription, setSubscription] = useState(cachedProfile?.subscription || null);
+  const [rewardCoupons, setRewardCoupons] = useState(cachedProfile?.rewardCoupons || []);
   const [referralCode, setReferralCode] = useState('');
   const [error, setError] = useState('');
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!cachedProfile);
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -43,10 +75,18 @@ export const ProfilePage = () => {
           api.getMySubscription(token),
           api.getRewardCoupons(token),
         ]);
-        setOrders(ordersResponse.status === 'fulfilled' ? ordersResponse.value : []);
-        setProgress(referralResponse.status === 'fulfilled' ? referralResponse.value : null);
-        setSubscription(subscriptionResponse.status === 'fulfilled' ? subscriptionResponse.value : null);
-        setRewardCoupons(couponsResponse.status === 'fulfilled' ? couponsResponse.value : []);
+        const nextProfileState = {
+          orders: ordersResponse.status === 'fulfilled' ? ordersResponse.value : [],
+          progress: referralResponse.status === 'fulfilled' ? referralResponse.value : null,
+          subscription: subscriptionResponse.status === 'fulfilled' ? subscriptionResponse.value : null,
+          rewardCoupons: couponsResponse.status === 'fulfilled' ? couponsResponse.value : [],
+        };
+
+        setOrders(nextProfileState.orders);
+        setProgress(nextProfileState.progress);
+        setSubscription(nextProfileState.subscription);
+        setRewardCoupons(nextProfileState.rewardCoupons);
+        writeProfileCache(user?.id, nextProfileState);
       } finally {
         setLoading(false);
       }
@@ -101,6 +141,7 @@ export const ProfilePage = () => {
     }
 
     addItemsToCart(nextItems, { replace: true });
+    void triggerNativeHaptic('success');
     navigate('/cart');
   };
 

@@ -15,10 +15,41 @@ import { CONTENT_FADE_VARIANTS, CONTENT_STACK_VARIANTS, SURFACE_REVEAL_VARIANTS 
 import { formatDateTime, formatEtaLabel } from '../utils/format';
 import { STORE_GOOGLE_REVIEW_URL } from '../utils/storefront';
 
+const readTrackingCache = (orderId) => {
+  if (typeof window === 'undefined' || !orderId) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(window.localStorage.getItem(`sjfc-tracking-cache:${orderId}`) || 'null');
+  } catch {
+    return null;
+  }
+};
+
+const writeTrackingCache = (orderId, payload) => {
+  if (typeof window === 'undefined' || !orderId) {
+    return;
+  }
+
+  try {
+    window.localStorage.setItem(
+      `sjfc-tracking-cache:${orderId}`,
+      JSON.stringify({
+        ...payload,
+        updatedAt: new Date().toISOString(),
+      }),
+    );
+  } catch {
+    // Ignore storage failures so tracking continues.
+  }
+};
+
 export const TrackOrderPage = () => {
   const { orderId } = useParams();
   const location = useLocation();
-  const [order, setOrder] = useState(null);
+  const cachedTracking = readTrackingCache(orderId);
+  const [order, setOrder] = useState(cachedTracking || null);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -26,9 +57,12 @@ export const TrackOrderPage = () => {
       try {
         const response = await api.getTracking(orderId);
         setOrder(response);
+        writeTrackingCache(orderId, response);
         setError('');
       } catch (trackingError) {
-        setError(trackingError.message);
+        if (!cachedTracking) {
+          setError(trackingError.message);
+        }
       }
     };
 

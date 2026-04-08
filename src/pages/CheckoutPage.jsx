@@ -5,6 +5,7 @@ import {
   Gift,
   MapPin,
   MessageCircleMore,
+  Navigation,
 } from 'lucide-react';
 import { PromoBanner } from '../components/common/PromoBanner';
 import { PageTransition } from '../components/common/PageTransition';
@@ -22,6 +23,8 @@ import { isValidPhoneNumber } from '../utils/validation';
 import { useStoreDistance } from '../hooks/useStoreDistance';
 import { clearCheckoutRecovery, saveCheckoutRecovery } from '../utils/cartRecovery';
 import { trackBeginCheckout, trackPaymentSuccess } from '../utils/analytics';
+import { getUserLocation } from '../utils/location';
+import { showNativeLocalNotification, triggerNativeHaptic } from '../lib/nativeFeatures';
 
 const emptyAddress = {
   name: '',
@@ -49,6 +52,8 @@ export const CheckoutPage = () => {
   const [couponDraft, setCouponDraft] = useState('');
   const [appliedCouponCode, setAppliedCouponCode] = useState('');
   const [couponFeedback, setCouponFeedback] = useState('');
+  const [locationAssistMessage, setLocationAssistMessage] = useState('');
+  const [locatingAddress, setLocatingAddress] = useState(false);
   const placeOrderLockRef = useRef(false);
   const redirectTimeoutRef = useRef(null);
   const countdownIntervalRef = useRef(null);
@@ -263,6 +268,16 @@ export const CheckoutPage = () => {
     setRedirectSeconds(4);
     clearCart();
     refreshUser().catch(() => {});
+    void triggerNativeHaptic('success');
+    void showNativeLocalNotification({
+      id: Number(String(order.id).replace(/\D/g, '').slice(-8)) || undefined,
+      title: 'Order placed successfully',
+      body: `${order.orderNumber || 'Your order'} is confirmed. We will keep you updated live.`,
+      extra: {
+        orderId: order.id,
+        url: `/track/${order.id}`,
+      },
+    });
     if (countdownIntervalRef.current) {
       window.clearInterval(countdownIntervalRef.current);
     }
@@ -281,6 +296,35 @@ export const CheckoutPage = () => {
     clearCheckoutRecovery();
 
     return order;
+  };
+
+  const handleUseCurrentLocation = async () => {
+    setLocatingAddress(true);
+    setLocationAssistMessage('');
+
+    try {
+      const location = await getUserLocation();
+
+      setAddressDraft((current) => ({
+        ...current,
+        name: current.name || user?.name || '',
+        phoneNumber: current.phoneNumber || user?.phoneNumber || '',
+        fullAddress:
+          current.fullAddress || 'Pinned near your current location. Add flat / area details here.',
+        landmark:
+          current.landmark ||
+          `Current location pinned (${location.lat.toFixed(5)}, ${location.lng.toFixed(5)})`,
+      }));
+      setSelectedAddressId('new');
+      setLocationAssistMessage(
+        'Current location pinned. Add your flat, block, or nearby landmark before placing the order.',
+      );
+      void triggerNativeHaptic('light');
+    } catch (locationError) {
+      setLocationAssistMessage(locationError.message || 'Unable to fetch your current location.');
+    } finally {
+      setLocatingAddress(false);
+    }
   };
 
   const handlePlaceOrder = async () => {
@@ -525,6 +569,17 @@ export const CheckoutPage = () => {
 
               {selectedAddressId === 'new' || !user?.addresses?.length ? (
                 <div className="form-grid">
+                  <div className="full-width native-address-actions">
+                    <button
+                      className="btn btn-secondary"
+                      onClick={handleUseCurrentLocation}
+                      type="button"
+                    >
+                      <Navigation size={16} />
+                      {locatingAddress ? 'Pinning current location...' : 'Use current location'}
+                    </button>
+                    {locationAssistMessage ? <p className="hint subtle-copy">{locationAssistMessage}</p> : null}
+                  </div>
                   <label>
                     Name
                     <input

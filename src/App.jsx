@@ -10,6 +10,7 @@ import { FloatingCartBar } from './components/layout/FloatingCartBar';
 import { ProtectedRoute } from './components/common/ProtectedRoute';
 import { Loader } from './components/common/Loader';
 import { NotificationCenter } from './components/common/NotificationCenter';
+import { NativeAppBridge } from './components/common/NativeAppBridge';
 import { CartActionToast } from './components/order/CartActionToast';
 import { CheckoutRecoveryPopup } from './components/order/CheckoutRecoveryPopup';
 import { GoogleAnalytics } from './components/seo/GoogleAnalytics';
@@ -278,6 +279,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <GoogleAnalytics />
+      <NativeAppBridge />
       <NativeOfflineNotice />
       <NativeAppUpdatePrompt />
       <NotificationCenter />

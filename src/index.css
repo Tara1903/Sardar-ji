@@ -293,6 +293,11 @@ textarea {
   font-size: 0.9rem;
 }
 
+.native-app-update-note {
+  font-weight: 700;
+  color: #d45500;
+}
+
 .native-app-update-actions {
   display: flex;
   gap: 0.75rem;
@@ -313,6 +318,10 @@ html.dark .native-app-update-copy strong {
 
 html.dark .native-app-update-copy p {
   color: #c6d1cb;
+}
+
+html.dark .native-app-update-note {
+  color: #ffd38a;
 }
 
 .hero-section {
@@ -1398,6 +1407,17 @@ html.dark .native-app-update-copy p {
   background: rgba(243, 202, 66, 0.18);
 }
 
+.referral-share-group {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+}
+
+.referral-share-button {
+  min-height: 2.75rem;
+}
+
 .milestone-list {
   margin-top: 1rem;
 }
@@ -1484,6 +1504,11 @@ html.dark .native-app-update-copy p {
 
 .coupon-input-row {
   align-items: stretch;
+}
+
+.native-address-actions {
+  display: grid;
+  gap: 0.55rem;
 }
 
 .coupon-input {

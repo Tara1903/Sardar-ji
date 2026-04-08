@@ -8,6 +8,7 @@ import {
   APP_UPDATE_LABEL,
   fetchLatestAppRelease,
   getAppDownloadUrl,
+  isAppForceUpdateRequired,
   isAppUpdateRequired,
 } from '../../utils/appDownload';
 import { trackAppDownloadClick } from '../../utils/analytics';
@@ -16,6 +17,7 @@ export const NativeAppUpdatePrompt = () => {
   const [appVersion, setAppVersion] = useState('');
   const [appBuild, setAppBuild] = useState(0);
   const [needsUpdate, setNeedsUpdate] = useState(false);
+  const [forceUpdate, setForceUpdate] = useState(false);
   const [releaseInfo, setReleaseInfo] = useState(APP_RELEASE);
   const [dismissed, setDismissed] = useState(false);
 
@@ -50,9 +52,11 @@ export const NativeAppUpdatePrompt = () => {
         setAppBuild(currentBuild);
         setReleaseInfo(latestRelease);
         setNeedsUpdate(isAppUpdateRequired(currentVersion, currentBuild, latestRelease));
+        setForceUpdate(isAppForceUpdateRequired(currentVersion, currentBuild, latestRelease));
       } catch {
         if (!cancelled) {
           setNeedsUpdate(false);
+          setForceUpdate(false);
         }
       }
     };
@@ -83,8 +87,8 @@ export const NativeAppUpdatePrompt = () => {
   }, [dismissKey]);
 
   const shouldShow = useMemo(
-    () => isNativeAppShell() && needsUpdate && !dismissed,
-    [dismissed, needsUpdate],
+    () => isNativeAppShell() && needsUpdate && (forceUpdate || !dismissed),
+    [dismissed, forceUpdate, needsUpdate],
   );
 
   const handleDismiss = () => {
@@ -123,21 +127,28 @@ export const NativeAppUpdatePrompt = () => {
               Get the latest website design, features, and smoother native startup. Updated{' '}
               {releaseInfo.releaseDate}.
             </p>
+            {forceUpdate ? (
+              <p className="native-app-update-note">
+                This build is now required to keep the app running smoothly.
+              </p>
+            ) : null}
           </div>
 
           <div className="native-app-update-actions">
-            <motion.button
-              animate="rest"
-              className="btn btn-secondary"
-              initial="rest"
-              onClick={handleDismiss}
-              type="button"
-              variants={BUTTON_PRESS_VARIANTS}
-              whileHover="hover"
-              whileTap="tap"
-            >
-              Later
-            </motion.button>
+            {!forceUpdate ? (
+              <motion.button
+                animate="rest"
+                className="btn btn-secondary"
+                initial="rest"
+                onClick={handleDismiss}
+                type="button"
+                variants={BUTTON_PRESS_VARIANTS}
+                whileHover="hover"
+                whileTap="tap"
+              >
+                Later
+              </motion.button>
+            ) : null}
             <motion.button
               animate="rest"
               className="btn btn-primary"

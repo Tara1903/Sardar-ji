@@ -1,4 +1,5 @@
 import { RESTAURANT_LOCATION } from './storefront';
+import { getNativeCurrentLocation } from '../lib/nativeFeatures';
 
 const LOCATION_CACHE_KEY = 'sjfc-user-location-v1';
 const LOCATION_CACHE_TTL_MS = 15 * 60 * 1000;
@@ -84,30 +85,65 @@ export const getUserLocation = () =>
       return;
     }
 
-    if (typeof navigator === 'undefined' || !navigator.geolocation) {
-      reject(new Error('Location not enabled'));
-      return;
-    }
+    getNativeCurrentLocation()
+      .then((nativeLocation) => {
+        if (nativeLocation?.lat && nativeLocation?.lng) {
+          writeCachedLocation(nativeLocation);
+          resolve(nativeLocation);
+          return;
+        }
 
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const nextLocation = {
-          lat: position.coords.latitude,
-          lng: position.coords.longitude,
-        };
+        if (typeof navigator === 'undefined' || !navigator.geolocation) {
+          reject(new Error('Location not enabled'));
+          return;
+        }
 
-        writeCachedLocation(nextLocation);
-        resolve(nextLocation);
-      },
-      (error) => {
-        reject(new Error(mapGeolocationError(error)));
-      },
-      {
-        enableHighAccuracy: true,
-        maximumAge: 2 * 60 * 1000,
-        timeout: GEOLOCATION_TIMEOUT_MS,
-      },
-    );
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            const nextLocation = {
+              lat: position.coords.latitude,
+              lng: position.coords.longitude,
+            };
+
+            writeCachedLocation(nextLocation);
+            resolve(nextLocation);
+          },
+          (error) => {
+            reject(new Error(mapGeolocationError(error)));
+          },
+          {
+            enableHighAccuracy: true,
+            maximumAge: 2 * 60 * 1000,
+            timeout: GEOLOCATION_TIMEOUT_MS,
+          },
+        );
+      })
+      .catch(() => {
+        if (typeof navigator === 'undefined' || !navigator.geolocation) {
+          reject(new Error('Location not enabled'));
+          return;
+        }
+
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            const nextLocation = {
+              lat: position.coords.latitude,
+              lng: position.coords.longitude,
+            };
+
+            writeCachedLocation(nextLocation);
+            resolve(nextLocation);
+          },
+          (error) => {
+            reject(new Error(mapGeolocationError(error)));
+          },
+          {
+            enableHighAccuracy: true,
+            maximumAge: 2 * 60 * 1000,
+            timeout: GEOLOCATION_TIMEOUT_MS,
+          },
+        );
+      });
   });
 
 export const calculateDistance = (lat1, lon1, lat2, lon2) => {
