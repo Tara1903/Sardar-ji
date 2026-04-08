@@ -301,6 +301,34 @@ const normalizeSettings = (row = {}) => {
   };
 };
 
+const USER_META_ENTRY_TYPES = Object.freeze({
+  subscription: 'subscription-meta',
+  pushSubscription: 'push-subscription',
+});
+
+const normalizePushSubscription = (row = {}) => {
+  const payload = row?.payload || row;
+
+  return {
+    endpoint: payload.endpoint || '',
+    expirationTime: payload.expirationTime ?? null,
+    keys: {
+      auth: payload.keys?.auth || '',
+      p256dh: payload.keys?.p256dh || '',
+    },
+    userAgent: payload.userAgent || '',
+    platform: payload.platform || '',
+    createdAt: payload.createdAt || '',
+    updatedAt: payload.updatedAt || '',
+  };
+};
+
+const extractPushSubscriptionsFromAddresses = (addresses = []) =>
+  (addresses || [])
+    .filter((entry) => entry?._type === USER_META_ENTRY_TYPES.pushSubscription)
+    .map(normalizePushSubscription)
+    .filter((subscription) => subscription.endpoint && subscription.keys?.auth && subscription.keys?.p256dh);
+
 const normalizeUser = (row) => ({
   id: row.id,
   name: row.name,
@@ -310,13 +338,18 @@ const normalizeUser = (row) => ({
   referralCode: row.referral_code || '',
   referralApplied: row.referral_applied || '',
   successfulReferrals: row.successful_referrals || [],
-  addresses: (row.addresses || []).filter((entry) => entry?._type !== 'subscription-meta'),
+  addresses: (row.addresses || []).filter(
+    (entry) =>
+      entry?._type !== USER_META_ENTRY_TYPES.subscription &&
+      entry?._type !== USER_META_ENTRY_TYPES.pushSubscription,
+  ),
   subscriptionMeta:
-    (row.addresses || []).find((entry) => entry?._type === 'subscription-meta')?.payload || {
+    (row.addresses || []).find((entry) => entry?._type === USER_META_ENTRY_TYPES.subscription)?.payload || {
       pausedUntil: '',
       skipDates: [],
       holidayDates: [],
     },
+  pushSubscriptions: extractPushSubscriptionsFromAddresses(row.addresses || []),
   avatarUrl: row.avatar_url || '',
   createdAt: row.created_at,
   updatedAt: row.updated_at,
@@ -431,24 +464,48 @@ const normalizeRewardCoupon = (row) => ({
   createdAt: row.created_at || row.createdAt || '',
 });
 
-const serializeUserAddresses = (addresses = [], subscriptionMeta = null) => {
-  const sanitizedAddresses = (addresses || []).filter((entry) => entry?._type !== 'subscription-meta');
+const serializeUserAddresses = (addresses = [], subscriptionMeta = null, pushSubscriptions = []) => {
+  const sanitizedAddresses = (addresses || []).filter(
+    (entry) =>
+      entry?._type !== USER_META_ENTRY_TYPES.subscription &&
+      entry?._type !== USER_META_ENTRY_TYPES.pushSubscription,
+  );
+  const serializedPushSubscriptions = (pushSubscriptions || [])
+    .map(normalizePushSubscription)
+    .filter((subscription) => subscription.endpoint && subscription.keys?.auth && subscription.keys?.p256dh)
+    .map((subscription, index) => ({
+      id: `__push_subscription__${index}`,
+      _type: USER_META_ENTRY_TYPES.pushSubscription,
+      payload: {
+        endpoint: subscription.endpoint,
+        expirationTime: subscription.expirationTime ?? null,
+        keys: {
+          auth: subscription.keys?.auth || '',
+          p256dh: subscription.keys?.p256dh || '',
+        },
+        userAgent: subscription.userAgent || '',
+        platform: subscription.platform || '',
+        createdAt: subscription.createdAt || new Date().toISOString(),
+        updatedAt: subscription.updatedAt || new Date().toISOString(),
+      },
+    }));
 
   if (!subscriptionMeta) {
-    return sanitizedAddresses;
+    return [...sanitizedAddresses, ...serializedPushSubscriptions];
   }
 
   return [
     ...sanitizedAddresses,
     {
       id: '__subscription_meta__',
-      _type: 'subscription-meta',
+      _type: USER_META_ENTRY_TYPES.subscription,
       payload: {
         pausedUntil: subscriptionMeta.pausedUntil || '',
         skipDates: Array.isArray(subscriptionMeta.skipDates) ? subscriptionMeta.skipDates : [],
         holidayDates: Array.isArray(subscriptionMeta.holidayDates) ? subscriptionMeta.holidayDates : [],
       },
     },
+    ...serializedPushSubscriptions,
   ];
 };
 
@@ -581,7 +638,9 @@ const saveAddressIfNew = async (supabase, user, address) => {
 
   const { data, error } = await supabase
     .from('users')
-    .update({ addresses: serializeUserAddresses(nextAddresses, user.subscriptionMeta) })
+    .update({
+      addresses: serializeUserAddresses(nextAddresses, user.subscriptionMeta, user.pushSubscriptions),
+    })
     .eq('id', user.id)
     .select('*')
     .single();
@@ -1169,7 +1228,13 @@ const direct = {
     const currentUser = await getProfile(supabase, authUser.id);
     const { data, error } = await supabase
       .from('users')
-      .update({ addresses: serializeUserAddresses(addresses, currentUser.subscriptionMeta) })
+      .update({
+        addresses: serializeUserAddresses(
+          addresses,
+          currentUser.subscriptionMeta,
+          currentUser.pushSubscriptions,
+        ),
+      })
       .eq('id', authUser.id)
       .select('*')
       .single();
@@ -1194,7 +1259,11 @@ const direct = {
     const { data, error } = await supabase
       .from('users')
       .update({
-        addresses: serializeUserAddresses(currentUser.addresses, nextMeta),
+        addresses: serializeUserAddresses(
+          currentUser.addresses,
+          nextMeta,
+          currentUser.pushSubscriptions,
+        ),
       })
       .eq('id', authUser.id)
       .select('*')
@@ -1202,6 +1271,68 @@ const direct = {
 
     if (error) {
       throw createError(error, 'Unable to update your subscription preferences.');
+    }
+
+    return { user: normalizeUser(data) };
+  },
+
+  savePushSubscription: async (subscription, token) => {
+    const supabase = await getSupabaseForToken(token);
+    const authUser = await getCurrentUser(supabase, token);
+    const currentUser = await getProfile(supabase, authUser.id);
+    const normalizedSubscription = normalizePushSubscription({
+      ...subscription,
+      createdAt:
+        currentUser.pushSubscriptions.find((entry) => entry.endpoint === subscription.endpoint)?.createdAt ||
+        new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    });
+
+    const nextPushSubscriptions = [
+      ...currentUser.pushSubscriptions.filter((entry) => entry.endpoint !== normalizedSubscription.endpoint),
+      normalizedSubscription,
+    ];
+
+    const { data, error } = await supabase
+      .from('users')
+      .update({
+        addresses: serializeUserAddresses(
+          currentUser.addresses,
+          currentUser.subscriptionMeta,
+          nextPushSubscriptions,
+        ),
+      })
+      .eq('id', authUser.id)
+      .select('*')
+      .single();
+
+    if (error) {
+      throw createError(error, 'Unable to save your browser notification subscription.');
+    }
+
+    return { user: normalizeUser(data) };
+  },
+
+  removePushSubscription: async (endpoint, token) => {
+    const supabase = await getSupabaseForToken(token);
+    const authUser = await getCurrentUser(supabase, token);
+    const currentUser = await getProfile(supabase, authUser.id);
+
+    const { data, error } = await supabase
+      .from('users')
+      .update({
+        addresses: serializeUserAddresses(
+          currentUser.addresses,
+          currentUser.subscriptionMeta,
+          currentUser.pushSubscriptions.filter((entry) => entry.endpoint !== endpoint),
+        ),
+      })
+      .eq('id', authUser.id)
+      .select('*')
+      .single();
+
+    if (error) {
+      throw createError(error, 'Unable to remove your browser notification subscription.');
     }
 
     return { user: normalizeUser(data) };
@@ -1556,6 +1687,8 @@ export const api = {
     USE_API_SERVER
       ? request('/auth/addresses', { method: 'PUT', body: { addresses }, token })
       : direct.updateAddresses(addresses, token),
+  savePushSubscription: (subscription, token) => direct.savePushSubscription(subscription, token),
+  removePushSubscription: (endpoint, token) => direct.removePushSubscription(endpoint, token),
   updateSubscriptionPreferences: (payload, token) => direct.updateSubscriptionPreferences(payload, token),
   getUsers: (role, token) =>
     USE_API_SERVER
@@ -1597,6 +1730,12 @@ export const api = {
     USE_API_SERVER
       ? request('/delivery/location-update', { method: 'POST', body: payload, token })
       : direct.updateDeliveryLocation(payload, token),
+  sendOrderNotification: (payload, token) =>
+    requestAppRoute('/api/send-notification', {
+      method: 'POST',
+      body: payload,
+      token,
+    }),
   createRazorpayOrder: (payload, token) => direct.createRazorpayOrder(payload, token),
   verifyRazorpayPayment: (payload, token) => direct.verifyRazorpayPayment(payload, token),
 };

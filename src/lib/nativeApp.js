@@ -2,6 +2,7 @@ import { Capacitor } from '@capacitor/core';
 
 const NATIVE_READY_EVENT = 'sjfc:native-ready';
 const NATIVE_HOST_NAME = 'localhost';
+const NATIVE_BOOT_FALLBACK_MS = 4200;
 let hasInitialized = false;
 let statusBarObserver = null;
 
@@ -41,6 +42,31 @@ const setBootComplete = () => {
   window.dispatchEvent(new CustomEvent(NATIVE_READY_EVENT));
 };
 
+const hideSplashScreen = async (SplashScreen) => {
+  if (!SplashScreen?.hide) {
+    return;
+  }
+
+  try {
+    await SplashScreen.hide({ fadeOutDuration: 250 });
+  } catch {
+    // Ignore splash plugin timing differences during local web builds.
+  }
+};
+
+const finalizeNativeBoot = async (SplashScreen) => {
+  setBootComplete();
+  await hideSplashScreen(SplashScreen);
+};
+
+const loadNativeModule = async (path) => {
+  try {
+    return await import(path);
+  } catch {
+    return {};
+  }
+};
+
 const waitForAppReady = async () => {
   if (!canUseBrowser()) {
     return;
@@ -64,6 +90,10 @@ const waitForAppReady = async () => {
 };
 
 const applyStatusBarAppearance = async (StatusBar, Style) => {
+  if (!StatusBar || !Style) {
+    return;
+  }
+
   const isDarkTheme = document.documentElement.classList.contains('dark');
 
   try {
@@ -92,7 +122,7 @@ const applyStatusBarAppearance = async (StatusBar, Style) => {
 };
 
 const observeThemeForStatusBar = (StatusBar, Style) => {
-  if (!canUseBrowser() || statusBarObserver) {
+  if (!canUseBrowser() || statusBarObserver || !StatusBar || !Style || typeof MutationObserver === 'undefined') {
     return;
   }
 
@@ -129,6 +159,10 @@ const bindConnectivityEvents = () => {
 };
 
 const bindBackButton = async (App) => {
+  if (!App?.addListener) {
+    return;
+  }
+
   try {
     await App.addListener('backButton', ({ canGoBack }) => {
       if (canGoBack || window.history.length > 1) {
@@ -144,6 +178,10 @@ const bindBackButton = async (App) => {
 };
 
 const bindAppResume = async (App, StatusBar, Style) => {
+  if (!App?.addListener) {
+    return;
+  }
+
   try {
     await App.addListener('appStateChange', ({ isActive }) => {
       if (!isActive) {
@@ -165,26 +203,42 @@ export const initializeNativeAppShell = async () => {
 
   hasInitialized = true;
   document.documentElement.classList.add('native-app');
+  let SplashScreen = null;
+  let fallbackTimeout = 0;
 
-  const [{ SplashScreen }, { StatusBar, Style }, { App }] = await Promise.all([
-    import('@capacitor/splash-screen'),
-    import('@capacitor/status-bar'),
-    import('@capacitor/app'),
-  ]);
-
-  bindConnectivityEvents();
-  await applyStatusBarAppearance(StatusBar, Style);
-  observeThemeForStatusBar(StatusBar, Style);
-  await bindBackButton(App);
-  await bindAppResume(App, StatusBar, Style);
-  await registerNativeServiceWorker();
-  await waitForAppReady();
-  setBootComplete();
+  if (canUseBrowser()) {
+    fallbackTimeout = window.setTimeout(() => {
+      void finalizeNativeBoot(SplashScreen);
+    }, NATIVE_BOOT_FALLBACK_MS);
+  }
 
   try {
-    await SplashScreen.hide({ fadeOutDuration: 250 });
+    const [splashScreenModule, statusBarModule, appModule] = await Promise.all([
+      loadNativeModule('@capacitor/splash-screen'),
+      loadNativeModule('@capacitor/status-bar'),
+      loadNativeModule('@capacitor/app'),
+    ]);
+
+    SplashScreen = splashScreenModule.SplashScreen || null;
+    const StatusBar = statusBarModule.StatusBar || null;
+    const Style = statusBarModule.Style || null;
+    const App = appModule.App || null;
+
+    bindConnectivityEvents();
+    await applyStatusBarAppearance(StatusBar, Style);
+    observeThemeForStatusBar(StatusBar, Style);
+    await bindBackButton(App);
+    await bindAppResume(App, StatusBar, Style);
+    await registerNativeServiceWorker();
+    await waitForAppReady();
   } catch {
-    // Ignore splash plugin timing differences during local web builds.
+    // Never leave the native shell stuck behind the boot overlay.
+  } finally {
+    if (fallbackTimeout) {
+      window.clearTimeout(fallbackTimeout);
+    }
+
+    await finalizeNativeBoot(SplashScreen);
   }
 };
 

@@ -8,6 +8,12 @@ const parseJsonSafely = (value, fallback = {}) => {
   }
 };
 
+const sanitizeEnvValue = (value = '') =>
+  String(value || '')
+    .replace(/\\r\\n/g, '')
+    .replace(/\r?\n/g, '')
+    .trim();
+
 export const sendJson = (res, statusCode, payload) => {
   res.statusCode = statusCode;
   res.setHeader('Content-Type', 'application/json');
@@ -37,8 +43,8 @@ export const readJsonBody = async (req) => {
 
 export const getEnv = (...names) =>
   names
-    .map((name) => process.env[name])
-    .find((value) => typeof value === 'string' && value.trim()) || '';
+    .map((name) => sanitizeEnvValue(process.env[name]))
+    .find((value) => value) || '';
 
 export const getBearerToken = (req) => {
   const authorization = req.headers.authorization || req.headers.Authorization || '';

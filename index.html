@@ -170,7 +170,20 @@
           root.classList.toggle('dark', resolvedTheme === 'dark');
           root.style.colorScheme = resolvedTheme;
           if (isNativeShell) {
+            let nativeBootReleased = false;
+            const releaseNativeBoot = () => {
+              if (nativeBootReleased) {
+                return;
+              }
+
+              nativeBootReleased = true;
+              root.classList.add('native-ready');
+              root.classList.remove('app-booting');
+            };
+
             root.classList.add('native-app', 'app-booting');
+            window.addEventListener('sjfc:native-ready', releaseNativeBoot, { once: true });
+            window.setTimeout(releaseNativeBoot, 4800);
             if (viewportMeta) {
               viewportMeta.setAttribute(
                 'content',

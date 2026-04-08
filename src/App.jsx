@@ -9,6 +9,7 @@ import { WhatsAppFab } from './components/layout/WhatsAppFab';
 import { FloatingCartBar } from './components/layout/FloatingCartBar';
 import { ProtectedRoute } from './components/common/ProtectedRoute';
 import { Loader } from './components/common/Loader';
+import { NotificationCenter } from './components/common/NotificationCenter';
 import { CartActionToast } from './components/order/CartActionToast';
 import { CheckoutRecoveryPopup } from './components/order/CheckoutRecoveryPopup';
 import { GoogleAnalytics } from './components/seo/GoogleAnalytics';
@@ -279,6 +280,7 @@ export default function App() {
       <GoogleAnalytics />
       <NativeOfflineNotice />
       <NativeAppUpdatePrompt />
+      <NotificationCenter />
       <AnimatedRoutes />
     </BrowserRouter>
   );

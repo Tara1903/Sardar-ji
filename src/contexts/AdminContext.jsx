@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { api } from '../api/client';
+import { ADMIN_NEW_ORDER_EVENT, buildOrderStatusNotification } from '../utils/orderNotifications';
 import { useAppData } from './AppDataContext';
 import { useAuth } from './AuthContext';
 
@@ -117,6 +118,22 @@ export const AdminProvider = ({ children }) => {
 
     setNewOrders(unseenOrders);
   }, [lastSeenOrderAt, orders]);
+
+  useEffect(() => {
+    const handleRealtimeOrder = (event) => {
+      const nextOrder = event.detail;
+
+      if (!nextOrder?.id) {
+        return;
+      }
+
+      setOrders((current) => [nextOrder, ...current.filter((order) => order.id !== nextOrder.id)]);
+    };
+
+    window.addEventListener(ADMIN_NEW_ORDER_EVENT, handleRealtimeOrder);
+
+    return () => window.removeEventListener(ADMIN_NEW_ORDER_EVENT, handleRealtimeOrder);
+  }, []);
 
   const deliveryUsers = useMemo(() => users.filter((user) => user.role === 'delivery'), [users]);
   const customers = useMemo(() => users.filter((user) => user.role === 'customer'), [users]);
@@ -270,7 +287,32 @@ export const AdminProvider = ({ children }) => {
   const saveOrderUpdate = async (orderId, payload) => {
     setUpdatingOrderId(orderId);
     try {
-      await api.updateOrderStatus(orderId, payload, token);
+      const currentOrder = orders.find((order) => order.id === orderId);
+      const updatedOrder = await api.updateOrderStatus(orderId, payload, token);
+      const nextNotification = buildOrderStatusNotification({
+        orderId: updatedOrder.id,
+        orderNumber: updatedOrder.orderNumber,
+        status: payload.status,
+      });
+
+      if (
+        nextNotification &&
+        currentOrder?.status &&
+        currentOrder.status !== payload.status
+      ) {
+        api
+          .sendOrderNotification(
+            {
+              orderId: updatedOrder.id,
+              userId: updatedOrder.userId,
+              status: payload.status,
+              message: nextNotification.message,
+            },
+            token,
+          )
+          .catch(() => {});
+      }
+
       await refreshAdminData({ silent: true });
       setError('');
     } catch (orderError) {

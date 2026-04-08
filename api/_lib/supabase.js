@@ -23,7 +23,7 @@ const getSupabaseConfig = () => {
   return { url, anonKey };
 };
 
-const restRequest = async ({ path, token = '', method = 'GET', body, headers = {} }) => {
+export const restRequest = async ({ path, token = '', method = 'GET', body, headers = {} }) => {
   const { url, anonKey } = getSupabaseConfig();
   const response = await fetch(`${url}/rest/v1${path}`, {
     method,
@@ -60,4 +60,13 @@ export const getSupabaseRows = ({ path, token }) =>
   restRequest({
     path,
     token,
+  });
+
+export const mutateSupabaseRows = ({ path, token, method = 'POST', body, headers = {} }) =>
+  restRequest({
+    path,
+    token,
+    method,
+    body,
+    headers,
   });

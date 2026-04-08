@@ -14,7 +14,6 @@ import { SeoMeta } from '../components/seo/SeoMeta';
 import { CONTENT_FADE_VARIANTS, CONTENT_STACK_VARIANTS, SURFACE_REVEAL_VARIANTS } from '../motion/variants';
 import { formatDateTime, formatEtaLabel } from '../utils/format';
 import { STORE_GOOGLE_REVIEW_URL } from '../utils/storefront';
-import { useOrderStatusNotifications } from '../hooks/useOrderStatusNotifications';
 
 export const TrackOrderPage = () => {
   const { orderId } = useParams();
@@ -37,8 +36,6 @@ export const TrackOrderPage = () => {
     const intervalId = window.setInterval(loadTracking, 4000);
     return () => window.clearInterval(intervalId);
   }, [orderId]);
-
-  useOrderStatusNotifications(order);
 
   if (error) {
     return (

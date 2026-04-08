@@ -1,4 +1,4 @@
-const CACHE_NAME = 'sjfc-native-shell-v1';
+const CACHE_NAME = 'sjfc-native-shell-v2';
 const APP_SHELL_URLS = [
   '/',
   '/index.html',

@@ -4,6 +4,8 @@ node_modules
 dist
 .env
 .env.local
+.env.vercel.pull
+.env.vercel.pull2
 .vercel
 .env.development.local
 android/.gradle
