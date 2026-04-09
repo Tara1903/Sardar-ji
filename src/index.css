@@ -7278,6 +7278,30 @@ html.dark .admin-day-pill span {
   background: linear-gradient(180deg, transparent, rgba(17, 24, 39, 0.5));
 }
 
+html:not(.native-app) .customer-app-shell .product-image-wrap,
+html:not(.native-app) .customer-app-shell .product-image-motion,
+html:not(.native-app) .customer-app-shell .product-image,
+html:not(.native-app) .customer-app-shell .smart-image-frame,
+html:not(.native-app) .customer-app-shell .smart-image-real,
+html:not(.native-app) .customer-app-shell .smart-image-placeholder {
+  height: 100%;
+}
+
+html:not(.native-app) .customer-app-shell .quick-picks-grid .product-card-compact .product-image-wrap {
+  aspect-ratio: 1 / 1;
+}
+
+html:not(.native-app) .customer-app-shell .storefront-grid .product-card:not(.product-card-compact) .product-image-wrap {
+  aspect-ratio: 1 / 1.02;
+}
+
+html:not(.native-app) .customer-app-shell .product-image,
+html:not(.native-app) .customer-app-shell .smart-image-real,
+html:not(.native-app) .customer-app-shell .smart-image-placeholder {
+  object-fit: cover;
+  object-position: center 42%;
+}
+
 .customer-app-shell .product-badge {
   top: auto;
   bottom: 0.9rem;
