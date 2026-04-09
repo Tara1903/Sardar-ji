@@ -7298,8 +7298,26 @@ html:not(.native-app) .customer-app-shell .storefront-grid .product-card:not(.pr
 html:not(.native-app) .customer-app-shell .product-image,
 html:not(.native-app) .customer-app-shell .smart-image-real,
 html:not(.native-app) .customer-app-shell .smart-image-placeholder {
+  object-position: center center;
+}
+
+html:not(.native-app) .customer-app-shell .product-image-motion,
+html:not(.native-app) .customer-app-shell .smart-image-frame {
+  background:
+    radial-gradient(circle at top, rgba(255, 214, 170, 0.34), transparent 36%),
+    linear-gradient(180deg, rgba(255, 248, 242, 0.98), rgba(247, 248, 239, 0.94));
+}
+
+html:not(.native-app) .customer-app-shell .product-image,
+html:not(.native-app) .customer-app-shell .smart-image-real {
+  object-fit: contain;
+  padding: 0.5rem;
+  image-rendering: -webkit-optimize-contrast;
+}
+
+html:not(.native-app) .customer-app-shell .smart-image-placeholder {
   object-fit: cover;
-  object-position: center 42%;
+  filter: blur(8px) saturate(1.02);
 }
 
 .customer-app-shell .product-badge {
