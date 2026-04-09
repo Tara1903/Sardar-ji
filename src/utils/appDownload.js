@@ -1,12 +1,12 @@
 const APP_DOWNLOAD_HOST = 'https://www.sardarjifoodcorner.shop';
 
 export const APP_RELEASE = Object.freeze({
-  version: '1.5.3',
-  build: 11,
+  version: '1.5.4',
+  build: 12,
   minimumSupportedBuild: 5,
   minimumSupportedVersion: '1.3.1',
   forceUpdate: false,
-  releaseDate: '8 Apr 2026',
+  releaseDate: '9 Apr 2026',
   downloadPath: '/downloads/sardar-ji-food-corner.apk',
   downloadPagePath: '/download-app',
   fileName: 'sardar-ji-food-corner.apk',
@@ -14,6 +14,7 @@ export const APP_RELEASE = Object.freeze({
   updateLabel: 'Update App',
   supportNote: 'Android 8.0+ supported • Native-feel app shell • Fast install • Pure veg ordering app',
   releaseHighlights: [
+    'Permanent blurred product images are fixed by removing the duplicate full-image blur placeholder path and adding stronger load-complete checks',
     'Native app scrolling is restored, with smoother vertical touch handling and safer WebView scroll behavior',
     'Razorpay amounts are now recomputed on the server and payments finalize through a hardened verified fulfillment path',
     'Webhook-ready payment state, smarter capture handling, and stronger order/subscription reliability are now included',
