@@ -1,11 +1,20 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { api } from '../api/client';
 import { ADMIN_NEW_ORDER_EVENT, buildOrderStatusNotification } from '../utils/orderNotifications';
+import { serializeAddonGroupsMap } from '../utils/addons';
 import { useAppData } from './AppDataContext';
 import { useAuth } from './AuthContext';
 
 const AdminContext = createContext(null);
 const ADMIN_LAST_SEEN_ORDER_KEY = 'sjfc-admin-last-seen-order-at';
+
+const buildAddonShadowProductName = (productName, groupTitle, optionName) =>
+  `Addon :: ${productName} :: ${groupTitle} :: ${optionName}`.slice(0, 180);
+
+const getOptionProductIds = (addonGroups = []) =>
+  (addonGroups || []).flatMap((group) =>
+    (group.options || []).map((option) => option.productId).filter(Boolean),
+  );
 
 const canUseStorage = () =>
   typeof window !== 'undefined' && typeof window.localStorage !== 'undefined';
@@ -216,6 +225,7 @@ export const AdminProvider = ({ children }) => {
         isAvailable: Boolean(formState.isAvailable),
         image: imageUrl || '',
         availabilitySchedule: formState.availabilitySchedule,
+        addonGroups: formState.addonGroups || [],
       };
 
       let savedProduct;
@@ -226,8 +236,57 @@ export const AdminProvider = ({ children }) => {
         savedProduct = await api.createProduct(payload, token);
       }
 
+      const syncedAddonGroups = [];
+
+      for (const group of formState.addonGroups || []) {
+        const nextOptions = [];
+
+        for (const option of group.options || []) {
+          const shadowPayload = {
+            name: buildAddonShadowProductName(
+              formState.name,
+              group.title,
+              option.name,
+            ),
+            price: Number(option.price || 0),
+            description: `Hidden add-on option for ${formState.name}: ${group.title} - ${option.name}`,
+            category: formState.category,
+            badge: 'Add-on',
+            isAvailable: false,
+            image: imageUrl || savedProduct.image || '',
+          };
+
+          const shadowProduct = option.productId
+            ? await api.updateProduct(option.productId, shadowPayload, token)
+            : await api.createProduct(shadowPayload, token);
+
+          nextOptions.push({
+            ...option,
+            productId: shadowProduct.id,
+          });
+        }
+
+        syncedAddonGroups.push({
+          ...group,
+          options: nextOptions,
+        });
+      }
+
+      const previousShadowProductIds = getOptionProductIds(editingProduct?.addonGroups || []);
+      const nextShadowProductIds = getOptionProductIds(syncedAddonGroups);
+      const shadowProductIdsToDelete = previousShadowProductIds.filter(
+        (productId) => !nextShadowProductIds.includes(productId),
+      );
+
+      for (const shadowProductId of shadowProductIdsToDelete) {
+        await api.deleteProduct(shadowProductId, token);
+      }
+
       const nextScheduleMap = {
         ...(settings?.storefront?.productAvailabilitySchedules || {}),
+      };
+      const nextAddonGroupMap = {
+        ...(settings?.storefront?.productAddonGroups || {}),
       };
 
       if (formState.availabilitySchedule?.enabled) {
@@ -236,12 +295,27 @@ export const AdminProvider = ({ children }) => {
         delete nextScheduleMap[savedProduct.id];
       }
 
-      if (JSON.stringify(nextScheduleMap) !== JSON.stringify(settings?.storefront?.productAvailabilitySchedules || {})) {
+      if (syncedAddonGroups.length) {
+        nextAddonGroupMap[savedProduct.id] = syncedAddonGroups;
+      } else {
+        delete nextAddonGroupMap[savedProduct.id];
+      }
+
+      const normalizedAddonGroupMap = serializeAddonGroupsMap(nextAddonGroupMap);
+      const addonGroupsChanged =
+        JSON.stringify(normalizedAddonGroupMap) !==
+        JSON.stringify(settings?.storefront?.productAddonGroups || {});
+      const schedulesChanged =
+        JSON.stringify(nextScheduleMap) !==
+        JSON.stringify(settings?.storefront?.productAvailabilitySchedules || {});
+
+      if (schedulesChanged || addonGroupsChanged) {
         const nextSettings = await api.updateSettings(
           {
             storefront: {
               ...(settings?.storefront || {}),
               productAvailabilitySchedules: nextScheduleMap,
+              productAddonGroups: normalizedAddonGroupMap,
             },
           },
           token,
@@ -260,7 +334,41 @@ export const AdminProvider = ({ children }) => {
   };
 
   const removeProduct = async (productId) => {
+    const nextScheduleMap = {
+      ...(settings?.storefront?.productAvailabilitySchedules || {}),
+    };
+    const productAddonGroups = settings?.storefront?.productAddonGroups || {};
+    const linkedAddonGroups = productAddonGroups[productId] || [];
+    const linkedShadowProductIds = getOptionProductIds(linkedAddonGroups);
+
+    for (const shadowProductId of linkedShadowProductIds) {
+      await api.deleteProduct(shadowProductId, token);
+    }
+
     await api.deleteProduct(productId, token);
+
+    delete nextScheduleMap[productId];
+
+    if (productAddonGroups[productId] || settings?.storefront?.productAvailabilitySchedules?.[productId]) {
+      const nextAddonGroupMap = {
+        ...productAddonGroups,
+      };
+
+      delete nextAddonGroupMap[productId];
+
+      const nextSettings = await api.updateSettings(
+        {
+          storefront: {
+            ...(settings?.storefront || {}),
+            productAvailabilitySchedules: nextScheduleMap,
+            productAddonGroups: serializeAddonGroupsMap(nextAddonGroupMap),
+          },
+        },
+        token,
+      );
+      setSettings(nextSettings);
+    }
+
     await refreshCatalog();
   };
 

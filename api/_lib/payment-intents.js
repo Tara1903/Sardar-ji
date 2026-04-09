@@ -86,14 +86,24 @@ const normalizeFoodItems = ({ requestedItems = [], products = [] }) => {
       throw createHttpError('One or more items in your cart are no longer available.', 400);
     }
 
-    if (!product.isAvailable && !item?.isFreebie) {
+    if (!product.isAvailable && !item?.isFreebie && !item?.isAddonLine) {
       throw createHttpError(`${product.name} is currently unavailable.`, 400);
     }
 
     return {
       ...product,
+      lineId: String(item?.lineId || id).trim(),
+      name: String(item?.name || product.name || '').trim(),
       quantity: Math.max(1, Number.parseInt(item?.quantity || 1, 10) || 1),
       isFreebie: Boolean(item?.isFreebie),
+      isAddonLine: Boolean(item?.isAddonLine),
+      parentLineId: String(item?.parentLineId || '').trim(),
+      parentProductId: String(item?.parentProductId || '').trim(),
+      groupId: String(item?.groupId || '').trim(),
+      groupTitle: String(item?.groupTitle || '').trim(),
+      addonSummary: String(item?.addonSummary || '').trim(),
+      basePrice: Number(item?.basePrice ?? item?.price ?? product.price ?? 0),
+      price: Number(item?.price ?? product.price ?? 0),
     };
   });
 };
@@ -155,8 +165,18 @@ export const buildFoodOrderPaymentIntent = async ({
     }),
     items: cartOfferState.orderItems.map((item) => ({
       id: item.id,
+      lineId: item.lineId || item.id,
       quantity: item.quantity,
+      price: Number(item.price || 0),
+      basePrice: Number(item.basePrice ?? item.price ?? 0),
+      name: item.name || '',
       isFreebie: Boolean(item.isFreebie),
+      isAddonLine: Boolean(item.isAddonLine),
+      parentLineId: item.parentLineId || '',
+      parentProductId: item.parentProductId || '',
+      groupId: item.groupId || '',
+      groupTitle: item.groupTitle || '',
+      addonSummary: item.addonSummary || '',
     })),
     couponCode: couponCode || '',
     pricing: {

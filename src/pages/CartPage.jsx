@@ -60,8 +60,9 @@ export const CartPage = () => {
                 delivery reward is already being tracked below.
               </p>
               <div className="cart-page-intro-chips">
-                <span className="hero-chip">{items.length} dishes selected</span>
-                <span className="hero-chip">{cartOfferState.offerMessage}</span>
+              <span className="hero-chip">{items.length} dishes selected</span>
+              <span className="hero-chip">{cartOfferState.baseItems.length} cart lines</span>
+              <span className="hero-chip">{cartOfferState.offerMessage}</span>
               </div>
             </div>
 
@@ -85,7 +86,7 @@ export const CartPage = () => {
             />
 
             {cartOfferState.displayItems.map((item) => (
-              <article className="cart-item" key={item.id}>
+              <article className="cart-item" key={item.lineId || item.id}>
                 <SmartImage
                   alt={item.name}
                   className="cart-item-image"
@@ -110,6 +111,16 @@ export const CartPage = () => {
                     <strong>{item.isFreebie ? 'FREE' : formatCurrency(item.price * item.quantity)}</strong>
                   </div>
                   <p>{item.description}</p>
+                  {item.addons?.length ? (
+                    <div className="cart-addon-list">
+                      {item.addons.map((addon) => (
+                        <span className="cart-addon-pill" key={`${item.lineId}-${addon.groupId}-${addon.id}`}>
+                          {addon.groupTitle}: {addon.name}
+                          {addon.price > 0 ? ` (+${formatCurrency(addon.price)})` : ''}
+                        </span>
+                      ))}
+                    </div>
+                  ) : null}
                   {item.isFreebie ? (
                     <div className="freebie-lock-row">
                       <Gift size={16} />
@@ -118,15 +129,15 @@ export const CartPage = () => {
                   ) : (
                     <div className="space-between cart-item-footer">
                       <div className="qty-control">
-                        <button onClick={() => updateQuantity(item.id, item.quantity - 1)} type="button">
+                        <button onClick={() => updateQuantity(item.lineId || item.id, item.quantity - 1)} type="button">
                           <Minus size={14} />
                         </button>
                         <span>{item.quantity}</span>
-                        <button onClick={() => updateQuantity(item.id, item.quantity + 1)} type="button">
+                        <button onClick={() => updateQuantity(item.lineId || item.id, item.quantity + 1)} type="button">
                           <Plus size={14} />
                         </button>
                       </div>
-                      <button className="icon-btn" onClick={() => removeFromCart(item.id)} type="button">
+                      <button className="icon-btn" onClick={() => removeFromCart(item.lineId || item.id)} type="button">
                         <Trash2 size={16} />
                       </button>
                     </div>

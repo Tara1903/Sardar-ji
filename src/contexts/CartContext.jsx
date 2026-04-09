@@ -2,17 +2,27 @@ import { createContext, useContext, useEffect, useMemo, useRef, useState } from 
 import { isMonthlySubscriptionProduct } from '../utils/subscription';
 import { trackAddToCart } from '../utils/analytics';
 import { triggerNativeHaptic } from '../lib/nativeFeatures';
+import {
+  buildConfiguredCartItem,
+  getProductCartLines,
+  getProductCartQuantity,
+  normalizeCartItem,
+} from '../utils/addons';
 
 const CartContext = createContext(null);
 const CART_KEY = 'sardar-ji-cart';
+
 const sanitizeCartItems = (items = []) => items.filter((item) => !isMonthlySubscriptionProduct(item));
-const normalizeCartItem = (item = {}) => ({
-  ...item,
-  quantity: Math.max(1, Number(item.quantity || 1)),
-});
+
+const normalizeIncomingCartItems = (items = []) =>
+  sanitizeCartItems(items)
+    .map(normalizeCartItem)
+    .filter((item) => item.id && item.lineId);
 
 export const CartProvider = ({ children }) => {
-  const [items, setItems] = useState(() => sanitizeCartItems(JSON.parse(localStorage.getItem(CART_KEY) || '[]')));
+  const [items, setItems] = useState(() =>
+    normalizeIncomingCartItems(JSON.parse(localStorage.getItem(CART_KEY) || '[]')),
+  );
   const [cartToast, setCartToast] = useState(null);
   const toastTimeoutRef = useRef(null);
 
@@ -32,7 +42,7 @@ export const CartProvider = ({ children }) => {
   };
 
   useEffect(() => {
-    localStorage.setItem(CART_KEY, JSON.stringify(sanitizeCartItems(items)));
+    localStorage.setItem(CART_KEY, JSON.stringify(normalizeIncomingCartItems(items)));
   }, [items]);
 
   useEffect(() => {
@@ -42,7 +52,7 @@ export const CartProvider = ({ children }) => {
       }
 
       try {
-        setItems(sanitizeCartItems(JSON.parse(event.newValue)).map(normalizeCartItem));
+        setItems(normalizeIncomingCartItems(JSON.parse(event.newValue)));
       } catch {
         // Ignore malformed cart snapshots from older sessions.
       }
@@ -61,47 +71,76 @@ export const CartProvider = ({ children }) => {
     [],
   );
 
-  const addToCart = (product) => {
+  const mergeCartItem = (incomingItem) => {
+    const normalizedItem = normalizeCartItem(incomingItem);
+
+    if (isMonthlySubscriptionProduct(normalizedItem)) {
+      return;
+    }
+
+    trackAddToCart(normalizedItem, normalizedItem.quantity || 1);
+    setItems((current) => {
+      const existingIndex = current.findIndex((item) => item.lineId === normalizedItem.lineId);
+
+      if (existingIndex >= 0) {
+        const nextItems = [...current];
+        nextItems[existingIndex] = {
+          ...nextItems[existingIndex],
+          quantity: nextItems[existingIndex].quantity + normalizedItem.quantity,
+        };
+        return nextItems;
+      }
+
+      return [...current, normalizedItem];
+    });
+
+    void triggerNativeHaptic('light');
+    showCartToast({
+      title: `${normalizedItem.name} added`,
+      message:
+        normalizedItem.addonSummary
+          ? `${normalizedItem.addonSummary} is ready in your cart.`
+          : 'Ready in your cart whenever you want to check out.',
+    });
+  };
+
+  const addToCart = (product, options = {}) => {
     if (isMonthlySubscriptionProduct(product)) {
       return;
     }
 
-    trackAddToCart(product, 1);
-    setItems((current) => {
-      const existing = current.find((item) => item.id === product.id);
-      if (existing) {
-        return current.map((item) =>
-          item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item,
-        );
-      }
+    if (options.lineItem) {
+      mergeCartItem(options.lineItem);
+      return;
+    }
 
-      return [...current, { ...product, quantity: 1 }];
+    const cartItem = buildConfiguredCartItem({
+      product,
+      addonGroups: product?.addonGroups || [],
+      selection: options.selection || {},
+      quantity: options.quantity || 1,
     });
-    void triggerNativeHaptic('light');
-    showCartToast({
-      title: `${product.name} added`,
-      message: 'Ready in your cart whenever you want to check out.',
-    });
+
+    mergeCartItem(cartItem);
   };
 
-  const updateQuantity = (id, quantity) => {
-    if (quantity > (items.find((item) => item.id === id)?.quantity || 0)) {
-      const item = items.find((entry) => entry.id === id);
-      if (item) {
-        trackAddToCart(item, 1);
-      }
+  const updateQuantity = (lineId, quantity) => {
+    const existingItem = items.find((item) => item.lineId === lineId);
+
+    if (quantity > Number(existingItem?.quantity || 0) && existingItem) {
+      trackAddToCart(existingItem, 1);
     }
 
     setItems((current) =>
       current
-        .map((item) => (item.id === id ? { ...item, quantity } : item))
+        .map((item) => (item.lineId === lineId ? { ...item, quantity } : item))
         .filter((item) => item.quantity > 0),
     );
     void triggerNativeHaptic(quantity > 0 ? 'light' : 'medium');
   };
 
-  const removeFromCart = (id) => {
-    setItems((current) => current.filter((item) => item.id !== id));
+  const removeFromCart = (lineId) => {
+    setItems((current) => current.filter((item) => item.lineId !== lineId));
     void triggerNativeHaptic('medium');
   };
 
@@ -115,50 +154,47 @@ export const CartProvider = ({ children }) => {
   };
 
   const replaceCart = (nextItems = []) => {
-    setItems(sanitizeCartItems(nextItems).map(normalizeCartItem));
+    setItems(normalizeIncomingCartItems(nextItems));
   };
 
   const addItemsToCart = (nextItems = [], { replace = false } = {}) => {
-    setItems((current) => {
-      const baseItems = replace ? [] : [...current];
-      const merged = [...baseItems];
+    const normalizedIncomingItems = normalizeIncomingCartItems(nextItems);
 
-      sanitizeCartItems(nextItems).forEach((incomingItem) => {
-        const normalizedItem = normalizeCartItem(incomingItem);
-        const existingIndex = merged.findIndex((item) => item.id === normalizedItem.id);
+    setItems((current) => {
+      const merged = replace ? [] : [...current];
+
+      normalizedIncomingItems.forEach((incomingItem) => {
+        const existingIndex = merged.findIndex((item) => item.lineId === incomingItem.lineId);
 
         if (existingIndex >= 0) {
           merged[existingIndex] = {
             ...merged[existingIndex],
-            quantity: merged[existingIndex].quantity + normalizedItem.quantity,
+            quantity: merged[existingIndex].quantity + incomingItem.quantity,
           };
           return;
         }
 
-        merged.push(normalizedItem);
+        merged.push(incomingItem);
       });
 
       return merged;
     });
 
-    if (nextItems.length) {
-      const firstItem = nextItems[0];
-      const addedCount = sanitizeCartItems(nextItems).reduce(
-        (total, item) => total + normalizeCartItem(item).quantity,
-        0,
-      );
+    if (normalizedIncomingItems.length) {
+      const firstItem = normalizedIncomingItems[0];
+      const addedCount = normalizedIncomingItems.reduce((total, item) => total + item.quantity, 0);
 
       showCartToast({
         title:
-          addedCount > 1
-            ? `${addedCount} items added`
-            : `${firstItem?.name || 'Item'} added`,
+          addedCount > 1 ? `${addedCount} items added` : `${firstItem?.name || 'Item'} added`,
         message: replace ? 'Your cart has been refreshed.' : 'Cart updated successfully.',
       });
     }
   };
 
-  const getItemQuantity = (id) => items.find((item) => item.id === id)?.quantity || 0;
+  const getItemQuantity = (productId) => getProductCartQuantity(items, productId);
+  const getLineQuantity = (lineId) => items.find((item) => item.lineId === lineId)?.quantity || 0;
+  const getProductLines = (productId) => getProductCartLines(items, productId);
 
   const value = useMemo(
     () => ({
@@ -172,6 +208,8 @@ export const CartProvider = ({ children }) => {
       replaceCart,
       addItemsToCart,
       getItemQuantity,
+      getLineQuantity,
+      getProductLines,
       cartToast,
       dismissCartToast,
     }),

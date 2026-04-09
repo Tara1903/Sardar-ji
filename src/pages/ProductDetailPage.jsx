@@ -9,6 +9,7 @@ import { ProductCard } from '../components/menu/ProductCard';
 import { SeoMeta } from '../components/seo/SeoMeta';
 import { useAppData } from '../contexts/AppDataContext';
 import { useCart } from '../contexts/CartContext';
+import { useProductCustomizer } from '../contexts/ProductCustomizerContext';
 import { getFallbackImage } from '../data/fallbackImages';
 import {
   BUTTON_PRESS_VARIANTS,
@@ -19,6 +20,7 @@ import {
   STAGGER_CONTAINER_VARIANTS,
   SURFACE_REVEAL_VARIANTS,
 } from '../motion/variants';
+import { hasAddonGroups } from '../utils/addons';
 import { formatCurrency } from '../utils/format';
 import { createProductOrderMessage, createWhatsAppLink } from '../utils/whatsapp';
 import { createBreadcrumbSchema } from '../seo/siteSeo';
@@ -28,7 +30,8 @@ import { shareNativeContent, triggerNativeHaptic } from '../lib/nativeFeatures';
 export const ProductDetailPage = () => {
   const { id } = useParams();
   const { products, settings } = useAppData();
-  const { addToCart, updateQuantity, getItemQuantity } = useCart();
+  const { addToCart, updateQuantity, getItemQuantity, getProductLines } = useCart();
+  const { openCustomizer } = useProductCustomizer();
   const product = products.find((entry) => entry.id === id);
   const quantity = getItemQuantity(id);
 
@@ -56,6 +59,8 @@ export const ProductDetailPage = () => {
       return rightScore - leftScore;
     })
     .slice(0, 2);
+  const customizable = hasAddonGroups(product);
+  const configuredLineCount = getProductLines(product.id).length;
 
   const handleShareProduct = async () => {
     const productUrl = `${window.location.origin}/product/${product.id}`;
@@ -144,12 +149,16 @@ export const ProductDetailPage = () => {
 
                 <motion.div className="detail-support-card" variants={CONTENT_FADE_VARIANTS}>
                   <strong>Quick order support</strong>
-                  <p>Add it instantly to cart or jump to WhatsApp if you want manual confirmation from the team.</p>
+                  <p>
+                    {customizable
+                      ? 'Pick your add-ons in a premium bottom sheet, then add the exact configuration to cart.'
+                      : 'Add it instantly to cart or jump to WhatsApp if you want manual confirmation from the team.'}
+                  </p>
                 </motion.div>
 
                 <motion.div className="hero-actions detail-actions" variants={CONTENT_FADE_VARIANTS}>
                   <AnimatePresence initial={false} mode="popLayout">
-                    {quantity > 0 ? (
+                    {quantity > 0 && !customizable ? (
                       <motion.div
                         animate="animate"
                         className="qty-control product-qty-control detail-qty-control"
@@ -191,13 +200,20 @@ export const ProductDetailPage = () => {
                         initial="initial"
                         key="add"
                         layout
-                        onClick={() => addToCart(product)}
+                        onClick={() => {
+                          if (customizable) {
+                            openCustomizer(product);
+                            return;
+                          }
+
+                          addToCart(product);
+                        }}
                         type="button"
                         variants={QUANTITY_SWAP_VARIANTS}
                         whileTap={{ scale: 0.96 }}
                       >
                         <ShoppingBag size={16} />
-                        Add to cart
+                        {customizable ? (quantity > 0 ? `Customize • ${quantity} in cart` : 'Choose add-ons') : 'Add to cart'}
                       </motion.button>
                     )}
                   </AnimatePresence>
@@ -239,6 +255,12 @@ export const ProductDetailPage = () => {
                     Share
                   </motion.button>
                 </motion.div>
+
+                {customizable && configuredLineCount ? (
+                  <motion.p className="detail-addon-note" variants={CONTENT_FADE_VARIANTS}>
+                    {configuredLineCount} {configuredLineCount === 1 ? 'configuration' : 'configurations'} already in your cart.
+                  </motion.p>
+                ) : null}
 
                 <motion.div variants={CONTENT_FADE_VARIANTS}>
                   <Link className="text-link" to="/menu">

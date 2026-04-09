@@ -18,6 +18,7 @@ import {
   storeOtpRequest,
 } from '../utils/otpState';
 import { defaultDeliveryRules } from '../utils/pricing';
+import { collapseOrderItems, normalizeAddonGroups } from '../utils/addons';
 import {
   DEFAULT_OFFERS,
   DEFAULT_TRUST_POINTS,
@@ -271,6 +272,7 @@ const normalizeProduct = (row) => {
     badge: row.badge || '',
     isAvailable: row.is_available !== false,
     isVeg: row.is_veg !== false,
+    addonGroups: normalizeAddonGroups(row.addon_groups || row.addonGroups || []),
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -382,7 +384,7 @@ const normalizeOrder = (row) => ({
   userId: row.user_id,
   customerName: row.customer_name || '',
   customerPhone: row.customer_phone || '',
-  items: row.items || [],
+  items: collapseOrderItems(row.items || []),
   address: row.address || {},
   paymentMethod: row.payment_method || row.paymentMethod || 'COD',
   note: row.note || '',
@@ -407,7 +409,16 @@ const normalizeTracking = (row) => ({
   status: row.status,
   estimatedDeliveryAt: row.estimatedDeliveryAt || row.estimated_delivery_at,
   tracking: {
-    timeline: row.timeline || row.tracking?.timeline || [],
+    timeline:
+      row.timeline?.length || row.tracking?.timeline?.length
+        ? row.timeline || row.tracking?.timeline || []
+        : [
+            {
+              status: row.status,
+              label: row.status || 'Order Placed',
+              timestamp: row.estimatedDeliveryAt || row.estimated_delivery_at || new Date().toISOString(),
+            },
+          ],
     currentLocation:
       row.currentLocation || row.current_location || row.tracking?.currentLocation || null,
   },

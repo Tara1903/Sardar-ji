@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import { api } from '../api/client';
 import { applyThemeToDocument, createAppConfig } from '../theme/theme';
 import { applyProductAvailabilitySchedule } from '../utils/availability';
+import { collectAddonShadowProductIds, normalizeProductAddonGroups } from '../utils/addons';
 import { isNativeAppShell } from '../lib/nativeApp';
 
 const AppDataContext = createContext(null);
@@ -59,6 +60,20 @@ export const AppDataProvider = ({ children }) => {
   const [error, setError] = useState('');
   const hasCachedAppData = Boolean(cachedAppData);
 
+  const hydrateProducts = useCallback((productsResponse = [], settingsResponse = null) => {
+    const scheduleMap = settingsResponse?.storefront?.productAvailabilitySchedules || {};
+    const addonMap = settingsResponse?.storefront?.productAddonGroups || {};
+    const shadowProductIds = new Set(collectAddonShadowProductIds(addonMap));
+
+    return productsResponse
+      .map((product) => ({
+        ...applyProductAvailabilitySchedule(product, scheduleMap),
+        addonGroups: normalizeProductAddonGroups(product, addonMap),
+        isAddonShadow: shadowProductIds.has(product.id),
+      }))
+      .filter((product) => !product.isAddonShadow);
+  }, []);
+
   const loadAppData = useCallback(async () => {
     setLoading(true);
     try {
@@ -67,10 +82,7 @@ export const AppDataProvider = ({ children }) => {
         api.getCategories(),
         api.getSettings(),
       ]);
-      const scheduleMap = settingsResponse?.storefront?.productAvailabilitySchedules || {};
-      const nextProducts = productsResponse.map((product) =>
-        applyProductAvailabilitySchedule(product, scheduleMap),
-      );
+      const nextProducts = hydrateProducts(productsResponse, settingsResponse);
       setProducts(nextProducts);
       setCategories(categoriesResponse);
       setSettings(settingsResponse);
@@ -87,7 +99,7 @@ export const AppDataProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  }, [hasCachedAppData]);
+  }, [hasCachedAppData, hydrateProducts]);
 
   useEffect(() => {
     void loadAppData();
@@ -157,14 +169,12 @@ export const AppDataProvider = ({ children }) => {
       refreshCatalog: loadAppData,
       refreshSettings: async () => {
         const nextSettings = await api.getSettings();
-        const nextProducts = products.map((product) =>
-          applyProductAvailabilitySchedule(
-            {
-              ...product,
-              isAvailable: product.baseIsAvailable ?? product.isAvailable,
-            },
-            nextSettings?.storefront?.productAvailabilitySchedules || {},
-          ),
+        const nextProducts = hydrateProducts(
+          products.map((product) => ({
+            ...product,
+            isAvailable: product.baseIsAvailable ?? product.isAvailable,
+          })),
+          nextSettings,
         );
         setProducts(nextProducts);
         setSettings(nextSettings);
@@ -180,7 +190,7 @@ export const AppDataProvider = ({ children }) => {
       setCategories,
       setSettings,
     }),
-    [categories, error, loading, products, settings],
+    [categories, error, hydrateProducts, loading, products, settings],
   );
 
   return <AppDataContext.Provider value={value}>{children}</AppDataContext.Provider>;

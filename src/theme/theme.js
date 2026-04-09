@@ -107,6 +107,7 @@ export const defaultStorefrontConfig = {
   sections: defaultSectionVisibility,
   categoryImages: {},
   productAvailabilitySchedules: {},
+  productAddonGroups: {},
   comboOffers: [],
   googleBusinessProfile: {
     menuUrl: '/menu',
@@ -261,6 +262,7 @@ export const mergeStorefrontConfig = (storefront = {}) => {
     },
     categoryImages: storefront.categoryImages || {},
     productAvailabilitySchedules: storefront.productAvailabilitySchedules || {},
+    productAddonGroups: storefront.productAddonGroups || {},
     comboOffers: Array.isArray(storefront.comboOffers) ? storefront.comboOffers : [],
     googleBusinessProfile: {
       ...defaultStorefrontConfig.googleBusinessProfile,
@@ -376,6 +378,7 @@ export const createAppConfig = ({ categories = [], products = [], settings = nul
     popup: storefront.popup,
     reviews: storefront.reviews,
     sections: storefront.sections,
+    productAddonGroups: storefront.productAddonGroups,
     comboOffers: storefront.comboOffers,
     googleBusinessProfile: storefront.googleBusinessProfile,
   };

@@ -131,6 +131,9 @@ export const ProfilePage = () => {
 
         return {
           ...(matchedProduct || item),
+          ...item,
+          image: matchedProduct?.image || item.image,
+          category: matchedProduct?.category || item.category,
           quantity: item.quantity || 1,
         };
       });

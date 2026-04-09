@@ -118,9 +118,10 @@ export const OrderSuccessPage = () => {
               <p>Payment: {order.paymentMethod}</p>
               <div className="order-mini-list">
                 {order.items.map((item, index) => (
-                  <div className="summary-line" key={`${order.id}-${item.id || index}`}>
+                  <div className="summary-line summary-line-stack" key={`${order.id}-${item.lineId || item.id || index}`}>
                     <span>
                       {item.name} x {item.quantity}
+                      {item.addonSummary ? <small>{item.addonSummary}</small> : null}
                     </span>
                     <strong>{item.isFreebie ? 'FREE' : formatCurrency(item.price * item.quantity)}</strong>
                   </div>

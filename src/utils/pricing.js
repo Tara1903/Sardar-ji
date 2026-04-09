@@ -1,4 +1,5 @@
 import { getFallbackImage } from '../data/fallbackImages';
+import { expandCartItemsForOrder } from './addons';
 import {
   DELIVERY_FEE_LABEL,
   FREEBIE_DESCRIPTION,
@@ -157,10 +158,11 @@ export const getCartOfferState = (
   const baseItems = getBaseItems(items);
   const freebieItem = pricing.freebieUnlocked ? buildFreebieItem(products, rules) : null;
   const displayItems = freebieItem ? [...baseItems, freebieItem] : baseItems;
+  const fulfillmentBaseItems = expandCartItemsForOrder(baseItems);
   const orderItems =
     freebieItem && freebieItem.hasBackendProduct
-      ? [...baseItems, freebieItem]
-      : baseItems;
+      ? [...fulfillmentBaseItems, freebieItem]
+      : fulfillmentBaseItems;
 
   return {
     ...pricing,

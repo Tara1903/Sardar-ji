@@ -2,9 +2,11 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { Clock3, Minus, Plus, ShoppingBag, Sparkles, Star } from 'lucide-react';
 import { useCart } from '../../contexts/CartContext';
+import { useProductCustomizer } from '../../contexts/ProductCustomizerContext';
 import { getFallbackImage } from '../../data/fallbackImages';
 import { SmartImage } from '../common/SmartImage';
 import { formatCurrency } from '../../utils/format';
+import { hasAddonGroups } from '../../utils/addons';
 import { createProductOrderMessage, createWhatsAppLink } from '../../utils/whatsapp';
 import { STORE_AVERAGE_RATING } from '../../utils/catalog';
 import { trackWhatsAppClick } from '../../utils/analytics';
@@ -16,9 +18,13 @@ import {
 } from '../../motion/variants';
 
 export const ProductCard = ({ product, whatsappNumber, variant = 'default', motionIndex = 0 }) => {
-  const { addToCart, updateQuantity, getItemQuantity } = useCart();
+  const { addToCart, updateQuantity, getItemQuantity, getProductLines } = useCart();
+  const { openCustomizer } = useProductCustomizer();
   const isCompact = variant === 'compact';
   const quantity = getItemQuantity(product.id);
+  const customizable = hasAddonGroups(product);
+  const configuredLines = getProductLines(product.id);
+  const configuredLineCount = configuredLines.length;
 
   return (
     <motion.article
@@ -87,7 +93,7 @@ export const ProductCard = ({ product, whatsappNumber, variant = 'default', moti
       </div>
       <div className="product-actions">
         <AnimatePresence initial={false} mode="popLayout">
-          {quantity > 0 ? (
+          {quantity > 0 && !customizable ? (
             <motion.div
               animate="animate"
               className={`qty-control product-qty-control ${isCompact ? 'is-compact' : ''}`.trim()}
@@ -127,16 +133,36 @@ export const ProductCard = ({ product, whatsappNumber, variant = 'default', moti
               initial="initial"
               key="add"
               layout
-              onClick={() => addToCart(product)}
+              onClick={() => {
+                if (customizable) {
+                  openCustomizer(product);
+                  return;
+                }
+
+                addToCart(product);
+              }}
               type="button"
               variants={QUANTITY_SWAP_VARIANTS}
               whileTap={{ scale: 0.96 }}
             >
               <ShoppingBag size={16} />
-              {isCompact ? '+ Add' : 'Add to cart'}
+              {customizable
+                ? quantity > 0
+                  ? `Customize${isCompact ? '' : ` • ${quantity} in cart`}`
+                  : isCompact
+                    ? 'Options'
+                    : 'Choose add-ons'
+                : isCompact
+                  ? '+ Add'
+                  : 'Add to cart'}
             </motion.button>
           )}
         </AnimatePresence>
+        {customizable && configuredLineCount ? (
+          <span className="product-addon-meta">
+            {configuredLineCount} {configuredLineCount === 1 ? 'configuration' : 'configurations'} in cart
+          </span>
+        ) : null}
         {isCompact ? null : (
           <motion.a
             className="btn btn-secondary"

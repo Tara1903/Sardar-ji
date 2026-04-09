@@ -692,9 +692,10 @@ export const CheckoutPage = () => {
             <h3>Order summary</h3>
             <div className="order-mini-list">
               {cartOfferState.displayItems.map((item) => (
-                <div className="summary-line" key={item.id}>
+                <div className="summary-line summary-line-stack" key={item.lineId || item.id}>
                   <span>
                     {item.name} x {item.quantity}
+                    {item.addonSummary ? <small>{item.addonSummary}</small> : null}
                   </span>
                   <strong>{item.isFreebie ? 'FREE' : formatCurrency(item.price * item.quantity)}</strong>
                 </div>

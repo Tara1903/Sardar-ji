@@ -30,13 +30,19 @@ export const createSubscriptionPaymentMessage = (planName, price, customerName =
 };
 
 export const createCartOrderMessage = (items = [], pricing) => {
+  const formatItemLine = (item) => {
+    const addonText = item.addonSummary ? ` [${item.addonSummary}]` : '';
+
+    if (item.isFreebie) {
+      return `- ${item.name}${addonText} x ${item.quantity} (FREE)`;
+    }
+
+    return `- ${item.name}${addonText} x ${item.quantity} - ${formatCurrency(item.price * item.quantity)}`;
+  };
+
   const lines = [
     'Hello Sardar Ji Food Corner, I want to place this order:',
-    ...items.map((item) =>
-      item.isFreebie
-        ? `- ${item.name} x ${item.quantity} (FREE)`
-        : `- ${item.name} x ${item.quantity} - ${formatCurrency(item.price * item.quantity)}`,
-    ),
+    ...items.map(formatItemLine),
     `Subtotal: ${formatCurrency(pricing.subtotal)}`,
     `${pricing.deliveryFeeLabel}: ${pricing.deliveryFee ? formatCurrency(pricing.deliveryFee) : 'FREE'}`,
   ];

@@ -8,6 +8,7 @@ import { AuthProvider } from './contexts/AuthContext';
 import { CartProvider } from './contexts/CartContext';
 import { AppDataProvider } from './contexts/AppDataContext';
 import { NotificationProvider } from './contexts/NotificationContext';
+import { ProductCustomizerProvider } from './contexts/ProductCustomizerContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { initializeNativeAppShell } from './lib/nativeApp';
 
@@ -19,7 +20,9 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <NotificationProvider>
             <AppDataProvider>
               <CartProvider>
-                <App />
+                <ProductCustomizerProvider>
+                  <App />
+                </ProductCustomizerProvider>
               </CartProvider>
             </AppDataProvider>
           </NotificationProvider>

@@ -65,11 +65,21 @@ const expandCompactAddress = (address = {}) => ({
 
 export const compactFoodPaymentPayload = (payload = {}) => ({
   a: sanitizeCompactAddress(payload.address),
-  i: (payload.items || []).map((item) => [
-    String(item.id || '').trim(),
-    Math.max(1, Number.parseInt(item.quantity || 1, 10) || 1),
-    item.isFreebie ? 1 : 0,
-  ]),
+  i: (payload.items || []).map((item) => ({
+    id: String(item.id || '').trim(),
+    q: Math.max(1, Number.parseInt(item.quantity || 1, 10) || 1),
+    f: item.isFreebie ? 1 : 0,
+    al: item.isAddonLine ? 1 : 0,
+    l: String(item.lineId || '').trim(),
+    p: String(item.parentLineId || '').trim(),
+    pp: String(item.parentProductId || '').trim(),
+    n: String(item.name || '').trim(),
+    pr: Number(item.price || 0),
+    bp: Number(item.basePrice ?? item.price ?? 0),
+    g: String(item.groupId || '').trim(),
+    gt: String(item.groupTitle || '').trim(),
+    s: String(item.addonSummary || '').trim(),
+  })),
   c: String(payload.couponCode || '').trim(),
   d:
     payload.pricing?.distanceKm === null || payload.pricing?.distanceKm === undefined
@@ -80,10 +90,20 @@ export const compactFoodPaymentPayload = (payload = {}) => ({
 export const expandFoodPaymentPayload = (payload = {}) => ({
   address: expandCompactAddress(payload.a),
   items: (payload.i || [])
-    .map(([id, quantity, isFreebie]) => ({
-      id: String(id || '').trim(),
-      quantity: Math.max(1, Number.parseInt(quantity || 1, 10) || 1),
-      isFreebie: Boolean(isFreebie),
+    .map((item) => ({
+      id: String(item?.id || '').trim(),
+      quantity: Math.max(1, Number.parseInt(item?.q || 1, 10) || 1),
+      isFreebie: Boolean(item?.f),
+      isAddonLine: Boolean(item?.al),
+      lineId: String(item?.l || '').trim(),
+      parentLineId: String(item?.p || '').trim(),
+      parentProductId: String(item?.pp || '').trim(),
+      name: String(item?.n || '').trim(),
+      price: Number(item?.pr || 0),
+      basePrice: Number(item?.bp || item?.pr || 0),
+      groupId: String(item?.g || '').trim(),
+      groupTitle: String(item?.gt || '').trim(),
+      addonSummary: String(item?.s || '').trim(),
     }))
     .filter((item) => item.id),
   couponCode: String(payload.c || '').trim(),

@@ -1,8 +1,8 @@
 const APP_DOWNLOAD_HOST = 'https://www.sardarjifoodcorner.shop';
 
 export const APP_RELEASE = Object.freeze({
-  version: '1.5.5',
-  build: 13,
+  version: '1.6.0',
+  build: 14,
   minimumSupportedBuild: 5,
   minimumSupportedVersion: '1.3.1',
   forceUpdate: false,
@@ -14,12 +14,12 @@ export const APP_RELEASE = Object.freeze({
   updateLabel: 'Update App',
   supportNote: 'Android 8.0+ supported • Native-feel app shell • Fast install • Pure veg ordering app',
   releaseHighlights: [
-    'All product images now use true 1:1 square containers with contain-fit rendering, so dishes stay fully visible without cropping or stretching',
-    'Permanent blurred product images are fixed by removing the duplicate full-image blur placeholder path and adding stronger load-complete checks',
-    'Native app scrolling is restored, with smoother vertical touch handling and safer WebView scroll behavior',
-    'Razorpay amounts are now recomputed on the server and payments finalize through a hardened verified fulfillment path',
-    'Webhook-ready payment state, smarter capture handling, and stronger order/subscription reliability are now included',
+    'New premium add-on selector now opens as an animated bottom sheet for products with options, with live pricing and quantity controls',
+    'Configured cart items now store selected add-ons cleanly, show readable summaries, and reorder correctly from account history',
+    'Admin can now manage add-on groups directly per product while hidden fulfillment-only add-on items stay out of the storefront catalog',
+    'All product images remain fully visible in true square containers with contain-fit rendering, without permanent blur overlays',
     'Background Android push, deep links, latest premium website design, subscriptions, referrals, reorder, and offline recovery remain included',
+    'Razorpay verification, webhook-ready fulfillment, and hardened order reliability remain active in this release',
   ],
 });
 

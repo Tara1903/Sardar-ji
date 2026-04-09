@@ -15,6 +15,10 @@ export const AdminProductsPage = () => {
   const filteredProducts = useMemo(
     () =>
       products.filter((product) => {
+        if (product.isAddonShadow) {
+          return false;
+        }
+
         if (selectedCategory !== 'All' && product.category !== selectedCategory) {
           return false;
         }
