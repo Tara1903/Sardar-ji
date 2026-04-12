@@ -1,24 +1,14 @@
-import { lazy, Suspense, useEffect, useState } from 'react';
-import { BrowserRouter, Outlet, Route, Routes, useLocation } from 'react-router-dom';
+import { lazy, Suspense } from 'react';
+import { BrowserRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
-import { Navbar } from './components/layout/Navbar';
-import { Footer } from './components/layout/Footer';
-import { MobileNav } from './components/layout/MobileNav';
-import { SpecialOfferPopup } from './components/layout/SpecialOfferPopup';
-import { WhatsAppFab } from './components/layout/WhatsAppFab';
-import { FloatingCartBar } from './components/layout/FloatingCartBar';
+import { AppShell } from './components/layout/AppShell';
 import { ProtectedRoute } from './components/common/ProtectedRoute';
 import { Loader } from './components/common/Loader';
 import { NotificationCenter } from './components/common/NotificationCenter';
 import { NativeAppBridge } from './components/common/NativeAppBridge';
-import { CartActionToast } from './components/order/CartActionToast';
-import { CheckoutRecoveryPopup } from './components/order/CheckoutRecoveryPopup';
 import { GoogleAnalytics } from './components/seo/GoogleAnalytics';
 import { NativeOfflineNotice } from './components/common/NativeOfflineNotice';
 import { NativeAppUpdatePrompt } from './components/common/NativeAppUpdatePrompt';
-import { useAppData } from './contexts/AppDataContext';
-import { useCart } from './contexts/CartContext';
-import { clearCheckoutRecovery, readCheckoutRecovery } from './utils/cartRecovery';
 
 const HomePage = lazy(() => import('./pages/HomePage').then((module) => ({ default: module.HomePage })));
 const MenuPage = lazy(() => import('./pages/MenuPage').then((module) => ({ default: module.MenuPage })));
@@ -134,54 +124,6 @@ const NotFoundPage = lazy(() =>
   import('./pages/NotFoundPage').then((module) => ({ default: module.NotFoundPage })),
 );
 
-const CustomerLayout = () => {
-  const { appConfig, settings } = useAppData();
-  const { cartToast, dismissCartToast } = useCart();
-  const location = useLocation();
-  const [checkoutRecovery, setCheckoutRecovery] = useState(null);
-
-  useEffect(() => {
-    setCheckoutRecovery(readCheckoutRecovery());
-  }, [location.pathname]);
-
-  useEffect(() => {
-    const syncRecovery = () => {
-      setCheckoutRecovery(readCheckoutRecovery());
-    };
-
-    window.addEventListener('storage', syncRecovery);
-    return () => window.removeEventListener('storage', syncRecovery);
-  }, []);
-
-  return (
-    <div className="app-shell customer-app-shell">
-      <Navbar businessName={settings?.businessName} />
-      <div className="page-stack">
-        <Outlet />
-      </div>
-      <Footer settings={settings} />
-      <FloatingCartBar />
-      <CartActionToast onDismiss={dismissCartToast} toast={cartToast} />
-      <MobileNav />
-      <SpecialOfferPopup
-        config={appConfig.popup}
-        enabled={location.pathname === '/' && appConfig.sections?.popup !== false}
-        phoneNumber={settings?.whatsappNumber}
-      />
-      {location.pathname !== '/checkout' ? (
-        <CheckoutRecoveryPopup
-          onDismiss={() => {
-            clearCheckoutRecovery();
-            setCheckoutRecovery(null);
-          }}
-          recovery={checkoutRecovery}
-        />
-      ) : null}
-      <WhatsAppFab phoneNumber={settings?.whatsappNumber} />
-    </div>
-  );
-};
-
 const AnimatedRoutes = () => {
   const location = useLocation();
 
@@ -189,7 +131,7 @@ const AnimatedRoutes = () => {
     <Suspense fallback={<Loader message="Opening Sardar Ji Food Corner..." />}>
       <AnimatePresence mode="wait">
         <Routes key={location.pathname} location={location}>
-          <Route element={<CustomerLayout />}>
+          <Route element={<AppShell />}>
             <Route index element={<HomePage />} />
             <Route path="/menu" element={<MenuPage />} />
             <Route path="/monthly-thali-plan-indore" element={<MonthlyThaliPlanIndorePage />} />

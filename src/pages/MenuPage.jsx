@@ -1,23 +1,21 @@
-import { startTransition, useDeferredValue, useMemo, useState } from 'react';
-import { motion } from 'framer-motion';
-import { Filter, MapPin, Search, ShoppingBag } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { useMemo } from 'react';
+import { Filter, MapPin, Sparkles } from 'lucide-react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { PromoBanner } from '../components/common/PromoBanner';
-import { PageTransition } from '../components/common/PageTransition';
 import { EmptyState } from '../components/common/EmptyState';
-import { SkeletonGrid } from '../components/common/Loader';
+import { PageTransition } from '../components/common/PageTransition';
 import { CategoryShowcase } from '../components/home/CategoryShowcase';
-import { ProductCard } from '../components/menu/ProductCard';
+import { QuickChips } from '../components/home/QuickChips';
+import { FeaturedProductsGrid } from '../components/home/FeaturedProductsGrid';
 import { SeoMeta } from '../components/seo/SeoMeta';
 import { useAppData } from '../contexts/AppDataContext';
-import { useAuth } from '../contexts/AuthContext';
 import { useCart } from '../contexts/CartContext';
 import { createComboOffers, sortProductsByCategoryAndPrice } from '../utils/catalog';
 import { formatCurrency } from '../utils/format';
 import { getCartOfferState } from '../utils/pricing';
 import { useStoreDistance } from '../hooks/useStoreDistance';
 import { createBreadcrumbSchema, createFaqSchema } from '../seo/siteSeo';
-import { STAGGER_CONTAINER_VARIANTS } from '../motion/variants';
+import { APP_QUICK_CHIPS, filterProductsByQuickChip } from '../data/appExperience';
 
 const priceFilters = [
   { label: 'All prices', value: 'all' },
@@ -26,83 +24,109 @@ const priceFilters = [
   { label: 'Above ₹300', value: 'above300' },
 ];
 
+const applyPriceFilter = (product, priceFilter) => {
+  if (priceFilter === 'under100') {
+    return product.price < 100;
+  }
+
+  if (priceFilter === '100to300') {
+    return product.price >= 100 && product.price <= 300;
+  }
+
+  if (priceFilter === 'above300') {
+    return product.price > 300;
+  }
+
+  return true;
+};
+
 export const MenuPage = () => {
   const { appConfig, products, categories, settings, loading } = useAppData();
-  const { isAuthenticated } = useAuth();
-  const { addItemsToCart, itemCount, items } = useCart();
-  const { distanceKm, locationStatus, isLocating } = useStoreDistance();
-  const [search, setSearch] = useState('');
-  const [activeCategory, setActiveCategory] = useState('All');
-  const [priceFilter, setPriceFilter] = useState('all');
-  const deferredSearch = useDeferredValue(search);
+  const { items, addItemsToCart, itemCount } = useCart();
+  const { distanceKm, isLocating, locationStatus } = useStoreDistance();
+  const [searchParams, setSearchParams] = useSearchParams();
   const offersConfig = appConfig.offers || {};
+  const railCategories = appConfig.categories?.length ? appConfig.categories : categories;
+  const categoryParam = searchParams.get('category') || 'All';
+  const chipParam = searchParams.get('chip') || 'all';
+  const priceFilter = searchParams.get('price') || 'all';
+  const search = searchParams.get('search') || '';
   const comboOffers = useMemo(() => createComboOffers(products), [products]);
+  const cartOfferState = getCartOfferState(items, products, settings?.deliveryRules, 0, distanceKm);
   const faqItems = [
     {
-      question: 'Is the full menu pure veg?',
+      question: 'Can I browse the full menu quickly on my phone?',
       answer:
-        'Yes, the menu is organized as a pure veg food delivery menu for Indore customers, including thalis, parathas, snacks, and beverages.',
+        'Yes, the menu is organized as an app-like browse screen with quick chips, categories, and direct add-to-cart actions.',
     },
     {
-      question: 'Can I get free delivery in Indore?',
+      question: 'Does the menu include pure veg thalis and tiffin options?',
       answer:
-        'Orders above ₹299 can unlock free or discounted delivery depending on your distance, and orders above ₹499 unlock free delivery plus a free mango juice.',
+        'Yes, Sardar Ji Food Corner focuses on pure veg meals including thalis, tiffin-style dishes, snacks, drinks, and related meal picks.',
     },
     {
-      question: 'Can I order on WhatsApp if I do not want to finish checkout online?',
+      question: 'Will I see my delivery rewards while browsing?',
       answer:
-        'Yes, every major order flow includes a WhatsApp fallback so customers can continue ordering even if they prefer chat support.',
+        'Yes, the menu keeps a live cart reward summary visible so customers can understand delivery savings before checkout.',
     },
   ];
 
   const filteredProducts = useMemo(() => {
-    const matchingProducts = products.filter((product) => {
-      if (!product.isAvailable) {
+    const visibleProducts = sortProductsByCategoryAndPrice(
+      products.filter((product) => product.isAvailable),
+      railCategories,
+    );
+
+    return filterProductsByQuickChip(visibleProducts, chipParam).filter((product) => {
+      if (categoryParam !== 'All' && product.category !== categoryParam) {
         return false;
       }
 
-      if (activeCategory !== 'All' && product.category !== activeCategory) {
-        return false;
-      }
-
-      if (deferredSearch) {
-        const haystack = `${product.name} ${product.description}`.toLowerCase();
-        if (!haystack.includes(deferredSearch.toLowerCase())) {
+      if (search) {
+        const haystack = `${product.name} ${product.description} ${product.category}`.toLowerCase();
+        if (!haystack.includes(search.toLowerCase())) {
           return false;
         }
       }
 
-      if (priceFilter === 'under100' && product.price >= 100) {
-        return false;
-      }
-      if (priceFilter === '100to300' && (product.price < 100 || product.price > 300)) {
-        return false;
-      }
-      if (priceFilter === 'above300' && product.price <= 300) {
-        return false;
-      }
-
-      return true;
+      return applyPriceFilter(product, priceFilter);
     });
+  }, [categoryParam, chipParam, priceFilter, products, railCategories, search]);
 
-    return sortProductsByCategoryAndPrice(
-      matchingProducts,
-      appConfig.categories?.length ? appConfig.categories : categories,
-    );
-  }, [activeCategory, appConfig.categories, categories, deferredSearch, priceFilter, products]);
+  const updateFilter = (key, value, resetKeys = []) => {
+    const nextParams = new URLSearchParams(searchParams);
 
-  const cartOfferState = getCartOfferState(items, products, settings?.deliveryRules, 0, distanceKm);
+    resetKeys.forEach((resetKey) => nextParams.delete(resetKey));
+
+    if (!value || value === 'all' || value === 'All') {
+      nextParams.delete(key);
+    } else {
+      nextParams.set(key, value);
+    }
+
+    setSearchParams(nextParams, { replace: true });
+  };
+
+  const clearFilters = () => {
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.delete('category');
+    nextParams.delete('chip');
+    nextParams.delete('price');
+    nextParams.delete('search');
+    setSearchParams(nextParams, { replace: true });
+  };
 
   return (
     <PageTransition>
       <SeoMeta
-        description="Browse the pure veg menu from Sardar Ji Food Corner for food delivery in Indore, thalis, parathas, snacks, drinks, and quick ordering."
+        description="Browse the pure veg menu from Sardar Ji Food Corner with fast filters, quick adds, and food delivery ordering in Indore."
         includeLocalBusiness
         keywords={[
           'food delivery in Indore',
           'veg menu Indore',
-          'tiffin service menu Indore',
+          'thali menu Indore',
           'pure veg food delivery Indore',
+          'monthly thali plan Indore',
         ]}
         path="/menu"
         schema={[
@@ -113,223 +137,162 @@ export const MenuPage = () => {
           createFaqSchema(faqItems),
         ]}
         settings={settings}
-        title="Food Delivery Menu in Indore"
+        title="Pure Veg Menu in Indore | Sardar Ji Food Corner"
       />
-      <section className="section first-section menu-page-shell">
-        <div className="container menu-experience-layout">
-          <aside className="panel-card menu-sidebar">
-            <div className="section-heading compact">
+
+      <section className="section first-section app-menu-shell">
+        <div className="container app-menu-stack">
+          <div className="app-menu-hero">
+            <div className="app-menu-hero-copy">
+              <p className="eyebrow">Browse the menu</p>
+              <h1>Pick your meal and keep the order moving</h1>
+              <p className="section-heading-note">
+                The search bar at the top works from anywhere. Use these chips and categories to narrow the menu even faster.
+              </p>
+            </div>
+            <div className="app-menu-hero-stats">
+              <span className="hero-chip">
+                <Sparkles size={14} />
+                {filteredProducts.length} dishes visible
+              </span>
+              <span className="hero-chip">
+                <MapPin size={14} />
+                {isLocating ? 'Checking distance...' : locationStatus}
+              </span>
+              {distanceKm !== null ? <span className="hero-chip">{distanceKm.toFixed(1)} km</span> : null}
+            </div>
+          </div>
+
+          <PromoBanner
+            actions={
+              <>
+                <Link className="btn btn-primary" to="/my-subscription?checkout=1">
+                  Buy Monthly Plan
+                </Link>
+                <Link className="btn btn-secondary" to={itemCount ? '/cart' : '/checkout'}>
+                  {itemCount ? 'Open cart' : 'Start checkout'}
+                </Link>
+              </>
+            }
+            className="app-menu-offer-banner"
+            description={
+              offersConfig.bannerDescription ||
+              '₹299 = free delivery up to 5 km • ₹499 = free delivery + free mango juice'
+            }
+            eyebrow={offersConfig.bannerEyebrow || 'Live rewards'}
+            title={itemCount ? cartOfferState.offerMessage : offersConfig.bannerTitle || 'Order smart and unlock rewards while you browse'}
+            tone="accent"
+          />
+
+          <div className="app-menu-toolbar panel-card">
+            <div className="app-menu-toolbar-group">
               <div>
-                <p className="eyebrow">Browse with ease</p>
-                <h2>Categories & filters</h2>
-                <p className="menu-sidebar-intro">
-                  Narrow down the menu quickly, then use the featured search banner to jump to your
-                  next craving.
-                </p>
+                <p className="eyebrow">Quick chips</p>
+                <h3>Fast shortcuts</h3>
               </div>
+              <QuickChips activeChip={chipParam} chips={APP_QUICK_CHIPS} onSelectChip={(value) => updateFilter('chip', value)} />
             </div>
 
-            <div className="menu-filter-block">
-              <strong>
-                <Filter size={15} />
-                Price filters
-              </strong>
-              <div className="menu-sidebar-list">
+            <div className="app-menu-toolbar-group">
+              <div>
+                <p className="eyebrow">Categories</p>
+                <h3>Jump to the right section</h3>
+              </div>
+              <CategoryShowcase
+                activeCategory={categoryParam}
+                categories={railCategories}
+                onSelectCategory={(value) => updateFilter('category', value)}
+              />
+            </div>
+
+            <div className="app-menu-toolbar-group">
+              <div className="app-menu-filter-heading">
+                <div>
+                  <p className="eyebrow">Price filter</p>
+                  <h3>Keep spend in range</h3>
+                </div>
+                <button className="btn btn-secondary app-menu-reset-button" onClick={clearFilters} type="button">
+                  <Filter size={16} />
+                  Reset
+                </button>
+              </div>
+              <div className="app-filter-strip">
                 {priceFilters.map((filter) => (
                   <button
-                    className={`category-scroll-chip ${priceFilter === filter.value ? 'active' : ''}`}
+                    className={`quick-chip ${priceFilter === filter.value ? 'active' : ''}`.trim()}
                     key={filter.value}
-                    onClick={() => setPriceFilter(filter.value)}
+                    onClick={() => updateFilter('price', filter.value)}
                     type="button"
                   >
                     {filter.label}
                   </button>
                 ))}
               </div>
-            </div>
-
-            <div className="helper-note">
-              <ShoppingBag size={16} />
-              <span>100% veg menu with fast scanning and quick add buttons.</span>
-            </div>
-          </aside>
-
-          <div className="menu-main-surface">
-            <div className="section-heading">
-              <div>
-                <p className="eyebrow">Browse the full menu</p>
-                <h1>Pure Veg Food Delivery Menu in Indore</h1>
-                <p className="section-heading-note">
-                  Fresh thalis, parathas, snacks, and drinks from Sardar Ji Food Corner.
+              {search ? (
+                <p className="app-menu-query-note">
+                  Showing results for <strong>{search}</strong>
                 </p>
-              </div>
-              <span className="hero-chip">Veg only</span>
+              ) : null}
             </div>
+          </div>
 
-            <div className="menu-inline-categories">
-              <strong>Categories</strong>
-              <CategoryShowcase
-                activeCategory={activeCategory}
-                categories={appConfig.categories}
-                onSelectCategory={setActiveCategory}
-              />
-            </div>
-
-            <PromoBanner
-              actions={
-                <>
-                  <Link className="btn btn-primary" to="/my-subscription?checkout=1">
-                    Buy Monthly Plan
-                  </Link>
-                  <Link className="btn btn-secondary" to="/tiffin-service-indore">
-                    Tiffin service in Indore
-                  </Link>
-                </>
-              }
-              className="menu-offer-banner"
-              description={
-                offersConfig.bannerDescription ||
-                '₹299 = Free Delivery (≤5km) | ₹499 = Free Delivery + FREE Mango Juice 🥭'
-              }
-              eyebrow={offersConfig.bannerEyebrow || 'Offer of the day'}
-              extraContent={
-                <div className="promo-banner-search-wrap">
-                  <label className="search-bar promo-banner-search-bar">
-                    <Search size={18} />
-                    <input
-                      onChange={(event) => startTransition(() => setSearch(event.target.value))}
-                      placeholder="Search Paneer, Thali..."
-                      value={search}
-                    />
-                  </label>
-                  <div className="promo-banner-search-meta">
-                    <span className="promo-banner-search-chip">{filteredProducts.length} dishes visible</span>
-                    <span className="promo-banner-search-chip">
-                      {activeCategory === 'All' ? 'All categories' : activeCategory}
-                    </span>
-                  </div>
-                </div>
-              }
-              title={offersConfig.bannerTitle || appConfig.hero.offerText}
-              tone="accent"
+          {filteredProducts.length ? (
+            <FeaturedProductsGrid
+              description="Direct add-to-cart cards stay front and center so customers can order fast."
+              eyebrow="Menu results"
+              loading={loading}
+              products={filteredProducts}
+              title="Pure veg dishes ready to add"
+              whatsappNumber={settings?.whatsappNumber}
             />
+          ) : (
+            <EmptyState
+              action={
+                <button className="btn btn-primary" onClick={clearFilters} type="button">
+                  Clear filters
+                </button>
+              }
+              description="Try a different search, category, or price range."
+              title="No dishes match these filters"
+            />
+          )}
 
-            {!isAuthenticated ? (
-              <PromoBanner
-                className="first-order-banner"
-                description="Create an account once, save your address, and make repeat orders much faster from cart, checkout, and WhatsApp."
-                eyebrow="First order perk"
-                title="New customer? Start with our fastest-moving veg dishes"
-                tone="success"
-              />
-            ) : null}
-
-            {loading ? (
-              <SkeletonGrid count={8} />
-            ) : filteredProducts.length ? (
-              <motion.div
-                animate="show"
-                className="grid storefront-grid"
-                initial="hidden"
-                variants={STAGGER_CONTAINER_VARIANTS}
-              >
-                {filteredProducts.map((product, index) => (
-                  <ProductCard
-                    key={product.id}
-                    motionIndex={index}
-                    product={product}
-                    whatsappNumber={settings?.whatsappNumber}
-                  />
-                ))}
-              </motion.div>
-            ) : (
-              <EmptyState
-                title="No items found"
-                description="Try another search term or reset the category and price filters."
-              />
-            )}
-
-            {comboOffers.length ? (
-              <div className="combo-offer-grid">
+          {comboOffers.length ? (
+            <section className="app-section-block">
+              <div className="section-heading compact">
+                <div>
+                  <p className="eyebrow">Combo ideas</p>
+                  <h2>Faster basket building</h2>
+                </div>
+              </div>
+              <div className="app-plan-grid">
                 {comboOffers.map((combo) => (
-                  <article className="panel-card combo-offer-card" key={combo.id}>
+                  <article className="app-plan-card" key={combo.id}>
                     <p className="eyebrow">Combo pick</p>
                     <h3>{combo.title}</h3>
                     <p>{combo.description}</p>
                     <strong>{formatCurrency(combo.total)}</strong>
-                    <div className="subscription-action-row">
-                      <button
-                        className="btn btn-primary"
-                        onClick={() =>
-                          addItemsToCart(
-                            combo.items.map((item) => ({
-                              ...item,
-                              quantity: 1,
-                            })),
-                          )
-                        }
-                        type="button"
-                      >
-                        Add combo
-                      </button>
-                      <Link className="btn btn-secondary" to="/cart">
-                        Open cart
-                      </Link>
-                    </div>
+                    <button
+                      className="btn btn-primary"
+                      onClick={() =>
+                        addItemsToCart(
+                          combo.items.map((item) => ({
+                            ...item,
+                            quantity: 1,
+                          })),
+                        )
+                      }
+                      type="button"
+                    >
+                      Add combo
+                    </button>
                   </article>
                 ))}
               </div>
-            ) : null}
-          </div>
-
-          <aside className="summary-card sticky menu-cart-panel">
-            <div className="space-between">
-              <h3>Sticky cart summary</h3>
-              <span className="hero-chip">{itemCount} items</span>
-            </div>
-            <div className="summary-line">
-              <span>Subtotal</span>
-              <strong>{formatCurrency(cartOfferState.subtotal)}</strong>
-            </div>
-            <div className="summary-line delivery-distance-line">
-              <span>
-                <MapPin size={14} />
-                {isLocating ? 'Checking distance...' : locationStatus}
-              </span>
-              <strong>{distanceKm !== null ? `${distanceKm.toFixed(1)} km` : 'Manual'}</strong>
-            </div>
-            <div className="summary-line">
-              <span>{cartOfferState.deliveryFeeLabel}</span>
-              <strong>{cartOfferState.deliveryFee ? formatCurrency(cartOfferState.deliveryFee) : 'FREE'}</strong>
-            </div>
-            {cartOfferState.deliveryDiscount > 0 ? (
-              <div className="summary-line summary-line-discount">
-                <span>Delivery discount</span>
-                <strong>-{formatCurrency(cartOfferState.deliveryDiscount)}</strong>
-              </div>
-            ) : null}
-            <div className="summary-line total">
-              <span>Current total</span>
-              <strong>{formatCurrency(cartOfferState.total)}</strong>
-            </div>
-            <p
-              className={`hint cart-offer-hint ${
-                cartOfferState.notDeliverable
-                  ? 'is-danger'
-                  : cartOfferState.freebieUnlocked || cartOfferState.deliveryFee === 0
-                    ? 'is-success'
-                    : 'is-warning'
-              }`}
-            >
-              {cartOfferState.offerMessage}
-            </p>
-            <Link className="btn btn-primary full-width" to={itemCount ? '/cart' : '/menu'}>
-              {itemCount ? 'Open cart' : 'Add items to begin'}
-            </Link>
-          </aside>
+            </section>
+          ) : null}
         </div>
       </section>
-
     </PageTransition>
   );
 };

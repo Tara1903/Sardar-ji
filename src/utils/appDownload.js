@@ -1,12 +1,12 @@
 const APP_DOWNLOAD_HOST = 'https://www.sardarjifoodcorner.shop';
 
 export const APP_RELEASE = Object.freeze({
-  version: '1.6.0',
-  build: 14,
+  version: '1.7.0',
+  build: 15,
   minimumSupportedBuild: 5,
   minimumSupportedVersion: '1.3.1',
   forceUpdate: false,
-  releaseDate: '10 Apr 2026',
+  releaseDate: '13 Apr 2026',
   downloadPath: '/downloads/sardar-ji-food-corner.apk',
   downloadPagePath: '/download-app',
   fileName: 'sardar-ji-food-corner.apk',
@@ -14,12 +14,12 @@ export const APP_RELEASE = Object.freeze({
   updateLabel: 'Update App',
   supportNote: 'Android 8.0+ supported • Native-feel app shell • Fast install • Pure veg ordering app',
   releaseHighlights: [
-    'New premium add-on selector now opens as an animated bottom sheet for products with options, with live pricing and quantity controls',
-    'Configured cart items now store selected add-ons cleanly, show readable summaries, and reorder correctly from account history',
-    'Admin can now manage add-on groups directly per product while hidden fulfillment-only add-on items stay out of the storefront catalog',
-    'All product images remain fully visible in true square containers with contain-fit rendering, without permanent blur overlays',
-    'Background Android push, deep links, latest premium website design, subscriptions, referrals, reorder, and offline recovery remain included',
-    'Razorpay verification, webhook-ready fulfillment, and hardened order reliability remain active in this release',
+    'Customer experience now opens in a tighter app shell with a compact top bar, richer fixed bottom navigation, and faster browse-first layout',
+    'Home screen is rebuilt around quick chips, category tiles, featured food cards, and horizontal meal rails instead of long website-style sections',
+    'Menu browsing now uses app-like filter stacks, live search query handling, and fast-scanning product grids without sidebar-heavy layout',
+    'Orders tab now works like a real app screen with active orders first, past orders second, and instant reorder actions',
+    'Premium add-ons, square contain-fit images, background push, deep links, subscriptions, referrals, and Razorpay hardening remain included',
+    'This release bundles the latest shared customer frontend into the Android app for a closer website-and-app match',
   ],
 });
 
