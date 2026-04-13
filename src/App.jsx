@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react';
-import { BrowserRouter, Route, Routes, useLocation } from 'react-router-dom';
+import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import { AppShell } from './components/layout/AppShell';
 import { ProtectedRoute } from './components/common/ProtectedRoute';
@@ -9,6 +9,7 @@ import { NativeAppBridge } from './components/common/NativeAppBridge';
 import { GoogleAnalytics } from './components/seo/GoogleAnalytics';
 import { NativeOfflineNotice } from './components/common/NativeOfflineNotice';
 import { NativeAppUpdatePrompt } from './components/common/NativeAppUpdatePrompt';
+import { isNativeAppShell } from './lib/nativeApp';
 
 const HomePage = lazy(() => import('./pages/HomePage').then((module) => ({ default: module.HomePage })));
 const MenuPage = lazy(() => import('./pages/MenuPage').then((module) => ({ default: module.MenuPage })));
@@ -126,6 +127,7 @@ const NotFoundPage = lazy(() =>
 
 const AnimatedRoutes = () => {
   const location = useLocation();
+  const isNativeShell = isNativeAppShell();
 
   return (
     <Suspense fallback={<Loader message="Opening Sardar Ji Food Corner..." />}>
@@ -140,7 +142,10 @@ const AnimatedRoutes = () => {
             <Route path="/veg-tiffin-service-indore" element={<VegTiffinServiceIndorePage />} />
             <Route path="/office-lunch-delivery-indore" element={<OfficeLunchDeliveryIndorePage />} />
             <Route path="/daily-thali-near-silicon-road" element={<DailyThaliNearSiliconRoadPage />} />
-            <Route path="/download-app" element={<DownloadAppPage />} />
+            <Route
+              path="/download-app"
+              element={isNativeShell ? <Navigate replace to="/" /> : <DownloadAppPage />}
+            />
             <Route path="/product/:id" element={<ProductDetailPage />} />
             <Route path="/cart" element={<CartPage />} />
             <Route

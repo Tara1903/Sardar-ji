@@ -13,8 +13,10 @@ import {
   resolveStoreTimings,
 } from '../../utils/storefront';
 import { trackWhatsAppClick } from '../../utils/analytics';
+import { isNativeAppShell } from '../../lib/nativeApp';
 
 export const Footer = ({ settings }) => {
+  const hideDownloadAppLink = isNativeAppShell();
   const googleBusiness = settings?.storefront?.googleBusinessProfile || {};
   const menuUrl = googleBusiness.menuUrl || '/menu';
   const orderUrl = googleBusiness.orderUrl || '/checkout';
@@ -63,7 +65,7 @@ export const Footer = ({ settings }) => {
           <Link to="/">Home</Link>
           <Link to="/menu">Menu</Link>
           <Link to="/monthly-thali-plan-indore">Monthly Plan</Link>
-          <Link to="/download-app">Download App</Link>
+          {!hideDownloadAppLink ? <Link to="/download-app">Download App</Link> : null}
           <Link to="/tiffin-service-indore">Tiffin Service</Link>
           <Link to="/punjabi-food-restaurant-indore">Punjabi Food</Link>
           <Link to="/veg-tiffin-service-indore">Veg Tiffin</Link>
