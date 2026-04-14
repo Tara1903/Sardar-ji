@@ -5,13 +5,11 @@ import { BrandLockup } from '../brand/BrandLockup';
 import { ThemeSwitcher } from '../common/ThemeSwitcher';
 import { useCart } from '../../contexts/CartContext';
 import { useAuth } from '../../contexts/AuthContext';
-import { isNativeAppShell } from '../../lib/nativeApp';
 
 export const Navbar = ({ businessName }) => {
   const [open, setOpen] = useState(false);
   const { itemCount } = useCart();
   const { user, logout } = useAuth();
-  const hideDownloadAppLink = isNativeAppShell();
   const accountLink = user
     ? user.role === 'admin'
       ? '/admin/dashboard'
@@ -24,12 +22,9 @@ export const Navbar = ({ businessName }) => {
     { to: '/', label: 'Home' },
     { to: '/menu', label: 'Menu' },
     { to: '/my-subscription', label: 'Monthly Plan' },
+    { to: '/download-app', label: 'Download App' },
     { to: '/track', label: 'Track order' },
   ];
-
-  if (!hideDownloadAppLink) {
-    navItems.splice(3, 0, { to: '/download-app', label: 'Download App' });
-  }
 
   return (
     <header className="site-header">

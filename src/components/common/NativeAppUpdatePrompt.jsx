@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Download, Sparkles } from 'lucide-react';
 import { isNativeAppShell } from '../../lib/nativeApp';
@@ -19,6 +19,12 @@ export const NativeAppUpdatePrompt = () => {
   const [needsUpdate, setNeedsUpdate] = useState(false);
   const [forceUpdate, setForceUpdate] = useState(false);
   const [releaseInfo, setReleaseInfo] = useState(APP_RELEASE);
+  const [dismissed, setDismissed] = useState(false);
+
+  const dismissKey = useMemo(
+    () => `sjfc-app-update-dismissed:${releaseInfo.version}:${releaseInfo.build}`,
+    [releaseInfo.build, releaseInfo.version],
+  );
 
   useEffect(() => {
     if (!isNativeAppShell()) {
@@ -72,7 +78,26 @@ export const NativeAppUpdatePrompt = () => {
     };
   }, []);
 
-  const shouldShow = isNativeAppShell() && forceUpdate && needsUpdate;
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    setDismissed(window.localStorage.getItem(dismissKey) === 'true');
+  }, [dismissKey]);
+
+  const shouldShow = useMemo(
+    () => isNativeAppShell() && needsUpdate && (forceUpdate || !dismissed),
+    [dismissed, forceUpdate, needsUpdate],
+  );
+
+  const handleDismiss = () => {
+    setDismissed(true);
+
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(dismissKey, 'true');
+    }
+  };
 
   const handleUpdate = () => {
     trackAppDownloadClick({ source: 'native-app-update-prompt' });
@@ -92,22 +117,38 @@ export const NativeAppUpdatePrompt = () => {
           <div className="native-app-update-copy">
             <span className="native-app-update-badge">
               <Sparkles size={15} />
-              App update required
+              New app build available
             </span>
             <strong>
               Update from v{appVersion || 'older build'}{appBuild ? ` (${appBuild})` : ''} to v
               {releaseInfo.version}
             </strong>
             <p>
-              Install the latest build to keep ordering, payments, and tracking working smoothly.
-              Updated {releaseInfo.releaseDate}.
+              Get the latest website design, features, and smoother native startup. Updated{' '}
+              {releaseInfo.releaseDate}.
             </p>
-            <p className="native-app-update-note">
-              This update is required for the installed app.
-            </p>
+            {forceUpdate ? (
+              <p className="native-app-update-note">
+                This build is now required to keep the app running smoothly.
+              </p>
+            ) : null}
           </div>
 
           <div className="native-app-update-actions">
+            {!forceUpdate ? (
+              <motion.button
+                animate="rest"
+                className="btn btn-secondary"
+                initial="rest"
+                onClick={handleDismiss}
+                type="button"
+                variants={BUTTON_PRESS_VARIANTS}
+                whileHover="hover"
+                whileTap="tap"
+              >
+                Later
+              </motion.button>
+            ) : null}
             <motion.button
               animate="rest"
               className="btn btn-primary"
