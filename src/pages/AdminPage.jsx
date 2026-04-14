@@ -19,9 +19,11 @@ import { NavLink, Navigate, Outlet, useLocation, useNavigate } from 'react-route
 import { BrandLockup } from '../components/brand/BrandLockup';
 import { Loader } from '../components/common/Loader';
 import { ThemeSwitcher } from '../components/common/ThemeSwitcher';
+import { NativeAdminShell } from '../components/layout/NativeAdminShell';
 import { SeoMeta } from '../components/seo/SeoMeta';
 import { AdminProvider, useAdmin } from '../contexts/AdminContext';
 import { useAuth } from '../contexts/AuthContext';
+import { isNativeAppShell } from '../lib/nativeApp';
 
 const navGroups = [
   {
@@ -194,7 +196,7 @@ const routeMeta = {
   },
 };
 
-const AdminShell = () => {
+const WebAdminShell = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { logout } = useAuth();
@@ -332,7 +334,7 @@ const AdminShell = () => {
 
 export const AdminPage = () => (
   <AdminProvider>
-    <AdminShell />
+    {isNativeAppShell() ? <NativeAdminShell /> : <WebAdminShell />}
   </AdminProvider>
 );
 

@@ -12,12 +12,14 @@ import { clearCheckoutRecovery, readCheckoutRecovery } from '../../utils/cartRec
 import { useAppData } from '../../contexts/AppDataContext';
 import { useCart } from '../../contexts/CartContext';
 import { useEffect, useState } from 'react';
+import { isNativeAppShell } from '../../lib/nativeApp';
 
 export const AppShell = () => {
   const { appConfig, settings } = useAppData();
   const { cartToast, dismissCartToast } = useCart();
   const location = useLocation();
   const [checkoutRecovery, setCheckoutRecovery] = useState(null);
+  const nativeAppShell = isNativeAppShell();
 
   useEffect(() => {
     setCheckoutRecovery(readCheckoutRecovery());
@@ -33,21 +35,27 @@ export const AppShell = () => {
   }, []);
 
   return (
-    <div className="app-shell customer-app-shell app-first-shell">
+    <div
+      className={`app-shell customer-app-shell app-first-shell ${
+        nativeAppShell ? 'native-customer-shell' : 'web-customer-shell'
+      }`.trim()}
+    >
       <TopAppBar />
-      <div className="page-stack">
+      <div className={`page-stack ${nativeAppShell ? 'native-page-stack' : ''}`.trim()}>
         <Outlet />
       </div>
-      <Footer settings={settings} />
+      {!nativeAppShell ? <Footer settings={settings} /> : null}
       <FloatingCartBar />
       <CartActionToast onDismiss={dismissCartToast} toast={cartToast} />
       <BottomNavigation />
-      <SpecialOfferPopup
-        config={appConfig.popup}
-        enabled={location.pathname === '/' && appConfig.sections?.popup !== false}
-        phoneNumber={settings?.whatsappNumber}
-      />
-      <WebsiteDownloadPopup />
+      {!nativeAppShell ? (
+        <SpecialOfferPopup
+          config={appConfig.popup}
+          enabled={location.pathname === '/' && appConfig.sections?.popup !== false}
+          phoneNumber={settings?.whatsappNumber}
+        />
+      ) : null}
+      {!nativeAppShell ? <WebsiteDownloadPopup /> : null}
       {location.pathname !== '/checkout' ? (
         <CheckoutRecoveryPopup
           onDismiss={() => {
@@ -57,7 +65,7 @@ export const AppShell = () => {
           recovery={checkoutRecovery}
         />
       ) : null}
-      <WhatsAppFab phoneNumber={settings?.whatsappNumber} />
+      {!nativeAppShell ? <WhatsAppFab phoneNumber={settings?.whatsappNumber} /> : null}
     </div>
   );
 };

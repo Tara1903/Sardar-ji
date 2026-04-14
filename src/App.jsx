@@ -10,6 +10,7 @@ import { GoogleAnalytics } from './components/seo/GoogleAnalytics';
 import { NativeOfflineNotice } from './components/common/NativeOfflineNotice';
 import { NativeAppUpdatePrompt } from './components/common/NativeAppUpdatePrompt';
 import { isNativeAppShell } from './lib/nativeApp';
+import { useAuth } from './contexts/AuthContext';
 
 const HomePage = lazy(() => import('./pages/HomePage').then((module) => ({ default: module.HomePage })));
 const MenuPage = lazy(() => import('./pages/MenuPage').then((module) => ({ default: module.MenuPage })));
@@ -125,6 +126,27 @@ const NotFoundPage = lazy(() =>
   import('./pages/NotFoundPage').then((module) => ({ default: module.NotFoundPage })),
 );
 
+const RoleAwareHomeRoute = () => {
+  const nativeAppShell = isNativeAppShell();
+  const { loading, isAuthenticated, user } = useAuth();
+
+  if (loading && nativeAppShell) {
+    return <Loader message="Opening your app workspace..." />;
+  }
+
+  if (nativeAppShell && isAuthenticated) {
+    if (user?.role === 'admin') {
+      return <Navigate replace to="/admin/dashboard" />;
+    }
+
+    if (user?.role === 'delivery') {
+      return <Navigate replace to="/delivery" />;
+    }
+  }
+
+  return <HomePage />;
+};
+
 const AnimatedRoutes = () => {
   const location = useLocation();
   const isNativeShell = isNativeAppShell();
@@ -134,7 +156,7 @@ const AnimatedRoutes = () => {
       <AnimatePresence mode="wait">
         <Routes key={location.pathname} location={location}>
           <Route element={<AppShell />}>
-            <Route index element={<HomePage />} />
+            <Route index element={<RoleAwareHomeRoute />} />
             <Route path="/menu" element={<MenuPage />} />
             <Route path="/monthly-thali-plan-indore" element={<MonthlyThaliPlanIndorePage />} />
             <Route path="/tiffin-service-indore" element={<TiffinServiceIndorePage />} />

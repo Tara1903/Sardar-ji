@@ -1,8 +1,8 @@
 const APP_DOWNLOAD_HOST = 'https://www.sardarjifoodcorner.shop';
 
 export const APP_RELEASE = Object.freeze({
-  version: '1.7.1',
-  build: 16,
+  version: '1.8.0',
+  build: 17,
   minimumSupportedBuild: 5,
   minimumSupportedVersion: '1.3.1',
   forceUpdate: false,
@@ -14,13 +14,12 @@ export const APP_RELEASE = Object.freeze({
   updateLabel: 'Update App',
   supportNote: 'Android 8.0+ supported • Native-feel app shell • Fast install • Pure veg ordering app',
   releaseHighlights: [
-    'Website now keeps a dedicated app download popup and download page, while the installed app shell hides download-only detours',
-    'Customer experience now opens in a tighter app shell with a compact top bar, richer fixed bottom navigation, and faster browse-first layout',
-    'Home screen is rebuilt around quick chips, category tiles, featured food cards, and horizontal meal rails instead of long website-style sections',
-    'Menu browsing now uses app-like filter stacks, live search query handling, and fast-scanning product grids without sidebar-heavy layout',
-    'Orders tab now works like a real app screen with active orders first, past orders second, and instant reorder actions',
-    'Premium add-ons, square contain-fit images, background push, deep links, subscriptions, referrals, and Razorpay hardening remain included',
-    'This release bundles the latest shared customer frontend into the Android app for a closer website-and-app match',
+    'Installed app now uses role-specific shells instead of one shared website-style wrapper: customer, admin, and delivery each have their own app navigation model',
+    'Customer app lands in a browse-first home with faster reorder, live order shortcut, plan access, compact browse filters, and thumb-friendly cart flow',
+    'Admin app now opens into a task-first ops shell with bottom navigation, live attention counts, and quicker movement between orders, kitchen, catalog, and theme controls',
+    'Delivery app now behaves like a route task app with queue filters, action-first cards, and direct call, map, WhatsApp, and live-tracking controls',
+    'Website experience remains separate for web visitors, while the installed app removes footer, marketing carryover, and other browser-style framing',
+    'Existing payments, Supabase data, Firebase notifications, add-ons, subscriptions, referrals, and hardened checkout flows remain intact',
   ],
 });
 

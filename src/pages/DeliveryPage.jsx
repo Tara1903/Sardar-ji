@@ -7,6 +7,8 @@ import { Loader } from '../components/common/Loader';
 import { ThemeSwitcher } from '../components/common/ThemeSwitcher';
 import { SeoMeta } from '../components/seo/SeoMeta';
 import { useAuth } from '../contexts/AuthContext';
+import { DELIVERY_APP_FILTERS } from '../data/nativeShellConfig';
+import { isNativeAppShell } from '../lib/nativeApp';
 import { formatDateTime } from '../utils/format';
 
 export const DeliveryPage = () => {
@@ -16,6 +18,8 @@ export const DeliveryPage = () => {
   const [lastLocationPing, setLastLocationPing] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [activeFilter, setActiveFilter] = useState('active');
+  const nativeAppShell = isNativeAppShell();
 
   const loadOrders = async () => {
     try {
@@ -175,9 +179,92 @@ export const DeliveryPage = () => {
       }).length,
     [orders],
   );
+  const filteredOrders = useMemo(() => {
+    const matcher = DELIVERY_APP_FILTERS.find((entry) => entry.id === activeFilter)?.matcher;
+
+    if (!matcher) {
+      return orders;
+    }
+
+    return orders.filter(matcher);
+  }, [activeFilter, orders]);
 
   if (loading) {
     return <Loader message="Loading delivery assignments..." />;
+  }
+
+  if (nativeAppShell) {
+    return (
+      <div className="native-role-shell native-delivery-shell">
+        <SeoMeta noIndex path="/delivery" title="Delivery App" />
+
+        <header className="native-role-header native-delivery-header">
+          <div className="native-role-header-row">
+            <BrandLockup className="native-role-brand" compact linkTo="/" showTagline={false} />
+            <div className="native-role-header-actions">
+              <ThemeSwitcher compact label="Delivery theme" />
+              <button className="icon-btn" onClick={logout} type="button">
+                <LogOut size={18} />
+              </button>
+            </div>
+          </div>
+
+          <div className="native-role-copy">
+            <p className="eyebrow">Delivery tasks</p>
+            <h1>Welcome back, {user.name}. Your active route and customer actions are ready.</h1>
+          </div>
+
+          <div className="native-role-metrics">
+            <article className="native-role-metric-card">
+              <span>{orders.length}</span>
+              <small>Assigned</small>
+            </article>
+            <article className="native-role-metric-card">
+              <span>{trackingOrderId ? 'Live' : 'Idle'}</span>
+              <small>GPS</small>
+            </article>
+            <article className="native-role-metric-card">
+              <span>{completedToday}</span>
+              <small>Done today</small>
+            </article>
+            <article className="native-role-metric-card">
+              <span>{lastLocationPing ? formatDateTime(lastLocationPing) : 'Waiting'}</span>
+              <small>Last ping</small>
+            </article>
+          </div>
+
+          <div className="native-delivery-filter-row" role="tablist" aria-label="Delivery queues">
+            {DELIVERY_APP_FILTERS.map((filter) => (
+              <button
+                className={`quick-chip ${activeFilter === filter.id ? 'active' : ''}`.trim()}
+                key={filter.id}
+                onClick={() => setActiveFilter(filter.id)}
+                type="button"
+              >
+                {filter.label}
+              </button>
+            ))}
+          </div>
+        </header>
+
+        {error ? <p className="error-text native-role-error">{error}</p> : null}
+
+        <main className="native-role-content native-delivery-content">
+          <section className="native-delivery-grid">
+            {filteredOrders.map((order) => (
+              <DeliveryOrderCard
+                key={order.id}
+                onStartTracking={setTrackingOrderId}
+                onStatusChange={handleStatusChange}
+                order={order}
+                trackingOrderId={trackingOrderId}
+                variant="app"
+              />
+            ))}
+          </section>
+        </main>
+      </div>
+    );
   }
 
   return (

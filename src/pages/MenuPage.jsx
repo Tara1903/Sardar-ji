@@ -10,6 +10,7 @@ import { FeaturedProductsGrid } from '../components/home/FeaturedProductsGrid';
 import { SeoMeta } from '../components/seo/SeoMeta';
 import { useAppData } from '../contexts/AppDataContext';
 import { useCart } from '../contexts/CartContext';
+import { isNativeAppShell } from '../lib/nativeApp';
 import { createComboOffers, sortProductsByCategoryAndPrice } from '../utils/catalog';
 import { formatCurrency } from '../utils/format';
 import { getCartOfferState } from '../utils/pricing';
@@ -45,6 +46,7 @@ export const MenuPage = () => {
   const { items, addItemsToCart, itemCount } = useCart();
   const { distanceKm, isLocating, locationStatus } = useStoreDistance();
   const [searchParams, setSearchParams] = useSearchParams();
+  const nativeAppShell = isNativeAppShell();
   const offersConfig = appConfig.offers || {};
   const railCategories = appConfig.categories?.length ? appConfig.categories : categories;
   const categoryParam = searchParams.get('category') || 'All';
@@ -115,6 +117,175 @@ export const MenuPage = () => {
     nextParams.delete('search');
     setSearchParams(nextParams, { replace: true });
   };
+
+  if (nativeAppShell) {
+    return (
+      <PageTransition>
+        <SeoMeta
+          description="Browse the pure veg menu from Sardar Ji Food Corner with fast filters, quick adds, and food delivery ordering in Indore."
+          includeLocalBusiness
+          keywords={[
+            'food delivery in Indore',
+            'veg menu Indore',
+            'thali menu Indore',
+            'pure veg food delivery Indore',
+            'monthly thali plan Indore',
+          ]}
+          path="/menu"
+          schema={[
+            createBreadcrumbSchema([
+              { name: 'Home', path: '/' },
+              { name: 'Menu', path: '/menu' },
+            ]),
+            createFaqSchema(faqItems),
+          ]}
+          settings={settings}
+          title="Pure Veg Menu in Indore | Sardar Ji Food Corner"
+        />
+
+        <section className="section first-section native-browse-screen">
+          <div className="container native-screen-stack">
+            <div className="native-screen-hero native-screen-hero-compact">
+              <div>
+                <p className="eyebrow">Browse menu</p>
+                <h1>Search first, filter fast, and add food without leaving the flow.</h1>
+              </div>
+              <div className="native-screen-hero-meta">
+                <span className="hero-chip">
+                  <Sparkles size={14} />
+                  {filteredProducts.length} dishes
+                </span>
+                <span className="hero-chip">
+                  <MapPin size={14} />
+                  {isLocating ? 'Checking distance...' : locationStatus}
+                </span>
+                {distanceKm !== null ? <span className="hero-chip">{distanceKm.toFixed(1)} km</span> : null}
+              </div>
+            </div>
+
+            <div className="native-toolbar-card">
+              <div className="native-toolbar-group">
+                <p className="eyebrow">Quick chips</p>
+                <QuickChips activeChip={chipParam} chips={APP_QUICK_CHIPS} onSelectChip={(value) => updateFilter('chip', value)} />
+              </div>
+
+              <div className="native-toolbar-group">
+                <div className="section-heading compact">
+                  <div>
+                    <p className="eyebrow">Categories</p>
+                    <h2>Jump faster</h2>
+                  </div>
+                </div>
+                <CategoryShowcase
+                  activeCategory={categoryParam}
+                  categories={railCategories}
+                  onSelectCategory={(value) => updateFilter('category', value)}
+                />
+              </div>
+
+              <div className="native-toolbar-group">
+                <div className="app-menu-filter-heading">
+                  <div>
+                    <p className="eyebrow">Spend range</p>
+                    <h3>Keep pricing visible</h3>
+                  </div>
+                  <button className="btn btn-secondary app-menu-reset-button" onClick={clearFilters} type="button">
+                    <Filter size={16} />
+                    Reset
+                  </button>
+                </div>
+                <div className="app-filter-strip">
+                  {priceFilters.map((filter) => (
+                    <button
+                      className={`quick-chip ${priceFilter === filter.value ? 'active' : ''}`.trim()}
+                      key={filter.value}
+                      onClick={() => updateFilter('price', filter.value)}
+                      type="button"
+                    >
+                      {filter.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="native-toolbar-summary">
+                <strong>{itemCount ? `${itemCount} item${itemCount > 1 ? 's' : ''} in cart` : 'No items in cart yet'}</strong>
+                <span>
+                  {itemCount
+                    ? `${cartOfferState.offerMessage} • ${formatCurrency(cartOfferState.total)}`
+                    : 'Add dishes directly from this grid and move straight into cart.'}
+                </span>
+                <div className="native-toolbar-actions">
+                  <Link className="btn btn-secondary" to="/my-subscription?checkout=1">
+                    Plan options
+                  </Link>
+                  <Link className="btn btn-primary" to={itemCount ? '/cart' : '/checkout'}>
+                    {itemCount ? 'Open cart' : 'Checkout'}
+                  </Link>
+                </div>
+              </div>
+            </div>
+
+            {filteredProducts.length ? (
+              <FeaturedProductsGrid
+                description="This is the fastest path from browse to basket inside the native app."
+                eyebrow="Browse results"
+                loading={loading}
+                products={filteredProducts}
+                title="Tap to add"
+                whatsappNumber={settings?.whatsappNumber}
+              />
+            ) : (
+              <EmptyState
+                action={
+                  <button className="btn btn-primary" onClick={clearFilters} type="button">
+                    Clear filters
+                  </button>
+                }
+                description="Try a different chip, category, or price range."
+                title="No dishes match these filters"
+              />
+            )}
+
+            {comboOffers.length ? (
+              <section className="native-app-section">
+                <div className="section-heading compact">
+                  <div>
+                    <p className="eyebrow">Combo shortcuts</p>
+                    <h2>Build a fuller basket faster</h2>
+                  </div>
+                </div>
+                <div className="app-plan-grid">
+                  {comboOffers.map((combo) => (
+                    <article className="app-plan-card" key={combo.id}>
+                      <p className="eyebrow">Combo pick</p>
+                      <h3>{combo.title}</h3>
+                      <p>{combo.description}</p>
+                      <strong>{formatCurrency(combo.total)}</strong>
+                      <button
+                        className="btn btn-primary"
+                        onClick={() =>
+                          addItemsToCart(
+                            combo.items.map((item) => ({
+                              ...item,
+                              quantity: 1,
+                            })),
+                          )
+                        }
+                        type="button"
+                      >
+                        Add combo
+                      </button>
+                    </article>
+                  ))}
+                </div>
+              </section>
+            ) : null}
+          </div>
+        </section>
+      </PageTransition>
+    );
+  }
 
   return (
     <PageTransition>

@@ -8,6 +8,7 @@ import { SeoMeta } from '../components/seo/SeoMeta';
 import { useCart } from '../contexts/CartContext';
 import { useAppData } from '../contexts/AppDataContext';
 import { getFallbackImage } from '../data/fallbackImages';
+import { isNativeAppShell } from '../lib/nativeApp';
 import { getCartOfferState } from '../utils/pricing';
 import { formatCurrency } from '../utils/format';
 import { createCartOrderMessage, createWhatsAppLink } from '../utils/whatsapp';
@@ -17,6 +18,7 @@ export const CartPage = () => {
   const { items, updateQuantity, removeFromCart, clearCart } = useCart();
   const { settings, products } = useAppData();
   const { distanceKm, locationStatus, isLocating } = useStoreDistance();
+  const nativeAppShell = isNativeAppShell();
   const cartOfferState = getCartOfferState(
     items,
     products,
@@ -40,6 +42,152 @@ export const CartPage = () => {
                 </Link>
               }
             />
+          </div>
+        </section>
+      </PageTransition>
+    );
+  }
+
+  if (nativeAppShell) {
+    return (
+      <PageTransition>
+        <SeoMeta noIndex path="/cart" title="Cart" />
+        <section className="section first-section native-cart-screen">
+          <div className="container native-screen-stack">
+            <div className="native-screen-hero native-screen-hero-compact">
+              <div>
+                <p className="eyebrow">Cart</p>
+                <h1>Review, adjust, and move into checkout without losing momentum.</h1>
+              </div>
+              <div className="native-screen-hero-meta">
+                <span className="hero-chip">{cartOfferState.baseItems.length} cart lines</span>
+                <span className="hero-chip">
+                  {isLocating ? 'Checking distance...' : locationStatus}
+                </span>
+              </div>
+            </div>
+
+            <div className="native-cart-offer-card">
+              <Gift size={18} />
+              <div>
+                <strong>{cartOfferState.offerMessage}</strong>
+                <span>
+                  {cartOfferState.notDeliverable
+                    ? cartOfferState.deliveryMessage
+                    : cartOfferState.freebieUnlocked
+                      ? 'Your complimentary mango juice is already included.'
+                      : cartOfferState.deliveryMessage}
+                </span>
+              </div>
+            </div>
+
+            <div className="native-cart-list">
+              {cartOfferState.displayItems.map((item) => (
+                <article className="native-cart-card" key={item.lineId || item.id}>
+                  <SmartImage
+                    alt={item.name}
+                    className="cart-item-image"
+                    fallbackSrc={getFallbackImage(item.category)}
+                    sizes="(max-width: 768px) 100vw, 180px"
+                    src={item.image}
+                  />
+                  <div className="cart-copy">
+                    <div className="space-between">
+                      <div>
+                        <p className="eyebrow">{item.category}</p>
+                        <h3>
+                          {item.name}
+                          {item.isFreebie ? (
+                            <span className="freebie-inline-pill">
+                              <Gift size={14} />
+                              FREE
+                            </span>
+                          ) : null}
+                        </h3>
+                      </div>
+                      <strong>{item.isFreebie ? 'FREE' : formatCurrency(item.price * item.quantity)}</strong>
+                    </div>
+                    {item.addons?.length ? (
+                      <div className="cart-addon-list">
+                        {item.addons.map((addon) => (
+                          <span className="cart-addon-pill" key={`${item.lineId}-${addon.groupId}-${addon.id}`}>
+                            {addon.groupTitle}: {addon.name}
+                            {addon.price > 0 ? ` (+${formatCurrency(addon.price)})` : ''}
+                          </span>
+                        ))}
+                      </div>
+                    ) : null}
+                    {item.isFreebie ? (
+                      <div className="freebie-lock-row">
+                        <Gift size={16} />
+                        <span>Unlocked automatically with your ₹499+ order.</span>
+                      </div>
+                    ) : (
+                      <div className="space-between cart-item-footer">
+                        <div className="qty-control">
+                          <button onClick={() => updateQuantity(item.lineId || item.id, item.quantity - 1)} type="button">
+                            <Minus size={14} />
+                          </button>
+                          <span>{item.quantity}</span>
+                          <button onClick={() => updateQuantity(item.lineId || item.id, item.quantity + 1)} type="button">
+                            <Plus size={14} />
+                          </button>
+                        </div>
+                        <button className="icon-btn" onClick={() => removeFromCart(item.lineId || item.id)} type="button">
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </article>
+              ))}
+            </div>
+
+            <div className="native-checkout-dock">
+              <div className="native-checkout-summary">
+                <div className="summary-line">
+                  <span>Subtotal</span>
+                  <strong>{formatCurrency(cartOfferState.subtotal)}</strong>
+                </div>
+                <div className="summary-line">
+                  <span>{cartOfferState.deliveryFeeLabel}</span>
+                  <strong>{cartOfferState.deliveryFee ? formatCurrency(cartOfferState.deliveryFee) : 'FREE'}</strong>
+                </div>
+                <div className="summary-line total">
+                  <span>Total</span>
+                  <strong>{formatCurrency(cartOfferState.total)}</strong>
+                </div>
+              </div>
+              <div className="native-checkout-actions">
+                <button className="btn btn-tertiary" onClick={clearCart} type="button">
+                  Clear cart
+                </button>
+                <Link
+                  aria-disabled={cartOfferState.notDeliverable}
+                  className={`btn btn-primary ${cartOfferState.notDeliverable ? 'is-disabled' : ''}`.trim()}
+                  onClick={(event) => {
+                    if (cartOfferState.notDeliverable) {
+                      event.preventDefault();
+                    }
+                  }}
+                  to="/checkout"
+                >
+                  Proceed to checkout
+                </Link>
+              </div>
+              <a
+                className="btn btn-secondary full-width"
+                href={createWhatsAppLink(
+                  settings?.whatsappNumber,
+                  createCartOrderMessage(cartOfferState.displayItems, cartOfferState),
+                )}
+                rel="noreferrer"
+                target="_blank"
+              >
+                <MessageCircleMore size={16} />
+                Order on WhatsApp
+              </a>
+            </div>
           </div>
         </section>
       </PageTransition>

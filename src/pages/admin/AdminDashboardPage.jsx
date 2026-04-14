@@ -1,6 +1,9 @@
 import { Bike, LayoutDashboard, MapPin, ShoppingBasket, Users } from 'lucide-react';
 import { useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import { useAdmin } from '../../contexts/AdminContext';
+import { useAppData } from '../../contexts/AppDataContext';
+import { isNativeAppShell } from '../../lib/nativeApp';
 import { formatDateTime } from '../../utils/format';
 import { publicEnv, publicEnvFlags } from '../../lib/env';
 
@@ -22,8 +25,15 @@ export const AdminDashboardPage = () => {
     settingsDraft,
     updateSettingsDraftValue,
   } = useAdmin();
+  const { products } = useAppData();
+  const nativeAppShell = isNativeAppShell();
 
   const recentOrders = orders.slice(0, 5);
+  const pendingOrders = orders.filter((order) =>
+    ['Order Placed', 'Preparing'].includes(order.status),
+  ).length;
+  const handoffOrders = orders.filter((order) => order.status === 'Out for Delivery').length;
+  const unavailableProducts = products.filter((product) => product.isAvailable === false).length;
 
   const referralLeaders = useMemo(
     () =>
@@ -38,6 +48,126 @@ export const AdminDashboardPage = () => {
 
   if (!settingsDraft) {
     return null;
+  }
+
+  if (nativeAppShell) {
+    return (
+      <section className="native-admin-dashboard">
+        <div className="native-admin-taskboard">
+          <article className="native-admin-task-card">
+            <p className="eyebrow">New orders</p>
+            <strong>{pendingOrders}</strong>
+            <span>Orders waiting on kitchen attention right now.</span>
+            <Link className="btn btn-primary" to="/admin/orders">
+              Open orders
+            </Link>
+          </article>
+
+          <article className="native-admin-task-card">
+            <p className="eyebrow">Kitchen queue</p>
+            <strong>{pendingOrders}</strong>
+            <span>Prep actions and status buttons stay one tap away.</span>
+            <Link className="btn btn-secondary" to="/admin/kitchen">
+              Open kitchen
+            </Link>
+          </article>
+
+          <article className="native-admin-task-card">
+            <p className="eyebrow">Delivery handoff</p>
+            <strong>{handoffOrders}</strong>
+            <span>Orders already out for delivery and actively moving.</span>
+            <Link className="btn btn-secondary" to="/admin/orders">
+              Review handoff
+            </Link>
+          </article>
+
+          <article className="native-admin-task-card">
+            <p className="eyebrow">Catalog risk</p>
+            <strong>{unavailableProducts}</strong>
+            <span>Out-of-stock or paused items still needing review.</span>
+            <Link className="btn btn-secondary" to="/admin/products">
+              Review products
+            </Link>
+          </article>
+        </div>
+
+        <div className="native-admin-overview-grid">
+          <article className="panel-card admin-card-section">
+            <div className="section-heading compact">
+              <div>
+                <p className="eyebrow">Live operations</p>
+                <h2>What needs attention first</h2>
+              </div>
+            </div>
+
+            <div className="stack-list">
+              <div className="admin-status-row">
+                <span>Active orders</span>
+                <strong>{metrics.activeOrders}</strong>
+              </div>
+              <div className="admin-status-row">
+                <span>Delivery partners</span>
+                <strong>{metrics.deliveryPartners}</strong>
+              </div>
+              <div className="admin-status-row">
+                <span>Customers</span>
+                <strong>{metrics.customers}</strong>
+              </div>
+              <div className="admin-status-row">
+                <span>Live products</span>
+                <strong>{metrics.liveProducts}</strong>
+              </div>
+            </div>
+          </article>
+
+          <article className="panel-card admin-card-section">
+            <div className="section-heading compact">
+              <div>
+                <p className="eyebrow">Recent orders</p>
+                <h2>Latest customer activity</h2>
+              </div>
+            </div>
+
+            <div className="stack-list">
+              {recentOrders.map((order) => (
+                <div className="admin-list-card" key={order.id}>
+                  <div className="admin-order-summary">
+                    <strong>{order.orderNumber}</strong>
+                    <span>{order.status}</span>
+                  </div>
+                  <p>{order.customerName}</p>
+                  <small>{formatDateTime(order.createdAt)}</small>
+                </div>
+              ))}
+            </div>
+          </article>
+
+          <article className="panel-card admin-card-section">
+            <div className="section-heading compact">
+              <div>
+                <p className="eyebrow">Storefront controls</p>
+                <h2>Fast app-side editing shortcuts</h2>
+              </div>
+            </div>
+
+            <div className="native-admin-shortcuts">
+              <Link className="btn btn-secondary" to="/admin/hero">
+                Hero
+              </Link>
+              <Link className="btn btn-secondary" to="/admin/offers">
+                Offers
+              </Link>
+              <Link className="btn btn-secondary" to="/admin/theme">
+                Theme
+              </Link>
+              <Link className="btn btn-secondary" to="/admin/sections">
+                Sections
+              </Link>
+            </div>
+          </article>
+        </div>
+      </section>
+    );
   }
 
   const sections = settingsDraft.storefront?.sections || {};
