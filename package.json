@@ -7,9 +7,9 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "android:sync": "npm run build && node .\\node_modules\\@capacitor\\cli\\dist\\index.js sync android",
-    "android:build:debug": "npm run android:sync && tools\\build-android-debug.cmd",
-    "android:build:release": "npm run android:sync && tools\\build-android-release.cmd",
+    "android:legacy:sync": "npm run build && node .\\node_modules\\@capacitor\\cli\\dist\\index.js sync android",
+    "android:build:debug": "tools\\build-android-debug.cmd",
+    "android:build:release": "tools\\build-android-release.cmd",
     "android:open": "node .\\node_modules\\@capacitor\\cli\\dist\\index.js open android"
   },
   "dependencies": {
