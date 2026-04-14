@@ -1,12 +1,12 @@
 const APP_DOWNLOAD_HOST = 'https://www.sardarjifoodcorner.shop';
 
 export const APP_RELEASE = Object.freeze({
-  version: '1.7.0',
-  build: 15,
+  version: '1.7.1',
+  build: 16,
   minimumSupportedBuild: 5,
   minimumSupportedVersion: '1.3.1',
   forceUpdate: false,
-  releaseDate: '13 Apr 2026',
+  releaseDate: '14 Apr 2026',
   downloadPath: '/downloads/sardar-ji-food-corner.apk',
   downloadPagePath: '/download-app',
   fileName: 'sardar-ji-food-corner.apk',
@@ -14,6 +14,7 @@ export const APP_RELEASE = Object.freeze({
   updateLabel: 'Update App',
   supportNote: 'Android 8.0+ supported • Native-feel app shell • Fast install • Pure veg ordering app',
   releaseHighlights: [
+    'Website now keeps a dedicated app download popup and download page, while the installed app shell hides download-only detours',
     'Customer experience now opens in a tighter app shell with a compact top bar, richer fixed bottom navigation, and faster browse-first layout',
     'Home screen is rebuilt around quick chips, category tiles, featured food cards, and horizontal meal rails instead of long website-style sections',
     'Menu browsing now uses app-like filter stacks, live search query handling, and fast-scanning product grids without sidebar-heavy layout',

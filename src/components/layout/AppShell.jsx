@@ -3,6 +3,7 @@ import { Footer } from './Footer';
 import { TopAppBar } from './TopAppBar';
 import { BottomNavigation } from './BottomNavigation';
 import { SpecialOfferPopup } from './SpecialOfferPopup';
+import { WebsiteDownloadPopup } from './WebsiteDownloadPopup';
 import { WhatsAppFab } from './WhatsAppFab';
 import { FloatingCartBar } from './FloatingCartBar';
 import { CartActionToast } from '../order/CartActionToast';
@@ -46,6 +47,7 @@ export const AppShell = () => {
         enabled={location.pathname === '/' && appConfig.sections?.popup !== false}
         phoneNumber={settings?.whatsappNumber}
       />
+      <WebsiteDownloadPopup />
       {location.pathname !== '/checkout' ? (
         <CheckoutRecoveryPopup
           onDismiss={() => {

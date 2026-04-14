@@ -322,6 +322,66 @@ html.dark .native-app-update-prompt {
   box-shadow: 0 24px 64px rgba(0, 0, 0, 0.34);
 }
 
+.website-download-popup {
+  border: 1px solid rgba(255, 107, 0, 0.18);
+  background:
+    radial-gradient(circle at top right, rgba(243, 202, 66, 0.22), transparent 28%),
+    linear-gradient(180deg, rgba(255, 253, 247, 0.97), rgba(247, 248, 239, 0.95));
+  box-shadow: 0 24px 65px rgba(18, 24, 38, 0.2);
+}
+
+.website-download-popup-copy {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.website-download-popup-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  width: max-content;
+  padding: 0.4rem 0.72rem;
+  color: #ff6b00;
+  border-radius: 999px;
+  background: rgba(255, 107, 0, 0.12);
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.website-download-popup h3 {
+  color: #182316;
+}
+
+.website-download-popup p {
+  color: #526257;
+}
+
+.website-download-popup small {
+  color: #d45500;
+}
+
+html.dark .website-download-popup {
+  border-color: rgba(244, 247, 242, 0.08);
+  background:
+    radial-gradient(circle at top right, rgba(243, 202, 66, 0.16), transparent 26%),
+    linear-gradient(180deg, rgba(18, 25, 32, 0.96), rgba(14, 19, 24, 0.95));
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.34);
+}
+
+html.dark .website-download-popup h3 {
+  color: #f4f7f2;
+}
+
+html.dark .website-download-popup p {
+  color: #c6d1cb;
+}
+
+html.dark .website-download-popup small {
+  color: #ffd38a;
+}
+
 html.dark .native-app-update-copy strong {
   color: #f4f7f2;
 }
