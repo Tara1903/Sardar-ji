@@ -10,14 +10,26 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Email
+import androidx.compose.material.icons.outlined.Favorite
+import androidx.compose.material.icons.outlined.FavoriteBorder
+import androidx.compose.material.icons.outlined.Lock
+import androidx.compose.material.icons.outlined.PersonOutline
+import androidx.compose.material.icons.outlined.Phone
+import androidx.compose.material.icons.outlined.Visibility
+import androidx.compose.material.icons.outlined.VisibilityOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
@@ -36,7 +48,11 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.sardarjifood.app.PendingPaymentContext
@@ -46,6 +62,7 @@ import com.sardarjifood.app.data.createInitialAddonSelection
 import com.sardarjifood.app.data.isAddonSelectionComplete
 import com.sardarjifood.app.data.repository.RazorpayCheckoutPayload
 import com.sardarjifood.app.model.Address
+import com.sardarjifood.app.model.AppSession
 import com.sardarjifood.app.model.Product
 import kotlinx.coroutines.launch
 
@@ -141,18 +158,17 @@ fun AddonBottomSheet(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AuthScreen(viewModel: MainViewModel, onDone: () -> Unit) {
-    val state by viewModel.uiState.collectAsStateWithLifecycle()
-    var isRegister by rememberSaveable { mutableStateOf(false) }
-    var name by rememberSaveable { mutableStateOf("") }
-    var email by rememberSaveable { mutableStateOf("") }
-    var phone by rememberSaveable { mutableStateOf("") }
-    var password by rememberSaveable { mutableStateOf("") }
-    var referral by rememberSaveable { mutableStateOf("") }
+fun AuthScreen(
+    authViewModel: AuthViewModel,
+    session: AppSession?,
+    onDone: () -> Unit,
+) {
+    val state by authViewModel.uiState.collectAsStateWithLifecycle()
 
-    LaunchedEffect(state.session?.user?.id) {
-        if (state.session != null) onDone()
+    LaunchedEffect(session?.user?.id) {
+        if (session != null) onDone()
     }
 
     LazyColumn(
@@ -161,51 +177,158 @@ fun AuthScreen(viewModel: MainViewModel, onDone: () -> Unit) {
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
         item {
-            Text(if (isRegister) "Create your app account" else "Welcome back", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.ExtraBold)
+            ElevatedCard {
+                Column(modifier = Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        if (state.isRegister) "Create your app account" else "Welcome back",
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.ExtraBold,
+                    )
+                    Text(
+                        if (state.isRegister) "Save your addresses, track orders, and reorder faster next time."
+                        else "Sign in to sync your cart, orders, rewards, and addresses.",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
         }
-        if (isRegister) {
+        if (state.isRegister) {
             item {
-                OutlinedTextField(value = name, onValueChange = { name = it }, modifier = Modifier.fillMaxWidth(), label = { Text("Name") })
+                OutlinedTextField(
+                    value = state.name,
+                    onValueChange = authViewModel::updateName,
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text("Name") },
+                    supportingText = { state.fieldErrors["name"]?.let { Text(it) } },
+                    isError = state.fieldErrors.containsKey("name"),
+                    leadingIcon = { Icon(Icons.Outlined.PersonOutline, contentDescription = null) },
+                    singleLine = true,
+                )
             }
             item {
-                OutlinedTextField(value = phone, onValueChange = { phone = it }, modifier = Modifier.fillMaxWidth(), label = { Text("Phone number") })
+                OutlinedTextField(
+                    value = state.phoneNumber,
+                    onValueChange = authViewModel::updatePhoneNumber,
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text("Phone number") },
+                    supportingText = { state.fieldErrors["phone"]?.let { Text(it) } },
+                    isError = state.fieldErrors.containsKey("phone"),
+                    leadingIcon = { Icon(Icons.Outlined.Phone, contentDescription = null) },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                )
             }
         }
         item {
-            OutlinedTextField(value = email, onValueChange = { email = it }, modifier = Modifier.fillMaxWidth(), label = { Text("Email") })
+            OutlinedTextField(
+                value = state.email,
+                onValueChange = authViewModel::updateEmail,
+                modifier = Modifier.fillMaxWidth(),
+                label = { Text("Email") },
+                supportingText = { state.fieldErrors["email"]?.let { Text(it) } },
+                isError = state.fieldErrors.containsKey("email"),
+                leadingIcon = { Icon(Icons.Outlined.Email, contentDescription = null) },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+            )
         }
         item {
-            OutlinedTextField(value = password, onValueChange = { password = it }, modifier = Modifier.fillMaxWidth(), label = { Text("Password") })
-        }
-        if (isRegister) {
-            item {
-                OutlinedTextField(value = referral, onValueChange = { referral = it }, modifier = Modifier.fillMaxWidth(), label = { Text("Referral code (optional)") })
-            }
-        }
-        item {
-            Button(
-                onClick = {
-                    if (isRegister) {
-                        viewModel.signUp(name, email, phone, password, referral)
-                    } else {
-                        viewModel.signIn(email, password)
+            OutlinedTextField(
+                value = state.password,
+                onValueChange = authViewModel::updatePassword,
+                modifier = Modifier.fillMaxWidth(),
+                label = { Text("Password") },
+                supportingText = { state.fieldErrors["password"]?.let { Text(it) } },
+                isError = state.fieldErrors.containsKey("password"),
+                leadingIcon = { Icon(Icons.Outlined.Lock, contentDescription = null) },
+                trailingIcon = {
+                    IconButton(onClick = authViewModel::togglePasswordVisibility) {
+                        Icon(
+                            imageVector = if (state.passwordVisible) Icons.Outlined.VisibilityOff else Icons.Outlined.Visibility,
+                            contentDescription = if (state.passwordVisible) "Hide password" else "Show password",
+                        )
                     }
                 },
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Text(if (isRegister) "Create account" else "Sign in")
+                visualTransformation = if (state.passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                singleLine = true,
+            )
+        }
+        if (state.isRegister) {
+            item {
+                OutlinedTextField(
+                    value = state.referralCode,
+                    onValueChange = authViewModel::updateReferralCode,
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text("Referral code (optional)") },
+                    singleLine = true,
+                )
             }
         }
         item {
-            TextButton(onClick = { isRegister = !isRegister }) {
-                Text(if (isRegister) "Already have an account? Sign in" else "New here? Create an account")
+            PrimaryActionButton(
+                text = if (state.isRegister) "Create account" else "Sign in",
+                onClick = authViewModel::submit,
+                modifier = Modifier.fillMaxWidth(),
+                loading = state.isSubmitting,
+            )
+        }
+        item {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                TextButton(onClick = { authViewModel.setRegisterMode(!state.isRegister) }) {
+                    Text(if (state.isRegister) "Already have an account? Sign in" else "New here? Create an account")
+                }
+                if (!state.isRegister) {
+                    TextButton(onClick = authViewModel::toggleForgotPassword) {
+                        Text("Forgot password?")
+                    }
+                }
+            }
+        }
+    }
+
+    if (state.showForgotPassword) {
+        ModalBottomSheet(onDismissRequest = authViewModel::toggleForgotPassword) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp, vertical = 10.dp),
+                verticalArrangement = Arrangement.spacedBy(14.dp),
+            ) {
+                Text("Reset password", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+                Text("We’ll send a secure reset link to your account email.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                OutlinedTextField(
+                    value = state.email,
+                    onValueChange = authViewModel::updateEmail,
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text("Email") },
+                    supportingText = { state.fieldErrors["email"]?.let { Text(it) } },
+                    isError = state.fieldErrors.containsKey("email"),
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                )
+                PrimaryActionButton(
+                    text = "Send reset link",
+                    onClick = authViewModel::requestPasswordReset,
+                    modifier = Modifier.fillMaxWidth(),
+                    loading = state.isSendingReset,
+                )
             }
         }
     }
 }
 
 @Composable
-fun ProductDetailRoute(product: Product?, viewModel: MainViewModel, onBack: () -> Unit) {
+fun ProductDetailRoute(
+    product: Product?,
+    viewModel: MainViewModel,
+    onBack: () -> Unit,
+    favoriteProductIds: Set<String> = emptySet(),
+    onToggleFavorite: (String) -> Unit = {},
+) {
     if (product == null) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             InfoCard(title = "Product not found", body = "This item may have moved or become unavailable.", actionLabel = "Back", onAction = onBack)
@@ -236,7 +359,18 @@ fun ProductDetailRoute(product: Product?, viewModel: MainViewModel, onBack: () -
                 TextButton(onClick = onBack) { Text("Back") }
             }
             item {
-                SquareFoodImage(image = product.image)
+                Box {
+                    SquareFoodImage(image = product.image)
+                    IconButton(
+                        onClick = { onToggleFavorite(product.id) },
+                        modifier = Modifier.align(Alignment.TopEnd),
+                    ) {
+                        Icon(
+                            imageVector = if (favoriteProductIds.contains(product.id)) Icons.Outlined.Favorite else Icons.Outlined.FavoriteBorder,
+                            contentDescription = null,
+                        )
+                    }
+                }
             }
             item {
                 Text(product.name, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.ExtraBold)

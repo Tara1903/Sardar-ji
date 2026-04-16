@@ -69,17 +69,38 @@ fun AdminOverviewScreen(viewModel: MainViewModel) {
 }
 
 @Composable
-fun AdminOrdersScreen(viewModel: MainViewModel) {
+fun AdminOrdersScreen(viewModel: MainViewModel, adminViewModel: AdminViewModel) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val adminState by adminViewModel.uiState.collectAsStateWithLifecycle()
+    val filteredOrders =
+        state.orders.filter { order ->
+            when (adminState.ordersFilter) {
+                "active" -> order.status.lowercase() !in setOf("delivered", "cancelled")
+                "completed" -> order.status.lowercase() in setOf("delivered", "cancelled")
+                else -> true
+            }
+        }
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         item {
-            Text("Order control", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text("Order control", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    FilterChip(selected = adminState.ordersFilter == "all", onClick = { adminViewModel.setOrdersFilter("all") }, label = { Text("All") })
+                    FilterChip(selected = adminState.ordersFilter == "active", onClick = { adminViewModel.setOrdersFilter("active") }, label = { Text("Active") })
+                    FilterChip(selected = adminState.ordersFilter == "completed", onClick = { adminViewModel.setOrdersFilter("completed") }, label = { Text("Completed") })
+                }
+            }
         }
-        items(state.orders) { order ->
+        if (filteredOrders.isEmpty()) {
+            item {
+                InfoCard(title = "No orders in this view", body = "As new orders come in or complete, they will appear here.")
+            }
+        } else {
+            items(filteredOrders) { order ->
             ElevatedCard {
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
@@ -101,20 +122,43 @@ fun AdminOrdersScreen(viewModel: MainViewModel) {
                 }
             }
         }
+        }
     }
 }
 
 @Composable
-fun KitchenQueueScreen(viewModel: MainViewModel) {
+fun KitchenQueueScreen(viewModel: MainViewModel, adminViewModel: AdminViewModel) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
-    val kitchenOrders = state.orders.filter { it.status.lowercase() in setOf("confirmed", "preparing") }
+    val adminState by adminViewModel.uiState.collectAsStateWithLifecycle()
+    val kitchenOrders =
+        state.orders.filter {
+            when (adminState.kitchenFilter) {
+                "confirmed" -> it.status.equals("confirmed", true)
+                "preparing" -> it.status.equals("preparing", true)
+                else -> it.status.lowercase() in setOf("confirmed", "preparing")
+            }
+        }
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        item { Text("Kitchen queue", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold) }
-        items(kitchenOrders) { order ->
+        item {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text("Kitchen queue", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    FilterChip(selected = adminState.kitchenFilter == "all", onClick = { adminViewModel.setKitchenFilter("all") }, label = { Text("All") })
+                    FilterChip(selected = adminState.kitchenFilter == "confirmed", onClick = { adminViewModel.setKitchenFilter("confirmed") }, label = { Text("Confirmed") })
+                    FilterChip(selected = adminState.kitchenFilter == "preparing", onClick = { adminViewModel.setKitchenFilter("preparing") }, label = { Text("Preparing") })
+                }
+            }
+        }
+        if (kitchenOrders.isEmpty()) {
+            item {
+                InfoCard(title = "Kitchen queue is clear", body = "Confirmed and preparing orders will appear here.")
+            }
+        } else {
+            items(kitchenOrders) { order ->
             ElevatedCard {
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(order.orderNumber, fontWeight = FontWeight.Bold)
@@ -126,6 +170,7 @@ fun KitchenQueueScreen(viewModel: MainViewModel) {
                     }
                 }
             }
+        }
         }
     }
 }

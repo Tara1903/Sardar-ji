@@ -58,7 +58,9 @@ interface AuthRepository {
         referralCode: String = "",
     ): AppSession
     suspend fun signOut()
+    suspend fun requestPasswordReset(email: String)
     suspend fun refreshProfile(): UserProfile?
+    suspend fun updateProfile(name: String, email: String): UserProfile
     suspend fun updateAddresses(addresses: List<Address>): UserProfile
     suspend fun registerNativePushToken(token: String)
 }

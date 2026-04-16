@@ -1,12 +1,12 @@
 const APP_DOWNLOAD_HOST = 'https://www.sardarjifoodcorner.shop';
 
 export const APP_RELEASE = Object.freeze({
-  version: '2.0.0',
-  build: 18,
+  version: '2.1.0',
+  build: 19,
   minimumSupportedBuild: 18,
   minimumSupportedVersion: '2.0.0',
   forceUpdate: false,
-  releaseDate: '15 Apr 2026',
+  releaseDate: '16 Apr 2026',
   downloadPath: '/downloads/sardar-ji-food-corner.apk',
   downloadPagePath: '/download-app',
   fileName: 'sardar-ji-food-corner.apk',
@@ -14,12 +14,12 @@ export const APP_RELEASE = Object.freeze({
   updateLabel: 'Update App',
   supportNote: 'Android 8.0+ supported • Full native Android app • Kotlin + Jetpack Compose • Pure veg ordering app',
   releaseHighlights: [
-    'The Android app is now rebuilt as a true native app using Kotlin and Jetpack Compose instead of the old website-in-a-webview runtime',
-    'Customer flow now runs as a real bottom-tab ordering app with native home, browse, orders, cart, profile, sticky actions, pull-to-refresh, and app-first product browsing',
-    'Admin now opens into an operations shell with task-first navigation across overview, orders, kitchen queue, catalog controls, and storefront settings',
-    'Delivery now runs as a dedicated workflow shell with queue segments, direct call, WhatsApp, map actions, and one-tap status movement',
-    'Offline-friendly local persistence now uses native Room and DataStore for cart, cached catalog snapshots, and session bootstrap instead of browser storage',
-    'Supabase auth and data, Razorpay checkout, Firebase notifications, deep links, add-ons, subscriptions, referrals, and checkout logic remain connected to the same backend stack',
+    'Authentication is now hardened with proper validation, loading states, password visibility toggle, reliable session restore, logout, and Supabase password reset flow',
+    'The app now has a full Settings experience with instant Light, Dark, and System theme switching, persisted notification preferences, profile editing, FAQ, and support contact actions',
+    'Customer screens were upgraded into a more premium ordering flow with skeleton loading, favorites, improved browse sorting, stronger cart and order cards, and cleaner product-first browsing',
+    'Admin and delivery shells now support clearer task filtering, role-specific control surfaces, and a more polished operational workflow inside the native app',
+    'Shared Material 3 app components now provide better motion, offline notice handling, loading placeholders, reusable action buttons, and more consistent card-based UI across the app',
+    'The native Kotlin + Jetpack Compose app remains connected to the existing Supabase, Razorpay, Firebase, and Vercel backend stack without changing the working business logic',
   ],
 });
 

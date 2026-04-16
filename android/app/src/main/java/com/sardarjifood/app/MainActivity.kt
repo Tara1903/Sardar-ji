@@ -12,11 +12,13 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.core.content.ContextCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import com.razorpay.Checkout
 import com.razorpay.PaymentData
 import com.razorpay.PaymentResultWithDataListener
 import com.sardarjifood.app.model.Address
+import com.sardarjifood.app.ui.AppStateViewModel
 import com.sardarjifood.app.ui.MainViewModel
 import com.sardarjifood.app.ui.NativeFoodApp
 import com.sardarjifood.app.ui.theme.SardarJiTheme
@@ -31,6 +33,7 @@ data class PendingPaymentContext(
 )
 
 class MainActivity : ComponentActivity(), PaymentResultWithDataListener {
+    private val appStateViewModel: AppStateViewModel by viewModels()
     private val viewModel: MainViewModel by viewModels()
     private var pendingPaymentContext: PendingPaymentContext? = null
 
@@ -45,8 +48,10 @@ class MainActivity : ComponentActivity(), PaymentResultWithDataListener {
         requestNotificationPermissionIfNeeded()
 
         setContent {
-            SardarJiTheme {
+            val appState = appStateViewModel.uiState.collectAsStateWithLifecycle()
+            SardarJiTheme(themeMode = appState.value.preferences.themeMode) {
                 NativeFoodApp(
+                    appStateViewModel = appStateViewModel,
                     viewModel = viewModel,
                     initialDeepLink = intent?.dataString ?: intent?.getStringExtra("deep_link_path"),
                     onLaunchRazorpay = { checkoutPayload, paymentContext ->

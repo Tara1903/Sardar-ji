@@ -4,7 +4,9 @@ import android.content.Context
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import com.sardarjifood.app.data.local.AppDatabase
+import com.sardarjifood.app.data.local.AppPreferencesStore
 import com.sardarjifood.app.data.local.SessionStore
+import com.sardarjifood.app.data.network.NetworkMonitor
 import com.sardarjifood.app.data.network.SiteHttpClient
 import com.sardarjifood.app.data.network.SupabaseHttpClient
 import com.sardarjifood.app.data.network.createSharedHttpClient
@@ -28,6 +30,8 @@ class AppContainer(context: Context) {
     private val okHttpClient = createSharedHttpClient()
     private val database = AppDatabase.getInstance(context)
     private val sessionStore = SessionStore(context)
+    val preferencesStore = AppPreferencesStore(context)
+    val networkMonitor = NetworkMonitor(context)
     private val supabaseHttpClient = SupabaseHttpClient(okHttpClient, gson)
     private val siteHttpClient = SiteHttpClient(okHttpClient, gson)
 

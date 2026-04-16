@@ -4,6 +4,7 @@ import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.reflect.TypeToken
+import com.sardarjifood.app.BuildConfig
 import com.sardarjifood.app.data.mapCategories
 import com.sardarjifood.app.data.mapOrders
 import com.sardarjifood.app.data.mapProducts
@@ -80,11 +81,13 @@ class NativeAuthRepository(
             return null
         }
 
-        return runCatching { fetchSession(token) }.getOrElse {
-            sessionStore.clear()
-            _sessionFlow.value = null
-            null
-        }
+        return runCatching { fetchSession(token) }
+            .onSuccess { session -> _sessionFlow.value = session }
+            .getOrElse {
+                sessionStore.clear()
+                _sessionFlow.value = null
+                null
+            }
     }
 
     override suspend fun signIn(email: String, password: String): AppSession {
@@ -140,8 +143,33 @@ class NativeAuthRepository(
     }
 
     override suspend fun signOut() {
+        currentSession()?.let { session ->
+            runCatching {
+                supabaseHttpClient.request(
+                    path = "auth/v1/logout",
+                    method = "POST",
+                    token = session.accessToken,
+                )
+            }
+        }
         sessionStore.clear()
         _sessionFlow.value = null
+    }
+
+    override suspend fun requestPasswordReset(email: String) {
+        val normalizedEmail = email.trim().lowercase()
+        if (normalizedEmail.isBlank()) {
+            throw AppHttpException("Enter the email linked to your account.", 400)
+        }
+
+        supabaseHttpClient.request(
+            path = "auth/v1/recover",
+            method = "POST",
+            body = mapOf(
+                "email" to normalizedEmail,
+                "redirect_to" to "${BuildConfig.APP_BASE_URL.trimEnd('/')}/reset-password",
+            ),
+        )
     }
 
     override suspend fun refreshProfile(): UserProfile? {
@@ -149,6 +177,54 @@ class NativeAuthRepository(
         return fetchUserProfile(session.accessToken, session.user.id).also { profile ->
             _sessionFlow.value = session.copy(user = profile)
         }
+    }
+
+    override suspend fun updateProfile(name: String, email: String): UserProfile {
+        val session = currentSession() ?: throw SessionRequiredException()
+        val normalizedName = name.trim()
+        val normalizedEmail = email.trim().lowercase()
+        if (normalizedName.isBlank()) {
+            throw AppHttpException("Please enter your name.", 400)
+        }
+        if (normalizedEmail.isBlank()) {
+            throw AppHttpException("Please enter your email.", 400)
+        }
+
+        val rows =
+            supabaseHttpClient.request(
+                path = "rest/v1/users?id=eq.${session.user.id}&select=*",
+                method = "PATCH",
+                token = session.accessToken,
+                body = mapOf(
+                    "name" to normalizedName,
+                    "email" to normalizedEmail,
+                ),
+                preferRepresentation = true,
+            ).asJsonArrayOrEmpty()
+
+        val updatedPublicProfile = rows.firstOrNull()?.asJsonObjectOrEmpty()?.toUserProfile() ?: session.user.copy(
+            name = normalizedName,
+            email = normalizedEmail,
+        )
+
+        runCatching {
+            supabaseHttpClient.request(
+                path = "auth/v1/user",
+                method = "PUT",
+                token = session.accessToken,
+                body = mapOf(
+                    "email" to normalizedEmail,
+                    "data" to mapOf(
+                        "name" to normalizedName,
+                        "phoneNumber" to updatedPublicProfile.phoneNumber,
+                        "role" to updatedPublicProfile.role.name.lowercase(),
+                    ),
+                ),
+            )
+        }
+
+        _sessionFlow.value = session.copy(user = updatedPublicProfile)
+        return updatedPublicProfile
     }
 
     override suspend fun updateAddresses(addresses: List<Address>): UserProfile {

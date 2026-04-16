@@ -24,6 +24,7 @@ import com.sardarjifood.app.model.RewardCoupon
 import com.sardarjifood.app.model.StoreSettings
 import com.sardarjifood.app.model.Subscription
 import com.sardarjifood.app.model.UserProfile
+import java.util.UUID
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -35,6 +36,7 @@ import kotlinx.coroutines.tasks.await
 data class NativeUiState(
     val booting: Boolean = true,
     val session: AppSession? = null,
+    val networkAvailable: Boolean = true,
     val settings: StoreSettings = StoreSettings(),
     val categories: List<Category> = emptyList(),
     val products: List<Product> = emptyList(),
@@ -53,6 +55,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val container = (application as SardarJiApplication).container
     private val _uiState = MutableStateFlow(NativeUiState())
     val uiState: StateFlow<NativeUiState> = _uiState.asStateFlow()
+    private var hydratedSessionUserId: String? = null
 
     val cartLines: StateFlow<List<CartLine>> =
         container.cartRepository.cartLines.stateIn(
@@ -62,6 +65,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         )
 
     init {
+        observeSession()
+        observeNetwork()
         bootstrap()
     }
 
@@ -94,11 +99,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                             errorMessage = error.message ?: "Unable to load the catalog.",
                         )
                 }
-
-            if (restoredSession != null) {
-                refreshAuthenticatedData(forceRefresh = forceRefresh)
-                registerPushToken()
-            }
         }
     }
 
@@ -224,6 +224,19 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun removeCartLine(lineId: String) {
         viewModelScope.launch {
             container.cartRepository.removeLine(lineId)
+        }
+    }
+
+    fun reorder(order: Order) {
+        viewModelScope.launch {
+            order.items.forEach { item ->
+                val clonedLine =
+                    item.copy(
+                        lineId = "${item.lineId}-${UUID.randomUUID()}",
+                    )
+                container.cartRepository.upsertLine(clonedLine)
+            }
+            _uiState.value = _uiState.value.copy(noticeMessage = "${order.orderNumber} added back to cart")
         }
     }
 
@@ -443,6 +456,40 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 .onSuccess { token ->
                     runCatching { container.authRepository.registerNativePushToken(token) }
                 }
+        }
+    }
+
+    private fun observeSession() {
+        viewModelScope.launch {
+            container.authRepository.sessionFlow.collect { session ->
+                val previousId = _uiState.value.session?.user?.id
+                _uiState.value = _uiState.value.copy(session = session)
+
+                when {
+                    session == null -> {
+                        hydratedSessionUserId = null
+                        _uiState.value =
+                            _uiState.value.copy(
+                                orders = emptyList(),
+                                rewardCoupons = emptyList(),
+                                subscription = null,
+                            )
+                    }
+                    session.user.id != hydratedSessionUserId -> {
+                        hydratedSessionUserId = session.user.id
+                        refreshAuthenticatedData(forceRefresh = previousId != session.user.id)
+                        registerPushToken()
+                    }
+                }
+            }
+        }
+    }
+
+    private fun observeNetwork() {
+        viewModelScope.launch {
+            container.networkMonitor.isOnline.collect { isOnline ->
+                _uiState.value = _uiState.value.copy(networkAvailable = isOnline)
+            }
         }
     }
 }
