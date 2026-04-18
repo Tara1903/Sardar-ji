@@ -29,7 +29,7 @@ class AppContainer(context: Context) {
     val gson: Gson = GsonBuilder().create()
     private val okHttpClient = createSharedHttpClient()
     private val database = AppDatabase.getInstance(context)
-    private val sessionStore = SessionStore(context)
+    val sessionStore = SessionStore(context)
     val preferencesStore = AppPreferencesStore(context)
     val networkMonitor = NetworkMonitor(context)
     private val supabaseHttpClient = SupabaseHttpClient(okHttpClient, gson)

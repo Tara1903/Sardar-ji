@@ -1,12 +1,12 @@
 const APP_DOWNLOAD_HOST = 'https://www.sardarjifoodcorner.shop';
 
 export const APP_RELEASE = Object.freeze({
-  version: '2.1.0',
-  build: 19,
+  version: '2.1.1',
+  build: 20,
   minimumSupportedBuild: 18,
   minimumSupportedVersion: '2.0.0',
   forceUpdate: false,
-  releaseDate: '16 Apr 2026',
+  releaseDate: '19 Apr 2026',
   downloadPath: '/downloads/sardar-ji-food-corner.apk',
   downloadPagePath: '/download-app',
   fileName: 'sardar-ji-food-corner.apk',
@@ -14,12 +14,11 @@ export const APP_RELEASE = Object.freeze({
   updateLabel: 'Update App',
   supportNote: 'Android 8.0+ supported • Full native Android app • Kotlin + Jetpack Compose • Pure veg ordering app',
   releaseHighlights: [
-    'Authentication is now hardened with proper validation, loading states, password visibility toggle, reliable session restore, logout, and Supabase password reset flow',
-    'The app now has a full Settings experience with instant Light, Dark, and System theme switching, persisted notification preferences, profile editing, FAQ, and support contact actions',
-    'Customer screens were upgraded into a more premium ordering flow with skeleton loading, favorites, improved browse sorting, stronger cart and order cards, and cleaner product-first browsing',
-    'Admin and delivery shells now support clearer task filtering, role-specific control surfaces, and a more polished operational workflow inside the native app',
-    'Shared Material 3 app components now provide better motion, offline notice handling, loading placeholders, reusable action buttons, and more consistent card-based UI across the app',
-    'The native Kotlin + Jetpack Compose app remains connected to the existing Supabase, Razorpay, Firebase, and Vercel backend stack without changing the working business logic',
+    'Idle-reopen crash paths were hardened with safer session and preferences recovery, so damaged local state now resets cleanly instead of crashing the app',
+    'Bootstrap and authenticated refresh flows now tolerate partial failures and render safe fallback UI instead of letting one failed request break app startup',
+    'Production JSON parsing is now more defensive for settings, profile metadata, orders, and cached snapshots, reducing crashes caused by unexpected live payload shapes',
+    'Background sync, push notification handling, and app startup now emit structured Android logs for faster diagnosis of any future device-specific stability issues',
+    'Malformed cached snapshots are now discarded surgically so bad local data cannot keep breaking the app on reopen',
   ],
 });
 

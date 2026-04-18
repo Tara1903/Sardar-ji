@@ -10,6 +10,7 @@ import android.os.Build
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
+import com.sardarjifood.app.AppLog
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 import com.sardarjifood.app.MainActivity
@@ -18,46 +19,53 @@ import com.sardarjifood.app.R
 class SardarJiFirebaseMessagingService : FirebaseMessagingService() {
     override fun onNewToken(token: String) {
         super.onNewToken(token)
+        AppLog.info("PushService", "Received refreshed FCM token.")
     }
 
     override fun onMessageReceived(message: RemoteMessage) {
         super.onMessageReceived(message)
-        createChannel()
+        runCatching {
+            createChannel()
 
-        val title = message.notification?.title ?: message.data["title"] ?: "Sardar Ji Food Corner"
-        val body = message.notification?.body ?: message.data["message"] ?: "You have a new update."
-        val targetUrl = message.data["url"] ?: message.data["deep_link"] ?: "/orders"
-        val intent =
-            Intent(this, MainActivity::class.java).apply {
-                putExtra("deep_link_path", targetUrl)
-                flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            val title = message.notification?.title ?: message.data["title"] ?: "Sardar Ji Food Corner"
+            val body = message.notification?.body ?: message.data["message"] ?: "You have a new update."
+            val targetUrl = sanitizeTargetUrl(message.data["url"] ?: message.data["deep_link"])
+            val intent =
+                Intent(this, MainActivity::class.java).apply {
+                    putExtra("deep_link_path", targetUrl)
+                    flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                }
+            val pendingIntent =
+                PendingIntent.getActivity(
+                    this,
+                    targetUrl.hashCode(),
+                    intent,
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+                )
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+                ActivityCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+            ) {
+                AppLog.warn("PushService", "Notification permission missing; skipping notification display.")
+                return
             }
-        val pendingIntent =
-            PendingIntent.getActivity(
-                this,
-                targetUrl.hashCode(),
-                intent,
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+
+            NotificationManagerCompat.from(this).notify(
+                System.currentTimeMillis().toInt(),
+                NotificationCompat.Builder(this, CHANNEL_ID)
+                    .setSmallIcon(R.mipmap.ic_launcher)
+                    .setContentTitle(title)
+                    .setContentText(body)
+                    .setStyle(NotificationCompat.BigTextStyle().bigText(body))
+                    .setContentIntent(pendingIntent)
+                    .setPriority(NotificationCompat.PRIORITY_HIGH)
+                    .setAutoCancel(true)
+                    .build(),
             )
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
-            ActivityCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
-        ) {
-            return
+            AppLog.info("PushService", "Displayed push notification for $targetUrl.")
+        }.onFailure { throwable ->
+            AppLog.error("PushService", "Failed while handling incoming FCM message.", throwable)
         }
-
-        NotificationManagerCompat.from(this).notify(
-            System.currentTimeMillis().toInt(),
-            NotificationCompat.Builder(this, CHANNEL_ID)
-                .setSmallIcon(R.mipmap.ic_launcher)
-                .setContentTitle(title)
-                .setContentText(body)
-                .setStyle(NotificationCompat.BigTextStyle().bigText(body))
-                .setContentIntent(pendingIntent)
-                .setPriority(NotificationCompat.PRIORITY_HIGH)
-                .setAutoCancel(true)
-                .build(),
-        )
     }
 
     private fun createChannel() {
@@ -76,5 +84,19 @@ class SardarJiFirebaseMessagingService : FirebaseMessagingService() {
 
     companion object {
         const val CHANNEL_ID = "sjfc_orders"
+    }
+
+    private fun sanitizeTargetUrl(value: String?): String {
+        val candidate = value?.trim().orEmpty()
+        return when {
+            candidate.isBlank() -> "/orders"
+            candidate.startsWith("/") -> candidate
+            candidate.startsWith("sjfc://") -> candidate.removePrefix("sjfc://").let { "/${it.trimStart('/')}" }
+            candidate.startsWith("https://www.sardarjifoodcorner.shop") ->
+                candidate.removePrefix("https://www.sardarjifoodcorner.shop").ifBlank { "/orders" }
+            candidate.startsWith("https://sardarjifoodcorner.shop") ->
+                candidate.removePrefix("https://sardarjifoodcorner.shop").ifBlank { "/orders" }
+            else -> "/orders"
+        }
     }
 }

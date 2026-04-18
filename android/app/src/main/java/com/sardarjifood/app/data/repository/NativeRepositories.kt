@@ -4,6 +4,7 @@ import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.reflect.TypeToken
+import com.sardarjifood.app.AppLog
 import com.sardarjifood.app.BuildConfig
 import com.sardarjifood.app.data.mapCategories
 import com.sardarjifood.app.data.mapOrders
@@ -59,6 +60,21 @@ private suspend fun AppDao.writeSnapshot(key: String, json: String) {
     upsertSnapshot(SnapshotEntity(key = key, json = json, updatedAt = System.currentTimeMillis()))
 }
 
+private suspend inline fun <reified T> readSnapshotOrDiscard(
+    gson: Gson,
+    dao: AppDao,
+    key: String,
+    label: String,
+): T? {
+    val snapshot = dao.readSnapshot(key) ?: return null
+    val parsed = gson.fromJsonOrNull<T>(snapshot)
+    if (parsed == null) {
+        AppLog.warn("Snapshots", "Discarding unreadable $label snapshot.")
+        dao.deleteSnapshot(key)
+    }
+    return parsed
+}
+
 private fun monthlySubscriptionProduct(product: Product): Boolean {
     val slug = product.slug.trim().lowercase()
     val name = product.name.trim().lowercase()
@@ -75,6 +91,7 @@ class NativeAuthRepository(
     override val sessionFlow: Flow<AppSession?> = _sessionFlow.asStateFlow()
 
     override suspend fun restoreSession(): AppSession? {
+        AppLog.info("AuthRepo", "Attempting session restore from local storage.")
         val token = sessionStore.tokenFlow.firstOrNull().orEmpty()
         if (token.isBlank()) {
             _sessionFlow.value = null
@@ -82,8 +99,12 @@ class NativeAuthRepository(
         }
 
         return runCatching { fetchSession(token) }
-            .onSuccess { session -> _sessionFlow.value = session }
+            .onSuccess { session ->
+                AppLog.info("AuthRepo", "Session restore succeeded for user ${session.user.id}.")
+                _sessionFlow.value = session
+            }
             .getOrElse {
+                AppLog.warn("AuthRepo", "Session restore failed. Clearing damaged or expired local session.", it)
                 sessionStore.clear()
                 _sessionFlow.value = null
                 null
@@ -349,10 +370,11 @@ class NativeCatalogRepository(
 ) : CatalogRepository {
     override suspend fun getCatalog(forceRefresh: Boolean): CatalogBundle {
         if (!forceRefresh) {
-            gson.fromJsonOrNull<CatalogBundle>(dao.readSnapshot(SNAPSHOT_CATALOG))?.let { return it }
+            readSnapshotOrDiscard<CatalogBundle>(gson, dao, SNAPSHOT_CATALOG, "catalog")?.let { return it }
         }
 
         return try {
+            AppLog.info("CatalogRepo", "Refreshing catalog. forceRefresh=$forceRefresh")
             val settingsJson =
                 supabaseHttpClient.request("rest/v1/app_settings?id=eq.1&select=*&limit=1").asJsonArrayOrEmpty()
                     .firstOrNull()?.asJsonObjectOrEmpty() ?: JsonObject()
@@ -370,8 +392,9 @@ class NativeCatalogRepository(
                 dao.writeSnapshot(SNAPSHOT_CATALOG, gson.toJson(bundle))
             }
         } catch (error: Exception) {
-            gson.fromJsonOrNull<CatalogBundle>(dao.readSnapshot(SNAPSHOT_CATALOG))
-                ?: throw error
+            AppLog.warn("CatalogRepo", "Catalog refresh failed. Falling back to cached or empty catalog.", error)
+            readSnapshotOrDiscard<CatalogBundle>(gson, dao, SNAPSHOT_CATALOG, "catalog")
+                ?: CatalogBundle(settings = StoreSettings(), categories = emptyList(), products = emptyList())
         }
     }
 }
@@ -409,17 +432,19 @@ class NativeOrdersRepository(
 ) : OrdersRepository {
     override suspend fun getOrders(forceRefresh: Boolean): List<Order> {
         if (!forceRefresh) {
-            gson.fromJsonOrNull<List<Order>>(dao.readSnapshot(SNAPSHOT_ORDERS))?.let { return it }
+            readSnapshotOrDiscard<List<Order>>(gson, dao, SNAPSHOT_ORDERS, "orders")?.let { return it }
         }
 
         val token = requireSession().accessToken
         return try {
+            AppLog.info("OrdersRepo", "Refreshing orders. forceRefresh=$forceRefresh")
             supabaseHttpClient.request("rest/v1/orders?select=*&order=created_at.desc", token = token)
                 .asJsonArrayOrEmpty()
                 .mapOrders()
                 .also { orders -> dao.writeSnapshot(SNAPSHOT_ORDERS, gson.toJson(orders)) }
         } catch (error: Exception) {
-            gson.fromJsonOrNull<List<Order>>(dao.readSnapshot(SNAPSHOT_ORDERS)) ?: throw error
+            AppLog.warn("OrdersRepo", "Orders refresh failed. Falling back to cached or empty orders.", error)
+            readSnapshotOrDiscard<List<Order>>(gson, dao, SNAPSHOT_ORDERS, "orders") ?: emptyList()
         }
     }
 
@@ -604,7 +629,7 @@ class NativeProfileRepository(
 ) : ProfileRepository {
     override suspend fun getSubscription(forceRefresh: Boolean): Subscription? {
         if (!forceRefresh) {
-            gson.fromJsonOrNull<Subscription>(dao.readSnapshot(SNAPSHOT_SUBSCRIPTION))?.let { return it }
+            readSnapshotOrDiscard<Subscription>(gson, dao, SNAPSHOT_SUBSCRIPTION, "subscription")?.let { return it }
         }
         val session = requireSession()
         return try {
@@ -618,13 +643,14 @@ class NativeProfileRepository(
                 ?.toSubscription()
                 ?.also { dao.writeSnapshot(SNAPSHOT_SUBSCRIPTION, gson.toJson(it)) }
         } catch (error: Exception) {
-            gson.fromJsonOrNull<Subscription>(dao.readSnapshot(SNAPSHOT_SUBSCRIPTION))
+            AppLog.warn("ProfileRepo", "Subscription refresh failed. Falling back to cached subscription.", error)
+            readSnapshotOrDiscard<Subscription>(gson, dao, SNAPSHOT_SUBSCRIPTION, "subscription")
         }
     }
 
     override suspend fun getRewardCoupons(forceRefresh: Boolean): List<RewardCoupon> {
         if (!forceRefresh) {
-            gson.fromJsonOrNull<List<RewardCoupon>>(dao.readSnapshot(SNAPSHOT_COUPONS))?.let { return it }
+            readSnapshotOrDiscard<List<RewardCoupon>>(gson, dao, SNAPSHOT_COUPONS, "reward coupons")?.let { return it }
         }
         val session = requireSession()
         return try {
@@ -637,7 +663,8 @@ class NativeProfileRepository(
             dao.writeSnapshot(SNAPSHOT_COUPONS, gson.toJson(coupons))
             coupons
         } catch (error: Exception) {
-            gson.fromJsonOrNull<List<RewardCoupon>>(dao.readSnapshot(SNAPSHOT_COUPONS)) ?: emptyList()
+            AppLog.warn("ProfileRepo", "Reward coupon refresh failed. Falling back to cached or empty coupons.", error)
+            readSnapshotOrDiscard<List<RewardCoupon>>(gson, dao, SNAPSHOT_COUPONS, "reward coupons") ?: emptyList()
         }
     }
 
@@ -663,7 +690,8 @@ class NativeAdminRepository(
                 .map { it.asJsonObjectOrEmpty().toUserProfile() }
                 .also { users -> dao.writeSnapshot(SNAPSHOT_USERS, gson.toJson(users)) }
         } catch (error: Exception) {
-            gson.fromJsonOrNull<List<UserProfile>>(dao.readSnapshot(SNAPSHOT_USERS)) ?: emptyList()
+            AppLog.warn("AdminRepo", "User refresh failed. Falling back to cached or empty users.", error)
+            readSnapshotOrDiscard<List<UserProfile>>(gson, dao, SNAPSHOT_USERS, "users") ?: emptyList()
         }
     }
 

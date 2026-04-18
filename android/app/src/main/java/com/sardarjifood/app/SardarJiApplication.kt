@@ -17,26 +17,34 @@ class SardarJiApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        AppLog.info("Application", "Application onCreate started.")
         container = AppContainer(this)
-        Checkout.preload(this)
-        FirebaseMessaging.getInstance().isAutoInitEnabled = true
+        runCatching { Checkout.preload(this) }
+            .onFailure { AppLog.warn("Application", "Razorpay preload failed during app start.", it) }
+        runCatching { FirebaseMessaging.getInstance().isAutoInitEnabled = true }
+            .onFailure { AppLog.warn("Application", "FCM auto-init could not be enabled.", it) }
         scheduleSync()
     }
 
     private fun scheduleSync() {
-        val request =
-            PeriodicWorkRequestBuilder<AppSyncWorker>(2, TimeUnit.HOURS)
-                .setConstraints(
-                    Constraints.Builder()
-                        .setRequiredNetworkType(NetworkType.CONNECTED)
-                        .build(),
-                )
-                .build()
+        runCatching {
+            val request =
+                PeriodicWorkRequestBuilder<AppSyncWorker>(2, TimeUnit.HOURS)
+                    .setConstraints(
+                        Constraints.Builder()
+                            .setRequiredNetworkType(NetworkType.CONNECTED)
+                            .build(),
+                    )
+                    .build()
 
-        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
-            "sjfc-native-sync",
-            ExistingPeriodicWorkPolicy.UPDATE,
-            request,
-        )
+            WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+                "sjfc-native-sync",
+                ExistingPeriodicWorkPolicy.UPDATE,
+                request,
+            )
+            AppLog.info("Application", "Periodic app sync scheduled.")
+        }.onFailure { throwable ->
+            AppLog.error("Application", "Failed to schedule periodic app sync.", throwable)
+        }
     }
 }

@@ -9,6 +9,8 @@ import com.sardarjifood.app.data.network.bool
 import com.sardarjifood.app.data.network.double
 import com.sardarjifood.app.data.network.int
 import com.sardarjifood.app.data.network.obj
+import com.sardarjifood.app.data.network.safeString
+import com.sardarjifood.app.data.network.safeStringList
 import com.sardarjifood.app.data.network.string
 import com.sardarjifood.app.model.AddonGroup
 import com.sardarjifood.app.model.AddonOption
@@ -109,9 +111,7 @@ fun JsonObject.toSettings(): StoreSettings {
         phoneNumber = string("phone_number"),
         timings = string("timings"),
         mapsEmbedUrl = string("maps_embed_url"),
-        trustPoints = array("trust_points").mapNotNull { element ->
-            element.takeIf { !it.isJsonNull }?.asString
-        },
+        trustPoints = array("trust_points").safeStringList(),
         deliveryRules = DeliveryRules(
             perKmRate = deliveryObject.int("perKmRate", 10),
             minDelivery = deliveryObject.int("minDelivery", 20),
@@ -136,7 +136,7 @@ fun JsonObject.toSettings(): StoreSettings {
         offers = storefront.obj("offers").entrySet().map { (key, value) ->
             OfferCard(
                 title = key.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() },
-                description = value.takeIf { !it.isJsonNull }?.asString.orEmpty(),
+                description = value.safeString(),
             )
         }.filter { it.description.isNotBlank() }.take(4),
         productAddonGroups = mapProductAddonGroups(storefront.obj("productAddonGroups")),
@@ -156,8 +156,8 @@ fun JsonObject.toUserProfile(): UserProfile {
                 val payload = json.obj("payload")
                 subscriptionMeta = SubscriptionMeta(
                     pausedUntil = payload.string("pausedUntil"),
-                    skipDates = payload.array("skipDates").mapNotNull { it.takeIf { node -> !node.isJsonNull }?.asString },
-                    holidayDates = payload.array("holidayDates").mapNotNull { it.takeIf { node -> !node.isJsonNull }?.asString },
+                    skipDates = payload.array("skipDates").safeStringList(),
+                    holidayDates = payload.array("holidayDates").safeStringList(),
                 )
             }
 
@@ -199,7 +199,7 @@ fun JsonObject.toUserProfile(): UserProfile {
         },
         referralCode = string("referral_code"),
         referralApplied = string("referral_applied"),
-        successfulReferrals = array("successful_referrals").mapNotNull { it.takeIf { node -> !node.isJsonNull }?.asString },
+        successfulReferrals = array("successful_referrals").safeStringList(),
         addresses = addresses,
         subscriptionMeta = subscriptionMeta,
         nativePushTokens = nativePushTokens.filter { it.token.isNotBlank() },

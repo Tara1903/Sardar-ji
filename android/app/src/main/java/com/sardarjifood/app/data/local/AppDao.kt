@@ -14,6 +14,9 @@ interface AppDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertSnapshot(snapshot: SnapshotEntity)
 
+    @Query("DELETE FROM snapshots WHERE `key` = :key")
+    suspend fun deleteSnapshot(key: String)
+
     @Query("SELECT * FROM cart_lines ORDER BY name ASC")
     fun observeCartLines(): Flow<List<CartLineEntity>>
 

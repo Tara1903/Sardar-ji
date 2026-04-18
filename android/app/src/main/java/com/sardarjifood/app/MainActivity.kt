@@ -41,6 +41,7 @@ class MainActivity : ComponentActivity(), PaymentResultWithDataListener {
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        AppLog.info("MainActivity", "onCreate started. deepLink=${intent?.dataString ?: intent?.getStringExtra("deep_link_path")}")
         val splashScreen = installSplashScreen()
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -65,10 +66,12 @@ class MainActivity : ComponentActivity(), PaymentResultWithDataListener {
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
+        AppLog.info("MainActivity", "onNewIntent received. deepLink=${intent.dataString ?: intent.getStringExtra("deep_link_path")}")
         setIntent(intent)
     }
 
     override fun onPaymentSuccess(razorpayPaymentId: String?, paymentData: PaymentData?) {
+        AppLog.info("MainActivity", "Razorpay payment success callback received.")
         val paymentId = razorpayPaymentId ?: paymentData?.paymentId
         val orderId = paymentData?.orderId
         val signature = paymentData?.signature
@@ -101,6 +104,7 @@ class MainActivity : ComponentActivity(), PaymentResultWithDataListener {
     }
 
     override fun onPaymentError(code: Int, response: String?, paymentData: PaymentData?) {
+        AppLog.warn("MainActivity", "Razorpay payment failed with code=$code and response=${response.orEmpty()}")
         viewModel.showError(response ?: "Payment was cancelled or failed. Code: $code")
         pendingPaymentContext = null
     }

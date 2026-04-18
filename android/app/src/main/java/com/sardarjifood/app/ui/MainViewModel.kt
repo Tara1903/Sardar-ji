@@ -3,6 +3,7 @@ package com.sardarjifood.app.ui
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.sardarjifood.app.AppLog
 import com.google.firebase.messaging.FirebaseMessaging
 import com.sardarjifood.app.SardarJiApplication
 import com.sardarjifood.app.data.buildCartLine
@@ -67,6 +68,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     init {
         observeSession()
         observeNetwork()
+        observeRecoveryEvents()
         bootstrap()
     }
 
@@ -75,11 +77,19 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun bootstrap(forceRefresh: Boolean = false) {
         viewModelScope.launch {
+            AppLog.info("Bootstrap", "App bootstrap started. forceRefresh=$forceRefresh")
             _uiState.value = _uiState.value.copy(booting = true, loadingCatalog = true, errorMessage = null)
 
-            val restoredSession = container.authRepository.restoreSession()
+            val restoredSession =
+                runCatching { container.authRepository.restoreSession() }
+                    .onFailure { AppLog.warn("Bootstrap", "Session restore failed during bootstrap.", it) }
+                    .getOrNull()
             runCatching { container.catalogRepository.getCatalog(forceRefresh = forceRefresh) }
                 .onSuccess { catalog ->
+                    AppLog.info(
+                        "Bootstrap",
+                        "Bootstrap finished successfully. session=${restoredSession != null} products=${catalog.products.size}",
+                    )
                     _uiState.value =
                         _uiState.value.copy(
                             session = restoredSession,
@@ -91,6 +101,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                         )
                 }
                 .onFailure { error ->
+                    AppLog.warn("Bootstrap", "Bootstrap catalog refresh failed. Rendering safe fallback state.", error)
                     _uiState.value =
                         _uiState.value.copy(
                             session = restoredSession,
@@ -156,6 +167,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun refreshCatalog(forceRefresh: Boolean = true) {
         viewModelScope.launch {
+            AppLog.info("CatalogUi", "Catalog refresh requested. forceRefresh=$forceRefresh")
             _uiState.value = _uiState.value.copy(loadingCatalog = true, errorMessage = null)
             runCatching { container.catalogRepository.getCatalog(forceRefresh) }
                 .onSuccess { catalog ->
@@ -168,6 +180,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                         )
                 }
                 .onFailure { error ->
+                    AppLog.warn("CatalogUi", "Catalog refresh failed.", error)
                     _uiState.value =
                         _uiState.value.copy(
                             loadingCatalog = false,
@@ -180,23 +193,33 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun refreshAuthenticatedData(forceRefresh: Boolean = true) {
         val session = uiState.value.session ?: return
         viewModelScope.launch {
+            AppLog.info("ProfileRefresh", "Refreshing authenticated data. forceRefresh=$forceRefresh user=${session.user.id}")
             _uiState.value = _uiState.value.copy(loadingOrders = true, errorMessage = null)
             val ordersResult = runCatching { container.ordersRepository.getOrders(forceRefresh) }
             val profileResult = runCatching { container.authRepository.refreshProfile() }
             val subscriptionResult = runCatching { container.profileRepository.getSubscription(forceRefresh) }
             val couponResult = runCatching { container.profileRepository.getRewardCoupons(forceRefresh) }
 
+            ordersResult.exceptionOrNull()?.let { AppLog.warn("ProfileRefresh", "Orders refresh failed.", it) }
+            profileResult.exceptionOrNull()?.let { AppLog.warn("ProfileRefresh", "Profile refresh failed.", it) }
+            subscriptionResult.exceptionOrNull()?.let { AppLog.warn("ProfileRefresh", "Subscription refresh failed.", it) }
+            couponResult.exceptionOrNull()?.let { AppLog.warn("ProfileRefresh", "Coupon refresh failed.", it) }
+
+            val previousState = _uiState.value
+
             _uiState.value =
                 _uiState.value.copy(
                     session = profileResult.getOrNull()?.let { session.copy(user = it) } ?: session,
-                    orders = ordersResult.getOrDefault(emptyList()),
-                    subscription = subscriptionResult.getOrNull(),
-                    rewardCoupons = couponResult.getOrDefault(emptyList()),
+                    orders = ordersResult.getOrNull() ?: previousState.orders,
+                    subscription = subscriptionResult.getOrNull() ?: previousState.subscription,
+                    rewardCoupons = couponResult.getOrNull() ?: previousState.rewardCoupons,
                     loadingOrders = false,
                     errorMessage =
                         listOfNotNull(
                             ordersResult.exceptionOrNull()?.message,
                             profileResult.exceptionOrNull()?.message,
+                            subscriptionResult.exceptionOrNull()?.message,
+                            couponResult.exceptionOrNull()?.message,
                         ).firstOrNull(),
                 )
         }
@@ -454,8 +477,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             runCatching { FirebaseMessaging.getInstance().token.await() }
                 .onSuccess { token ->
+                    AppLog.info("Push", "Registering native push token.")
                     runCatching { container.authRepository.registerNativePushToken(token) }
+                        .onFailure { AppLog.warn("Push", "Native push token registration failed.", it) }
                 }
+                .onFailure { AppLog.warn("Push", "Unable to obtain FCM token.", it) }
         }
     }
 
@@ -489,6 +515,19 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             container.networkMonitor.isOnline.collect { isOnline ->
                 _uiState.value = _uiState.value.copy(networkAvailable = isOnline)
+            }
+        }
+    }
+
+    private fun observeRecoveryEvents() {
+        viewModelScope.launch {
+            container.sessionStore.recoveryEvents.collect { message ->
+                _uiState.value = _uiState.value.copy(noticeMessage = message)
+            }
+        }
+        viewModelScope.launch {
+            container.preferencesStore.recoveryEvents.collect { message ->
+                _uiState.value = _uiState.value.copy(noticeMessage = message)
             }
         }
     }
