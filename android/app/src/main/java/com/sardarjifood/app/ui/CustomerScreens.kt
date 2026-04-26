@@ -383,7 +383,11 @@ fun BrowseScreen(
 }
 
 @Composable
-fun OrdersScreen(viewModel: MainViewModel, onShowAuth: () -> Unit) {
+fun OrdersScreen(
+    viewModel: MainViewModel,
+    onShowAuth: () -> Unit,
+    onOpenOrder: (String) -> Unit,
+) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     var showHistory by rememberSaveable { mutableStateOf(false) }
 
@@ -430,7 +434,131 @@ fun OrdersScreen(viewModel: MainViewModel, onShowAuth: () -> Unit) {
             }
         } else {
             items(orders) { order ->
-                OrderCard(order = order, onReorder = { viewModel.reorder(order) })
+                OrderCard(
+                    order = order,
+                    onOpenOrder = { onOpenOrder(order.id) },
+                    onReorder = { viewModel.reorder(order) },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun OrderDetailRoute(
+    orderId: String,
+    viewModel: MainViewModel,
+    onBack: () -> Unit,
+    onShowAuth: () -> Unit,
+) {
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val order = state.orders.firstOrNull { it.id == orderId }
+
+    LaunchedEffect(orderId, state.session?.user?.id) {
+        if (state.session != null && order == null) {
+            viewModel.refreshAuthenticatedData(forceRefresh = true)
+        }
+    }
+
+    if (state.session == null) {
+        EmptyAuthGate(
+            title = "Open your order timeline",
+            body = "Sign in to track order updates, delivery progress, and reorder this meal anytime.",
+            cta = "Sign in",
+            onShowAuth = onShowAuth,
+        )
+        return
+    }
+
+    if (order == null && state.loadingOrders) {
+        AppScaffold(
+            title = "Order details",
+            subtitle = "Loading your latest timeline",
+            topActions = { TextButton(onClick = onBack) { Text("Back") } },
+        ) { padding ->
+            Box(modifier = Modifier.fillMaxSize().padding(padding).padding(16.dp)) {
+                SkeletonList(itemCount = 3, itemHeight = 112)
+            }
+        }
+        return
+    }
+
+    if (order == null) {
+        AppScaffold(
+            title = "Order details",
+            subtitle = "We could not find this order",
+            topActions = { TextButton(onClick = onBack) { Text("Back") } },
+        ) { padding ->
+            Box(modifier = Modifier.fillMaxSize().padding(padding).padding(16.dp)) {
+                EmptyStateCard(
+                    title = "Order not available",
+                    body = "This order may be archived or still syncing. Pull to refresh from Orders and try again.",
+                    actionLabel = "Back",
+                    onAction = onBack,
+                )
+            }
+        }
+        return
+    }
+
+    AppScaffold(
+        title = order.orderNumber,
+        subtitle = "Live tracking, address, and item summary",
+        topActions = { TextButton(onClick = onBack) { Text("Back") } },
+    ) { padding ->
+        LazyColumn(
+            modifier = Modifier.fillMaxSize().padding(padding),
+            contentPadding = PaddingValues(16.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp),
+        ) {
+            item {
+                ElevatedCard {
+                    Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        StatusChip(
+                            label = order.status.replace('_', ' ').replaceFirstChar { it.uppercase() },
+                            tone =
+                                when (order.status.lowercase()) {
+                                    "delivered" -> StatusChipTone.Success
+                                    "cancelled" -> StatusChipTone.Error
+                                    else -> StatusChipTone.Warning
+                                },
+                        )
+                        SummaryRow(label = "Total", value = formatCurrency(order.total), highlight = true)
+                        SummaryRow(label = "Items", value = "${order.items.sumOf { it.quantity }}")
+                        SummaryRow(
+                            label = "Delivery address",
+                            value = order.address.fullAddress.ifBlank { "Address from checkout" },
+                        )
+                    }
+                }
+            }
+            item {
+                SectionHeader(
+                    title = "Items in this order",
+                    subtitle = "Everything packed into this delivery",
+                )
+            }
+            items(order.items) { item ->
+                ElevatedCard {
+                    Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Text(item.name, fontWeight = FontWeight.Bold)
+                        if (item.addonSummary.isNotBlank()) {
+                            Text(item.addonSummary, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                        SummaryRow(label = "Quantity", value = item.quantity.toString())
+                        SummaryRow(label = "Line total", value = formatCurrency(item.price * item.quantity))
+                    }
+                }
+            }
+            item {
+                OutlinedButton(
+                    onClick = { viewModel.reorder(order) },
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Icon(Icons.Outlined.Refresh, contentDescription = null)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Reorder this meal")
+                }
             }
         }
     }
@@ -745,7 +873,11 @@ private fun ProductCard(
 }
 
 @Composable
-private fun OrderCard(order: Order, onReorder: () -> Unit) {
+private fun OrderCard(
+    order: Order,
+    onOpenOrder: () -> Unit,
+    onReorder: () -> Unit,
+) {
     ElevatedCard {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
@@ -763,10 +895,15 @@ private fun OrderCard(order: Order, onReorder: () -> Unit) {
                 Text(formatCurrency(order.total), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
             }
             Text("${order.items.sumOf { it.quantity }} items • ${order.address.fullAddress.ifBlank { "Address coming from checkout" }}", color = MaterialTheme.colorScheme.onSurfaceVariant)
-            OutlinedButton(onClick = onReorder, modifier = Modifier.fillMaxWidth()) {
-                Icon(Icons.Outlined.Refresh, contentDescription = null)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Reorder")
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                OutlinedButton(onClick = onOpenOrder, modifier = Modifier.weight(1f)) {
+                    Text("Track order")
+                }
+                OutlinedButton(onClick = onReorder, modifier = Modifier.weight(1f)) {
+                    Icon(Icons.Outlined.Refresh, contentDescription = null)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Reorder")
+                }
             }
         }
     }

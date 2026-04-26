@@ -26,19 +26,21 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
+import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -47,6 +49,7 @@ import com.sardarjifood.app.PendingPaymentContext
 import com.sardarjifood.app.data.repository.RazorpayCheckoutPayload
 import com.sardarjifood.app.model.AppRole
 import com.sardarjifood.app.model.Product
+import com.sardarjifood.app.notifications.AdminAlertPlayer
 
 private data class AppTab(val label: String, val icon: androidx.compose.ui.graphics.vector.ImageVector)
 
@@ -54,10 +57,11 @@ private data class AppTab(val label: String, val icon: androidx.compose.ui.graph
 fun NativeFoodApp(
     appStateViewModel: AppStateViewModel,
     viewModel: MainViewModel,
-    initialDeepLink: String? = null,
+    deepLinkPath: String? = null,
     onLaunchRazorpay: (RazorpayCheckoutPayload, PendingPaymentContext) -> Unit,
 ) {
     val navController = rememberNavController()
+    val context = LocalContext.current
     val appState by appStateViewModel.uiState.collectAsStateWithLifecycle()
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val cartLines by viewModel.cartLines.collectAsStateWithLifecycle()
@@ -71,6 +75,11 @@ fun NativeFoodApp(
     val authState by authViewModel.uiState.collectAsStateWithLifecycle()
     val settingsState by settingsViewModel.uiState.collectAsStateWithLifecycle()
     val currentRole = appState.session?.user?.role ?: AppRole.CUSTOMER
+    val adminAlertPlayer = remember(context) { AdminAlertPlayer(context.applicationContext) }
+
+    DisposableEffect(adminAlertPlayer) {
+        onDispose { adminAlertPlayer.release() }
+    }
 
     LaunchedEffect(state.errorMessage, state.noticeMessage, authState.errorMessage, authState.noticeMessage, settingsState.errorMessage, settingsState.noticeMessage) {
         val message =
@@ -88,7 +97,7 @@ fun NativeFoodApp(
         }
     }
 
-    LaunchedEffect(currentRole, appState.session?.user?.id, initialDeepLink) {
+    LaunchedEffect(currentRole, appState.session?.user?.id) {
         val roleRoute =
             when (currentRole) {
                 AppRole.ADMIN -> "admin"
@@ -110,17 +119,56 @@ fun NativeFoodApp(
             }
         }
 
-        initialDeepLink?.let { deepLink ->
-            when {
-                deepLink.contains("/cart") -> navController.navigate("customer?tab=3")
-                deepLink.contains("/track/") || deepLink.contains("/orders") -> navController.navigate("customer?tab=2")
-                deepLink.contains("/menu") -> navController.navigate("customer?tab=1")
-            }
-        }
-
         if (appState.session == null && currentRoute == "settings") {
             navController.navigate("customer") {
                 popUpTo(0)
+            }
+        }
+    }
+
+    LaunchedEffect(deepLinkPath, currentRole, appState.session?.user?.id) {
+        if (!deepLinkPath.isNullOrBlank()) {
+            openAppDeepLink(
+                deepLink = deepLinkPath,
+                currentRole = currentRole,
+                navController = navController,
+                customerShellViewModel = customerShellViewModel,
+                adminViewModel = adminViewModel,
+                deliveryViewModel = deliveryViewModel,
+            )
+        }
+    }
+
+    LaunchedEffect(currentRole, appState.preferences.notificationsEnabled) {
+        viewModel.notificationEvents.collect { event ->
+            if (event.role != currentRole || !appState.preferences.notificationsEnabled) {
+                return@collect
+            }
+
+            if (event.role == AppRole.ADMIN) {
+                adminAlertPlayer.playNewOrderAlert(event.announcement.ifBlank { event.title })
+            }
+
+            val result =
+                snackbars.showSnackbar(
+                    message = event.message,
+                    actionLabel =
+                        when (event.role) {
+                            AppRole.CUSTOMER -> "Track"
+                            AppRole.ADMIN -> "Open"
+                            AppRole.DELIVERY -> "View"
+                        },
+                )
+
+            if (result == SnackbarResult.ActionPerformed) {
+                openAppDeepLink(
+                    deepLink = event.deepLink,
+                    currentRole = currentRole,
+                    navController = navController,
+                    customerShellViewModel = customerShellViewModel,
+                    adminViewModel = adminViewModel,
+                    deliveryViewModel = deliveryViewModel,
+                )
             }
         }
     }
@@ -150,6 +198,7 @@ fun NativeFoodApp(
                             cartCount = cartLines.sumOf { it.quantity },
                             onShowAuth = { navController.navigate("auth") },
                             onOpenProduct = { product -> navController.navigate("product/${product.id}") },
+                            onOpenOrder = { orderId -> navController.navigate("order/$orderId") },
                             onCheckout = { navController.navigate("checkout") },
                             onOpenSettings = { navController.navigate("settings") },
                         )
@@ -212,6 +261,17 @@ fun NativeFoodApp(
                             onLaunchRazorpay = onLaunchRazorpay,
                         )
                     }
+                    composable(
+                        route = "order/{id}",
+                        arguments = listOf(navArgument("id") { type = NavType.StringType }),
+                    ) { backStackEntry ->
+                        OrderDetailRoute(
+                            orderId = backStackEntry.arguments?.getString("id").orEmpty(),
+                            viewModel = viewModel,
+                            onBack = { navController.popBackStack() },
+                            onShowAuth = { navController.navigate("auth") },
+                        )
+                    }
                 }
             }
         }
@@ -226,6 +286,7 @@ private fun CustomerShell(
     cartCount: Int,
     onShowAuth: () -> Unit,
     onOpenProduct: (Product) -> Unit,
+    onOpenOrder: (String) -> Unit,
     onCheckout: () -> Unit,
     onOpenSettings: () -> Unit,
 ) {
@@ -299,7 +360,7 @@ private fun CustomerShell(
                         onToggleFavorite = shellViewModel::toggleFavorite,
                         onOpenProduct = onOpenProduct,
                     )
-                2 -> OrdersScreen(viewModel = viewModel, onShowAuth = onShowAuth)
+                2 -> OrdersScreen(viewModel = viewModel, onShowAuth = onShowAuth, onOpenOrder = onOpenOrder)
                 3 -> CartScreen(viewModel = viewModel, onShowAuth = onShowAuth, onCheckout = onCheckout)
                 else -> ProfileScreen(viewModel = viewModel, onShowAuth = onShowAuth, onOpenSettings = onOpenSettings)
             }
@@ -313,7 +374,8 @@ private fun AdminShell(
     adminViewModel: AdminViewModel,
     onOpenSettings: () -> Unit,
 ) {
-    var selectedTab by rememberSaveable { androidx.compose.runtime.mutableIntStateOf(0) }
+    val adminState by adminViewModel.uiState.collectAsStateWithLifecycle()
+    val selectedTab = adminState.selectedTab
     val tabs =
         listOf(
             AppTab("Overview", Icons.Outlined.Home),
@@ -334,7 +396,7 @@ private fun AdminShell(
                 tabs.forEachIndexed { index, tab ->
                     NavigationBarItem(
                         selected = selectedTab == index,
-                        onClick = { selectedTab = index },
+                        onClick = { adminViewModel.selectTab(index) },
                         icon = { Icon(tab.icon, contentDescription = tab.label) },
                         label = { Text(tab.label) },
                     )
@@ -391,5 +453,69 @@ private fun DeliveryShell(
         Box(modifier = Modifier.padding(padding)) {
             DeliveryScreen(viewModel = viewModel, segment = deliveryState.selectedSegment)
         }
+    }
+}
+
+private fun openAppDeepLink(
+    deepLink: String,
+    currentRole: AppRole,
+    navController: NavHostController,
+    customerShellViewModel: CustomerShellViewModel,
+    adminViewModel: AdminViewModel,
+    deliveryViewModel: DeliveryViewModel,
+) {
+    val normalized = normalizeAppDeepLink(deepLink)
+
+    when {
+        normalized.startsWith("/track/") || normalized.startsWith("/order/") -> {
+            val orderId = normalized.substringAfterLast('/').trim()
+            customerShellViewModel.selectTab(2)
+            if (orderId.isNotBlank()) {
+                navController.navigate("order/$orderId") {
+                    launchSingleTop = true
+                }
+            } else {
+                navController.navigate("customer?tab=2") {
+                    launchSingleTop = true
+                }
+            }
+        }
+        normalized.startsWith("/cart") -> {
+            customerShellViewModel.selectTab(3)
+            navController.navigate("customer?tab=3") { launchSingleTop = true }
+        }
+        normalized.startsWith("/menu") || normalized.startsWith("/browse") -> {
+            customerShellViewModel.selectTab(1)
+            navController.navigate("customer?tab=1") { launchSingleTop = true }
+        }
+        normalized.startsWith("/profile") -> {
+            customerShellViewModel.selectTab(4)
+            navController.navigate("customer?tab=4") { launchSingleTop = true }
+        }
+        normalized.startsWith("/admin/orders") || normalized.startsWith("/admin") -> {
+            adminViewModel.selectTab(1)
+            navController.navigate("admin") { launchSingleTop = true }
+        }
+        normalized.startsWith("/delivery") -> {
+            deliveryViewModel.selectSegment(0)
+            navController.navigate("delivery") { launchSingleTop = true }
+        }
+        currentRole == AppRole.ADMIN -> navController.navigate("admin") { launchSingleTop = true }
+        currentRole == AppRole.DELIVERY -> navController.navigate("delivery") { launchSingleTop = true }
+        else -> navController.navigate("customer") { launchSingleTop = true }
+    }
+}
+
+private fun normalizeAppDeepLink(value: String): String {
+    val candidate = value.trim()
+    return when {
+        candidate.isBlank() -> "/orders"
+        candidate.startsWith("/") -> candidate
+        candidate.startsWith("sjfc://") -> "/${candidate.removePrefix("sjfc://").trimStart('/')}"
+        candidate.startsWith("https://www.sardarjifoodcorner.shop") ->
+            candidate.removePrefix("https://www.sardarjifoodcorner.shop").ifBlank { "/orders" }
+        candidate.startsWith("https://sardarjifoodcorner.shop") ->
+            candidate.removePrefix("https://sardarjifoodcorner.shop").ifBlank { "/orders" }
+        else -> "/$candidate"
     }
 }

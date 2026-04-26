@@ -13,6 +13,7 @@ import { publicEnvFlags, publicEnv } from '../lib/env';
 import { isNativeAppShell } from '../lib/nativeApp';
 import {
   ADMIN_NEW_ORDER_EVENT,
+  buildAdminNewOrderAlert,
   buildOrderStatusNotification,
   normalizeRealtimeOrderPreview,
 } from '../utils/orderNotifications';
@@ -32,6 +33,7 @@ import {
 const NotificationContext = createContext(null);
 const MAX_TOASTS = 4;
 const TOAST_DURATION_MS = 5200;
+const RECENT_EVENT_WINDOW_MS = 18000;
 
 const canUseBrowser = () => typeof window !== 'undefined' && typeof document !== 'undefined';
 
@@ -68,6 +70,27 @@ const createToastRecord = (payload) => ({
   ...payload,
 });
 
+const markRecentEvent = (cacheRef, key, now = Date.now()) => {
+  if (!key) {
+    return false;
+  }
+
+  const cache = cacheRef.current;
+
+  Array.from(cache.entries()).forEach(([entryKey, timestamp]) => {
+    if (now - timestamp > RECENT_EVENT_WINDOW_MS) {
+      cache.delete(entryKey);
+    }
+  });
+
+  if (cache.has(key)) {
+    return true;
+  }
+
+  cache.set(key, now);
+  return false;
+};
+
 export const NotificationProvider = ({ children }) => {
   const { token, user, refreshUser } = useAuth();
   const [toasts, setToasts] = useState([]);
@@ -78,6 +101,9 @@ export const NotificationProvider = ({ children }) => {
   const alertsUnlockedRef = useRef(false);
   const nativePushReadyRef = useRef(false);
   const nativePushTokenRef = useRef('');
+  const webPushSubscribedRef = useRef(false);
+  const recentCustomerEventsRef = useRef(new Map());
+  const recentAdminEventsRef = useRef(new Map());
 
   const dismissToast = useCallback((toastId) => {
     const timer = toastTimersRef.current.get(toastId);
@@ -214,10 +240,12 @@ export const NotificationProvider = ({ children }) => {
       const payload = normalizePushSubscriptionPayload(subscription);
 
       if (!isPushSubscriptionPayloadValid(payload)) {
+        webPushSubscribedRef.current = false;
         return false;
       }
 
       await api.savePushSubscription(payload, token);
+      webPushSubscribedRef.current = true;
       await refreshUser().catch(() => null);
       return true;
     },
@@ -250,6 +278,40 @@ export const NotificationProvider = ({ children }) => {
       window.removeEventListener('keydown', handleFirstInteraction);
     };
   }, [ensurePushSubscription, primeAdminAudio, token, user]);
+
+  useEffect(() => {
+    if (!token || user?.role !== 'customer' || isNativeAppShell()) {
+      webPushSubscribedRef.current = false;
+      return;
+    }
+
+    let cancelled = false;
+
+    const hydratePushState = async () => {
+      try {
+        const registration = await navigator.serviceWorker.getRegistration('/');
+        const subscription = await registration?.pushManager?.getSubscription?.();
+
+        if (!cancelled) {
+          webPushSubscribedRef.current = Boolean(
+            subscription &&
+              isPushSubscriptionPayloadValid(normalizePushSubscriptionPayload(subscription)) &&
+              Notification.permission === 'granted',
+          );
+        }
+      } catch {
+        if (!cancelled) {
+          webPushSubscribedRef.current = false;
+        }
+      }
+    };
+
+    void hydratePushState();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [token, user?.role]);
 
   useEffect(() => {
     if (!token || user?.role !== 'customer') {
@@ -406,6 +468,12 @@ export const NotificationProvider = ({ children }) => {
             return;
           }
 
+          const eventKey = `customer:${nextOrder.id}:${notification.status || nextOrder.status}`;
+
+          if (markRecentEvent(recentCustomerEventsRef, eventKey)) {
+            return;
+          }
+
           enqueueToast({
             kind: 'customer',
             title: notification.title,
@@ -428,7 +496,8 @@ export const NotificationProvider = ({ children }) => {
             typeof document !== 'undefined' &&
             document.visibilityState === 'hidden' &&
             'Notification' in window &&
-            Notification.permission === 'granted'
+            Notification.permission === 'granted' &&
+            !webPushSubscribedRef.current
           ) {
             new Notification('Sardar Ji Food Corner', {
               body: notification.message,
@@ -469,13 +538,19 @@ export const NotificationProvider = ({ children }) => {
         },
         (payload) => {
           const order = normalizeRealtimeOrderPreview(payload.new);
+          const alert = buildAdminNewOrderAlert(order);
+          const eventKey = `admin:${order.id}:${order.createdAt}`;
+
+          if (markRecentEvent(recentAdminEventsRef, eventKey)) {
+            return;
+          }
 
           enqueueToast({
             kind: 'admin',
-            title: 'New order received',
-            message: `${order.customerName} placed ${order.orderNumber || 'a new order'}.`,
+            title: alert.title,
+            message: alert.message,
             actionLabel: 'Open orders',
-            actionTo: '/admin/orders',
+            actionTo: alert.url,
           });
           playAdminBeep();
           speakAdminAnnouncement('New order received');

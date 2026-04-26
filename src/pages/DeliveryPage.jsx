@@ -10,6 +10,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { DELIVERY_APP_FILTERS } from '../data/nativeShellConfig';
 import { isNativeAppShell } from '../lib/nativeApp';
 import { formatDateTime } from '../utils/format';
+import { buildOrderStatusNotification } from '../utils/orderNotifications';
 
 export const DeliveryPage = () => {
   const { token, logout, user } = useAuth();
@@ -154,7 +155,43 @@ export const DeliveryPage = () => {
   }, [token, trackingOrderId]);
 
   const handleStatusChange = async (orderId, status) => {
-    await api.updateOrderStatus(orderId, { status }, token);
+    const currentOrder = orders.find((order) => order.id === orderId);
+    const updatedOrder = await api.updateOrderStatus(orderId, { status }, token);
+    let notificationWarning = '';
+
+    const nextNotification = buildOrderStatusNotification({
+      orderId: updatedOrder.id,
+      orderNumber: updatedOrder.orderNumber,
+      status,
+    });
+
+    if (nextNotification && currentOrder?.status && currentOrder.status !== status) {
+      const deliveryResult = await api
+        .sendOrderNotification(
+          {
+            type: 'order_status',
+            orderId: updatedOrder.id,
+            orderNumber: updatedOrder.orderNumber,
+            userId: updatedOrder.userId,
+            status,
+            message: nextNotification.message,
+            deepLink: nextNotification.url,
+            channels: ['realtime', 'browserPush', 'androidPush', 'email'],
+          },
+          token,
+        )
+        .catch((notificationError) => ({
+          ok: false,
+          message:
+            notificationError?.message || 'Order updated, but customer notification delivery could not be confirmed.',
+        }));
+
+      if (!deliveryResult?.ok) {
+        notificationWarning =
+          deliveryResult?.message ||
+          'Order updated, but customer notification delivery could not be confirmed.';
+      }
+    }
 
     if (status === 'Out for Delivery') {
       setTrackingOrderId(orderId);
@@ -165,6 +202,10 @@ export const DeliveryPage = () => {
     }
 
     await loadOrders();
+
+    if (notificationWarning) {
+      setError(notificationWarning);
+    }
   };
 
   const completedToday = useMemo(

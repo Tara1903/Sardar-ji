@@ -3,6 +3,7 @@ package com.sardarjifood.app.ui
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.google.firebase.messaging.FirebaseMessaging
 import com.sardarjifood.app.SardarJiApplication
 import com.sardarjifood.app.model.AppPreferences
 import com.sardarjifood.app.model.AppSession
@@ -13,6 +14,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 
 data class SettingsUiState(
     val session: AppSession? = null,
@@ -107,6 +109,12 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     fun logout() {
         viewModelScope.launch {
             logoutBusy.value = true
+            runCatching {
+                FirebaseMessaging.getInstance().token.await()
+            }.getOrNull()?.let { nativeToken ->
+                runCatching { container.authRepository.removeNativePushToken(nativeToken) }
+            }
+
             runCatching { container.authRepository.signOut() }
                 .onSuccess {
                     transientMessage.value = null to "Signed out"

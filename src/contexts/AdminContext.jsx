@@ -434,6 +434,7 @@ export const AdminProvider = ({ children }) => {
     try {
       const currentOrder = orders.find((order) => order.id === orderId);
       const updatedOrder = await api.updateOrderStatus(orderId, payload, token);
+      let notificationWarning = '';
       const nextNotification = buildOrderStatusNotification({
         orderId: updatedOrder.id,
         orderNumber: updatedOrder.orderNumber,
@@ -445,21 +446,35 @@ export const AdminProvider = ({ children }) => {
         currentOrder?.status &&
         currentOrder.status !== payload.status
       ) {
-        api
+        const deliveryResult = await api
           .sendOrderNotification(
             {
+              type: 'order_status',
               orderId: updatedOrder.id,
+              orderNumber: updatedOrder.orderNumber,
               userId: updatedOrder.userId,
               status: payload.status,
               message: nextNotification.message,
+              deepLink: nextNotification.url,
+              channels: ['realtime', 'browserPush', 'androidPush', 'email'],
             },
             token,
           )
-          .catch(() => {});
+          .catch((notificationError) => ({
+            ok: false,
+            message:
+              notificationError?.message || 'Order updated, but customer notification delivery could not be confirmed.',
+          }));
+
+        if (!deliveryResult?.ok) {
+          notificationWarning =
+            deliveryResult?.message ||
+            'Order updated, but customer notification delivery could not be confirmed.';
+        }
       }
 
       await refreshAdminData({ silent: true });
-      setError('');
+      setError(notificationWarning);
     } catch (orderError) {
       setError(orderError.message);
       throw orderError;

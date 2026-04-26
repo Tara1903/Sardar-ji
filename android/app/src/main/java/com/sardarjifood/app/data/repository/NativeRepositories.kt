@@ -288,6 +288,32 @@ class NativeAuthRepository(
         _sessionFlow.value = session.copy(user = updatedUser)
     }
 
+    override suspend fun removeNativePushToken(token: String) {
+        if (token.isBlank()) return
+        val session = currentSession() ?: return
+        val nextTokens = session.user.nativePushTokens.filterNot { it.token == token }
+
+        if (nextTokens.size == session.user.nativePushTokens.size) {
+            return
+        }
+
+        val payload = serializeAddressesPayload(
+            addresses = session.user.addresses,
+            user = session.user.copy(nativePushTokens = nextTokens),
+        )
+
+        val rows =
+            supabaseHttpClient.request(
+                path = "rest/v1/users?id=eq.${session.user.id}&select=*",
+                method = "PATCH",
+                token = session.accessToken,
+                body = mapOf("addresses" to payload),
+                preferRepresentation = true,
+            ).asJsonArrayOrEmpty()
+        val updatedUser = rows.firstOrNull()?.asJsonObjectOrEmpty()?.toUserProfile() ?: session.user.copy(nativePushTokens = nextTokens)
+        _sessionFlow.value = session.copy(user = updatedUser)
+    }
+
     internal suspend fun currentSession(): AppSession? = _sessionFlow.value ?: restoreSession()
 
     private suspend fun fetchSession(token: String): AppSession {
@@ -580,6 +606,7 @@ class NativeOrdersRepository(
         assignedDeliveryBoyName: String?,
     ): Order {
         val token = requireSession().accessToken
+        val currentOrder = runCatching { getOrder(id) }.getOrNull()
         val body = buildMap {
             put("status", status)
             assignedDeliveryBoyId?.let { put("assigned_delivery_boy_id", it) }
@@ -594,8 +621,19 @@ class NativeOrdersRepository(
                 body = body,
                 preferRepresentation = true,
             ).asJsonArrayOrEmpty()
-        return rows.firstOrNull()?.asJsonObjectOrEmpty()?.toOrder()
-            ?: throw AppHttpException("Unable to update the order status.", 500)
+        val updatedOrder =
+            rows.firstOrNull()?.asJsonObjectOrEmpty()?.toOrder()
+                ?: throw AppHttpException("Unable to update the order status.", 500)
+
+        if (currentOrder?.status?.equals(updatedOrder.status, ignoreCase = true) == false) {
+            runCatching {
+                sendOrderStatusNotification(token = token, order = updatedOrder)
+            }.onFailure {
+                AppLog.warn("OrdersRepo", "Order status updated, but outbound notification orchestration failed.", it)
+            }
+        }
+
+        return updatedOrder
     }
 
     override suspend fun updateDeliveryLocation(orderId: String, latitude: Double, longitude: Double): Order {
@@ -619,6 +657,31 @@ class NativeOrdersRepository(
     private suspend fun requireSession(): AppSession =
         authRepository.restoreSession()
             ?: throw SessionRequiredException()
+
+    private suspend fun sendOrderStatusNotification(token: String, order: Order) {
+        val response =
+            siteHttpClient.request(
+                path = "api/send-notification",
+                method = "POST",
+                token = token,
+                body = mapOf(
+                    "type" to "order_status",
+                    "orderId" to order.id,
+                    "orderNumber" to order.orderNumber,
+                    "userId" to order.userId,
+                    "status" to order.status,
+                    "deepLink" to "/track/${order.id}",
+                    "channels" to listOf("realtime", "browserPush", "androidPush", "email"),
+                ),
+            ).asJsonObjectOrEmpty()
+
+        if (response.get("ok")?.takeIf { !it.isJsonNull }?.asBoolean != true) {
+            AppLog.warn(
+                "OrdersRepo",
+                "Notification orchestration returned no confirmed deliveries for order ${order.orderNumber.ifBlank { order.id }}.",
+            )
+        }
+    }
 }
 
 class NativeProfileRepository(

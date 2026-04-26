@@ -1,12 +1,12 @@
 const APP_DOWNLOAD_HOST = 'https://www.sardarjifoodcorner.shop';
 
 export const APP_RELEASE = Object.freeze({
-  version: '2.1.1',
-  build: 20,
+  version: '2.1.2',
+  build: 21,
   minimumSupportedBuild: 18,
   minimumSupportedVersion: '2.0.0',
   forceUpdate: false,
-  releaseDate: '19 Apr 2026',
+  releaseDate: '26 Apr 2026',
   downloadPath: '/downloads/sardar-ji-food-corner.apk',
   downloadPagePath: '/download-app',
   fileName: 'sardar-ji-food-corner.apk',
@@ -14,11 +14,11 @@ export const APP_RELEASE = Object.freeze({
   updateLabel: 'Update App',
   supportNote: 'Android 8.0+ supported • Full native Android app • Kotlin + Jetpack Compose • Pure veg ordering app',
   releaseHighlights: [
-    'Idle-reopen crash paths were hardened with safer session and preferences recovery, so damaged local state now resets cleanly instead of crashing the app',
-    'Bootstrap and authenticated refresh flows now tolerate partial failures and render safe fallback UI instead of letting one failed request break app startup',
-    'Production JSON parsing is now more defensive for settings, profile metadata, orders, and cached snapshots, reducing crashes caused by unexpected live payload shapes',
-    'Background sync, push notification handling, and app startup now emit structured Android logs for faster diagnosis of any future device-specific stability issues',
-    'Malformed cached snapshots are now discarded surgically so bad local data cannot keep breaking the app on reopen',
+    'Customer order updates now use one unified notification pipeline across realtime, browser push, Android push, and email',
+    'Admin and delivery status changes now trigger the same backend notification orchestration, so customer alerts stay consistent from every operational flow',
+    'The native Android app now shows foreground in-app notification banners instead of relying only on background push delivery',
+    'Admins using the native app now get realtime new-order alerts with a visible in-app prompt plus beep and voice announcement fallback',
+    'FCM token refresh, logout cleanup, and deep-link routing were tightened so push opens land on the right screen more reliably',
   ],
 });
 

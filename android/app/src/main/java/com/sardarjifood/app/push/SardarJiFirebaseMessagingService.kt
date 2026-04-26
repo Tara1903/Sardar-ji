@@ -15,11 +15,28 @@ import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 import com.sardarjifood.app.MainActivity
 import com.sardarjifood.app.R
+import com.sardarjifood.app.SardarJiApplication
+import com.sardarjifood.app.notifications.AppNotificationCenter
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 
 class SardarJiFirebaseMessagingService : FirebaseMessagingService() {
+    private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
     override fun onNewToken(token: String) {
         super.onNewToken(token)
         AppLog.info("PushService", "Received refreshed FCM token.")
+        serviceScope.launch {
+            runCatching {
+                (application as? SardarJiApplication)?.container?.authRepository?.registerNativePushToken(token)
+            }.onSuccess {
+                AppLog.info("PushService", "Refreshed FCM token saved to the signed-in profile.")
+            }.onFailure { throwable ->
+                AppLog.warn("PushService", "Refreshed FCM token could not be saved yet.", throwable)
+            }
+        }
     }
 
     override fun onMessageReceived(message: RemoteMessage) {
@@ -30,6 +47,20 @@ class SardarJiFirebaseMessagingService : FirebaseMessagingService() {
             val title = message.notification?.title ?: message.data["title"] ?: "Sardar Ji Food Corner"
             val body = message.notification?.body ?: message.data["message"] ?: "You have a new update."
             val targetUrl = sanitizeTargetUrl(message.data["url"] ?: message.data["deep_link"])
+            val notificationEvent =
+                AppNotificationCenter.createCustomerOrderStatusEvent(
+                    orderId = message.data["orderId"].orEmpty(),
+                    orderNumber = message.data["orderNumber"].orEmpty(),
+                    status = message.data["status"].orEmpty(),
+                    rawNotificationKey = message.data["notificationKey"].orEmpty(),
+                )
+
+            if (AppNotificationCenter.isForeground.value && notificationEvent != null) {
+                AppNotificationCenter.emit(notificationEvent.copy(title = title, message = body, deepLink = targetUrl))
+                AppLog.info("PushService", "Delivered foreground push through in-app notification center.")
+                return
+            }
+
             val intent =
                 Intent(this, MainActivity::class.java).apply {
                     putExtra("deep_link_path", targetUrl)

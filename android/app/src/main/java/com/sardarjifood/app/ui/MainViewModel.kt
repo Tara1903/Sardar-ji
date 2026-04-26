@@ -9,7 +9,6 @@ import com.sardarjifood.app.SardarJiApplication
 import com.sardarjifood.app.data.buildCartLine
 import com.sardarjifood.app.data.computePricing
 import com.sardarjifood.app.data.createInitialAddonSelection
-import com.sardarjifood.app.data.repository.CatalogBundle
 import com.sardarjifood.app.data.repository.PaymentDraft
 import com.sardarjifood.app.data.repository.PaymentVerificationResult
 import com.sardarjifood.app.data.repository.RazorpayCheckoutPayload
@@ -24,13 +23,17 @@ import com.sardarjifood.app.model.Product
 import com.sardarjifood.app.model.RewardCoupon
 import com.sardarjifood.app.model.StoreSettings
 import com.sardarjifood.app.model.Subscription
-import com.sardarjifood.app.model.UserProfile
+import com.sardarjifood.app.notifications.AppNotificationCenter
 import java.util.UUID
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
@@ -57,6 +60,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val _uiState = MutableStateFlow(NativeUiState())
     val uiState: StateFlow<NativeUiState> = _uiState.asStateFlow()
     private var hydratedSessionUserId: String? = null
+    private val orderStatusBaseline = linkedMapOf<String, String>()
+    private val adminSeenOrderIds = linkedSetOf<String>()
+    val notificationEvents: SharedFlow<com.sardarjifood.app.notifications.AppNotificationEvent> = AppNotificationCenter.events
 
     val cartLines: StateFlow<List<CartLine>> =
         container.cartRepository.cartLines.stateIn(
@@ -69,6 +75,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         observeSession()
         observeNetwork()
         observeRecoveryEvents()
+        observeForegroundNotificationPolling()
+        observeForegroundResume()
         bootstrap()
     }
 
@@ -153,6 +161,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun logout() {
         viewModelScope.launch {
+            runCatching { FirebaseMessaging.getInstance().token.await() }
+                .getOrNull()
+                ?.let { nativeToken ->
+                    runCatching { container.authRepository.removeNativePushToken(nativeToken) }
+                }
             container.authRepository.signOut()
             _uiState.value =
                 _uiState.value.copy(
@@ -206,11 +219,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             couponResult.exceptionOrNull()?.let { AppLog.warn("ProfileRefresh", "Coupon refresh failed.", it) }
 
             val previousState = _uiState.value
+            val refreshedSession = profileResult.getOrNull()?.let { session.copy(user = it) } ?: session
+            val refreshedOrders = ordersResult.getOrNull() ?: previousState.orders
 
             _uiState.value =
                 _uiState.value.copy(
-                    session = profileResult.getOrNull()?.let { session.copy(user = it) } ?: session,
-                    orders = ordersResult.getOrNull() ?: previousState.orders,
+                    session = refreshedSession,
+                    orders = refreshedOrders,
                     subscription = subscriptionResult.getOrNull() ?: previousState.subscription,
                     rewardCoupons = couponResult.getOrNull() ?: previousState.rewardCoupons,
                     loadingOrders = false,
@@ -222,6 +237,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                             couponResult.exceptionOrNull()?.message,
                         ).firstOrNull(),
                 )
+            syncNotificationBaselines(refreshedOrders, refreshedSession.user.role)
         }
     }
 
@@ -494,6 +510,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 when {
                     session == null -> {
                         hydratedSessionUserId = null
+                        clearNotificationBaselines()
                         _uiState.value =
                             _uiState.value.copy(
                                 orders = emptyList(),
@@ -529,6 +546,119 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             container.preferencesStore.recoveryEvents.collect { message ->
                 _uiState.value = _uiState.value.copy(noticeMessage = message)
             }
+        }
+    }
+
+    private fun observeForegroundResume() {
+        viewModelScope.launch {
+            AppNotificationCenter.isForeground.collect { isForeground ->
+                if (isForeground && _uiState.value.session != null && _uiState.value.networkAvailable) {
+                    runCatching { refreshForegroundNotifications() }
+                        .onFailure { AppLog.warn("Notifications", "Foreground resume notification refresh failed.", it) }
+                }
+            }
+        }
+    }
+
+    private fun observeForegroundNotificationPolling() {
+        viewModelScope.launch {
+            while (currentCoroutineContext().isActive) {
+                delay(12_000)
+
+                if (!AppNotificationCenter.isForeground.value || !_uiState.value.networkAvailable || _uiState.value.session == null) {
+                    continue
+                }
+
+                runCatching { refreshForegroundNotifications() }
+                    .onFailure { AppLog.warn("Notifications", "Foreground notification refresh failed.", it) }
+            }
+        }
+    }
+
+    private suspend fun refreshForegroundNotifications() {
+        val session = _uiState.value.session ?: return
+
+        when (session.user.role) {
+            AppRole.CUSTOMER -> pollCustomerOrderNotifications()
+            AppRole.ADMIN -> pollAdminOrderNotifications()
+            AppRole.DELIVERY -> pollDeliveryAssignments()
+        }
+    }
+
+    private suspend fun pollCustomerOrderNotifications() {
+        val latestOrders = container.ordersRepository.getOrders(forceRefresh = true)
+        val previousStatuses = orderStatusBaseline.toMap()
+
+        if (previousStatuses.isEmpty()) {
+            syncNotificationBaselines(latestOrders, AppRole.CUSTOMER)
+            _uiState.value = _uiState.value.copy(orders = latestOrders)
+            return
+        }
+
+        latestOrders.forEach { order ->
+            val previousStatus = previousStatuses[order.id]
+            if (previousStatus != null && !previousStatus.equals(order.status, ignoreCase = true)) {
+                AppNotificationCenter.createCustomerOrderStatusEvent(
+                    orderId = order.id,
+                    orderNumber = order.orderNumber,
+                    status = order.status,
+                )?.let(AppNotificationCenter::emit)
+            }
+        }
+
+        syncNotificationBaselines(latestOrders, AppRole.CUSTOMER)
+        _uiState.value = _uiState.value.copy(orders = latestOrders)
+    }
+
+    private suspend fun pollAdminOrderNotifications() {
+        val latestOrders = container.ordersRepository.getOrders(forceRefresh = true)
+        val previousIds = adminSeenOrderIds.toSet()
+
+        if (previousIds.isEmpty()) {
+            syncNotificationBaselines(latestOrders, AppRole.ADMIN)
+            _uiState.value = _uiState.value.copy(orders = latestOrders)
+            return
+        }
+
+        latestOrders
+            .asReversed()
+            .filter { !previousIds.contains(it.id) }
+            .forEach { order ->
+                AppNotificationCenter.emit(
+                    AppNotificationCenter.createAdminNewOrderEvent(
+                        orderId = order.id,
+                        orderNumber = order.orderNumber,
+                        customerName = order.customerName,
+                    ),
+                )
+            }
+
+        syncNotificationBaselines(latestOrders, AppRole.ADMIN)
+        _uiState.value = _uiState.value.copy(orders = latestOrders)
+    }
+
+    private suspend fun pollDeliveryAssignments() {
+        val latestOrders = container.ordersRepository.getOrders(forceRefresh = true)
+        syncNotificationBaselines(latestOrders, AppRole.DELIVERY)
+        _uiState.value = _uiState.value.copy(orders = latestOrders)
+    }
+
+    private fun clearNotificationBaselines() {
+        orderStatusBaseline.clear()
+        adminSeenOrderIds.clear()
+    }
+
+    private fun syncNotificationBaselines(orders: List<Order>, role: AppRole) {
+        orderStatusBaseline.clear()
+        orders.forEach { order ->
+            orderStatusBaseline[order.id] = order.status
+        }
+
+        if (role == AppRole.ADMIN) {
+            adminSeenOrderIds.clear()
+            adminSeenOrderIds.addAll(orders.map(Order::id))
+        } else {
+            adminSeenOrderIds.clear()
         }
     }
 }

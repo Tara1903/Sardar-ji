@@ -12,12 +12,14 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.core.content.ContextCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import com.razorpay.Checkout
 import com.razorpay.PaymentData
 import com.razorpay.PaymentResultWithDataListener
 import com.sardarjifood.app.model.Address
+import com.sardarjifood.app.notifications.AppNotificationCenter
 import com.sardarjifood.app.ui.AppStateViewModel
 import com.sardarjifood.app.ui.MainViewModel
 import com.sardarjifood.app.ui.NativeFoodApp
@@ -36,6 +38,7 @@ class MainActivity : ComponentActivity(), PaymentResultWithDataListener {
     private val appStateViewModel: AppStateViewModel by viewModels()
     private val viewModel: MainViewModel by viewModels()
     private var pendingPaymentContext: PendingPaymentContext? = null
+    private val deepLinkState = mutableStateOf<String?>(null)
 
     private val notificationPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
@@ -47,6 +50,7 @@ class MainActivity : ComponentActivity(), PaymentResultWithDataListener {
         enableEdgeToEdge()
         splashScreen.setKeepOnScreenCondition { viewModel.uiState.value.booting }
         requestNotificationPermissionIfNeeded()
+        deepLinkState.value = resolveIncomingDeepLink(intent)
 
         setContent {
             val appState = appStateViewModel.uiState.collectAsStateWithLifecycle()
@@ -54,7 +58,7 @@ class MainActivity : ComponentActivity(), PaymentResultWithDataListener {
                 NativeFoodApp(
                     appStateViewModel = appStateViewModel,
                     viewModel = viewModel,
-                    initialDeepLink = intent?.dataString ?: intent?.getStringExtra("deep_link_path"),
+                    deepLinkPath = deepLinkState.value,
                     onLaunchRazorpay = { checkoutPayload, paymentContext ->
                         pendingPaymentContext = paymentContext
                         launchRazorpayCheckout(checkoutPayload)
@@ -68,6 +72,17 @@ class MainActivity : ComponentActivity(), PaymentResultWithDataListener {
         super.onNewIntent(intent)
         AppLog.info("MainActivity", "onNewIntent received. deepLink=${intent.dataString ?: intent.getStringExtra("deep_link_path")}")
         setIntent(intent)
+        deepLinkState.value = resolveIncomingDeepLink(intent)
+    }
+
+    override fun onStart() {
+        super.onStart()
+        AppNotificationCenter.setForeground(true)
+    }
+
+    override fun onStop() {
+        AppNotificationCenter.setForeground(false)
+        super.onStop()
     }
 
     override fun onPaymentSuccess(razorpayPaymentId: String?, paymentData: PaymentData?) {
@@ -116,6 +131,9 @@ class MainActivity : ComponentActivity(), PaymentResultWithDataListener {
         }
         notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
     }
+
+    private fun resolveIncomingDeepLink(intent: Intent?): String? =
+        intent?.dataString ?: intent?.getStringExtra("deep_link_path")
 
     private fun launchRazorpayCheckout(checkoutPayload: com.sardarjifood.app.data.repository.RazorpayCheckoutPayload) {
         val options =

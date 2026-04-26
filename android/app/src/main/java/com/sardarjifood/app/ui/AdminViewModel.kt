@@ -6,6 +6,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 data class AdminUiState(
+    val selectedTab: Int = 0,
     val ordersFilter: String = "all",
     val kitchenFilter: String = "all",
 )
@@ -13,6 +14,10 @@ data class AdminUiState(
 class AdminViewModel : ViewModel() {
     private val _uiState = MutableStateFlow(AdminUiState())
     val uiState: StateFlow<AdminUiState> = _uiState.asStateFlow()
+
+    fun selectTab(index: Int) {
+        _uiState.value = _uiState.value.copy(selectedTab = index.coerceIn(0, 4))
+    }
 
     fun setOrdersFilter(filter: String) {
         _uiState.value = _uiState.value.copy(ordersFilter = filter)
