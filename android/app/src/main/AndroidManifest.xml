@@ -12,7 +12,7 @@
             android:name=".MainActivity"
             android:label="@string/title_activity_main"
             android:theme="@style/Theme.SardarJi.Splash"
-            android:launchMode="singleTask"
+            android:launchMode="singleTop"
             android:windowSoftInputMode="adjustResize"
             android:exported="true">
             <intent-filter>
@@ -38,9 +38,7 @@
             </intent-filter>
         </activity>
 
-        <service
-            android:name=".push.SardarJiFirebaseMessagingService"
-            android:exported="false">
+        <service android:name=".push.SardarJiFirebaseMessagingService" android:exported="false">
             <intent-filter>
                 <action android:name="com.google.firebase.MESSAGING_EVENT" />
             </intent-filter>

@@ -12,6 +12,7 @@ import com.sardarjifood.app.data.createInitialAddonSelection
 import com.sardarjifood.app.data.repository.PaymentDraft
 import com.sardarjifood.app.data.repository.PaymentVerificationResult
 import com.sardarjifood.app.data.repository.RazorpayCheckoutPayload
+import com.sardarjifood.app.data.repository.StarPayCheckoutPayload
 import com.sardarjifood.app.model.Address
 import com.sardarjifood.app.model.AppRole
 import com.sardarjifood.app.model.AppSession
@@ -334,6 +335,22 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     )
             }
         }
+    }
+
+    suspend fun createStarPayDraft(address: Address, note: String = "", couponCode: String = "", distanceKm: Double? = null): StarPayCheckoutPayload {
+        val session = _uiState.value.session ?: throw IllegalStateException("Not logged in.")
+        val draft =
+            PaymentDraft(
+                customerName = session.user.name,
+                phoneNumber = session.user.phoneNumber,
+                items = _cartLines.value,
+                address = address,
+                note = note,
+                couponCode = couponCode,
+                distanceKm = distanceKm,
+            )
+
+        return container.ordersRepository.createStarPayOrder(draft)
     }
 
     suspend fun createRazorpayDraft(address: Address, note: String = "", couponCode: String = "", distanceKm: Double? = null): RazorpayCheckoutPayload {

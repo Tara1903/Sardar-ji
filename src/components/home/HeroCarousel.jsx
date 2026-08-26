@@ -263,21 +263,21 @@ export const HeroCarousel = ({
   );
 };
 
-export const createHeroSlides = ({ heroConfig, products = [] }) => {
+export const createHeroSlides = ({ heroConfig, heroMedia = {}, copy = {}, products = [] }) => {
   const topProducts = products.slice(0, 3);
 
   const coreSlide = {
     id: 'hero-default',
-    image: heroConfig.backgroundImage,
+    image: heroConfig.backgroundImage || heroMedia.home,
     fallbackImage: getFallbackImage('Thali Specials'),
     imageAlt: 'Premium pure veg food delivery from Sardar Ji Food Corner',
-    kicker: 'Fresh from Sardar Ji Food Corner',
+    kicker: copy.homeEyebrow || 'Sardar Ji Signature',
     title: heroConfig.headline,
     description: heroConfig.subtext,
-    highlights: [heroConfig.offerText, 'Pure Veg', 'Fast delivery'],
-    featuredTitle: 'Daily crowd favourite',
-    featuredSubtitle: 'App-style ordering with premium delivery experience',
-    note: 'Scroll, swipe, and add dishes in a few satisfying taps.',
+    highlights: [heroConfig.offerText, 'Pure Veg', 'Live ETA'],
+    featuredTitle: 'Editorial pick of the day',
+    featuredSubtitle: 'A calmer, more premium ordering flow',
+    note: 'Browse, add, and track with a quieter flagship feel.',
   };
 
   const productSlides = topProducts.map((product) => ({

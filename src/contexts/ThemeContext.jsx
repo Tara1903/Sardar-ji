@@ -42,7 +42,7 @@ const applyResolvedTheme = (resolvedTheme) => {
   const metaThemeColor = document.querySelector("meta[name='theme-color']");
 
   if (metaThemeColor) {
-    metaThemeColor.setAttribute('content', isDark ? '#101713' : '#e23744');
+    metaThemeColor.setAttribute('content', isDark ? '#101217' : '#f6f1ea');
   }
 };
 

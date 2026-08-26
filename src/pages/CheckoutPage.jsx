@@ -1,3 +1,4 @@
+import { Browser } from '@capacitor/browser';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -25,6 +26,7 @@ import { clearCheckoutRecovery, saveCheckoutRecovery } from '../utils/cartRecove
 import { trackBeginCheckout, trackPaymentSuccess } from '../utils/analytics';
 import { getUserLocation } from '../utils/location';
 import { showNativeLocalNotification, triggerNativeHaptic } from '../lib/nativeFeatures';
+import { isNativeAppShell } from '../lib/nativeApp';
 
 const emptyAddress = {
   name: '',
@@ -92,19 +94,6 @@ export const CheckoutPage = () => {
     loadRewardCoupons();
   }, [token]);
 
-  useEffect(() => {
-    if (!items.length || placedOrder) {
-      clearCheckoutRecovery();
-      return;
-    }
-
-    saveCheckoutRecovery({
-      itemCount: cartOfferState.baseItems.length,
-      totalLabel: formatCurrency(cartOfferState.total),
-      whatsappLink: createWhatsAppLink(settings?.whatsappNumber, checkoutMessage),
-    });
-  }, [cartOfferState.baseItems.length, cartOfferState.total, checkoutMessage, items.length, placedOrder, settings?.whatsappNumber]);
-
   const activeRewardCoupons = useMemo(
     () =>
       rewardCoupons
@@ -161,6 +150,19 @@ export const CheckoutPage = () => {
   ]
     .filter(Boolean)
     .join('\n');
+
+  useEffect(() => {
+    if (!items.length || placedOrder) {
+      clearCheckoutRecovery();
+      return;
+    }
+
+    saveCheckoutRecovery({
+      itemCount: cartOfferState.baseItems.length,
+      totalLabel: formatCurrency(cartOfferState.total),
+      whatsappLink: createWhatsAppLink(settings?.whatsappNumber, checkoutMessage),
+    });
+  }, [cartOfferState.baseItems.length, cartOfferState.total, checkoutMessage, items.length, placedOrder, settings?.whatsappNumber]);
 
   const validateOrder = () => {
     if (!items.length) {
@@ -347,8 +349,8 @@ export const CheckoutPage = () => {
 
     try {
       if (paymentMethod === 'ONLINE') {
-        const amountInPaise = Math.round(cartOfferState.total * 100);
-        const paymentOrder = await api.createRazorpayOrder(
+        /* amount In Paise removed */
+        const paymentOrder = await api.createStarPayOrder(
           {
             purpose: 'food-order',
             customerName: chosenAddress.name || user?.name || '',
@@ -366,33 +368,16 @@ export const CheckoutPage = () => {
           token,
         );
 
-        const checkoutResponse = await openRazorpayCheckout({
-          amount: paymentOrder.order.amount,
-          business: paymentOrder.business,
-          keyId: paymentOrder.keyId,
-          order: paymentOrder.order,
-          prefill: paymentOrder.prefill,
-        });
+        if (isNativeAppShell()) {
+          await Browser.open({ url: paymentOrder.checkoutUrl });
+          await Browser.addListener('browserFinished', () => {
+            window.location.href = '/track';
+          });
+          return;
+        }
 
-        verifiedPayment = await api.verifyRazorpayPayment(
-          {
-            amount: amountInPaise,
-            razorpayPaymentId: checkoutResponse.razorpay_payment_id,
-            razorpayOrderId: checkoutResponse.razorpay_order_id,
-            razorpaySignature: checkoutResponse.razorpay_signature,
-            purpose: 'food-order',
-            payload: {
-              items: cartOfferState.orderItems,
-              address: chosenAddress,
-              couponCode: selectedRewardCoupon?.code || '',
-              pricing: {
-                distanceKm: cartOfferState.distanceKm,
-              },
-              note: '',
-            },
-          },
-          token,
-        );
+        window.location.href = paymentOrder.checkoutUrl;
+        return;
       }
 
       const paymentNote = verifiedPayment
@@ -675,14 +660,14 @@ export const CheckoutPage = () => {
                   type="button"
                 >
                   <div>
-                    <strong>Razorpay / UPI / Cards</strong>
-                    <span>Pay securely with Razorpay before we confirm your order.</span>
+                    <strong>StarPay / UPI / QR</strong>
+                    <span>Pay securely with StarPay before we confirm your order.</span>
                   </div>
                 </button>
               </div>
               {paymentMethod === 'ONLINE' ? (
                 <p className="hint subtle-copy">
-                  Online payments open Razorpay checkout for UPI, cards, wallets and netbanking.
+                  Online payments redirect to StarPay checkout for UPI and QR payments.
                 </p>
               ) : null}
             </div>
@@ -766,7 +751,7 @@ export const CheckoutPage = () => {
                 : cartOfferState.notDeliverable
                   ? 'Outside delivery zone'
                   : paymentMethod === 'ONLINE'
-                    ? `Pay ${formatCurrency(cartOfferState.total)} with Razorpay`
+                    ? `Pay ${formatCurrency(cartOfferState.total)} with StarPay`
                     : 'Place order'}
             </button>
             <a

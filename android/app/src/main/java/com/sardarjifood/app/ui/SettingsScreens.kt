@@ -2,19 +2,20 @@ package com.sardarjifood.app.ui
 
 import android.content.Intent
 import android.net.Uri
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.HelpOutline
+import androidx.compose.material.icons.automirrored.outlined.Logout
 import androidx.compose.material.icons.outlined.DeleteOutline
 import androidx.compose.material.icons.outlined.Email
-import androidx.compose.material.icons.outlined.HelpOutline
-import androidx.compose.material.icons.outlined.Logout
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.Palette
 import androidx.compose.material.icons.outlined.PersonOutline
@@ -34,6 +35,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -48,6 +50,7 @@ fun SettingsRoute(
 ) {
     val state by settingsViewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    val adaptiveState = rememberAdaptiveState()
     var showProfileEditor by rememberSaveable { mutableStateOf(false) }
     var showFaq by rememberSaveable { mutableStateOf(false) }
 
@@ -58,128 +61,295 @@ fun SettingsRoute(
             TextButton(onClick = onBack) { Text("Done") }
         },
     ) { padding ->
-        LazyColumn(
-            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 110.dp + padding.calculateBottomPadding()),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+        CenteredContentFrame(
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .background(
+                        Brush.verticalGradient(
+                            colors =
+                                listOf(
+                                    MaterialTheme.colorScheme.background,
+                                    MaterialTheme.colorScheme.surface,
+                                ),
+                        ),
+                    ),
+            adaptiveState = adaptiveState,
         ) {
-            item {
-                ElevatedCard(colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.surface)) {
-                    Column(modifier = Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Text(
-                            text = state.session?.user?.name ?: "Guest",
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold,
-                        )
-                        Text(
-                            text = state.session?.user?.email ?: "Sign in to personalize your app",
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
+            if (adaptiveState.isMediumUp) {
+                Row(
+                    modifier = Modifier.fillMaxSize().padding(horizontal = adaptiveState.horizontalPadding, vertical = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(adaptiveState.paneSpacing),
+                ) {
+                    LazyColumn(
+                        modifier = Modifier.weight(1f),
+                        contentPadding = PaddingValues(bottom = 32.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp),
+                    ) {
+                        item {
+                            ElevatedCard(colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.surface), shape = MaterialTheme.shapes.extraLarge) {
+                                Row(modifier = Modifier.fillMaxWidth().padding(18.dp), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                                    InitialsAvatar(name = state.session?.user?.name ?: "Guest", modifier = Modifier.padding(top = 2.dp))
+                                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                        Text(
+                                            text = state.session?.user?.name ?: "Guest",
+                                            style = MaterialTheme.typography.titleLarge,
+                                            fontWeight = FontWeight.Bold,
+                                        )
+                                        Text(
+                                            text = state.session?.user?.email ?: "Sign in to personalize your app",
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        )
+                                        StatusChip(
+                                            label = if (state.preferences.notificationsEnabled) "Notifications on" else "Notifications muted",
+                                            tone = if (state.preferences.notificationsEnabled) StatusChipTone.Success else StatusChipTone.Neutral,
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                        item {
+                            SettingsSection(
+                                title = "Appearance",
+                                subtitle = "Switch instantly between light, dark, and system theme",
+                            ) {
+                                ThemeMode.entries.forEach { mode ->
+                                    SettingsListItem(
+                                        title = when (mode) {
+                                            ThemeMode.LIGHT -> "Light mode"
+                                            ThemeMode.DARK -> "Dark mode"
+                                            ThemeMode.SYSTEM -> "System default"
+                                        },
+                                        supportingText = when (mode) {
+                                            ThemeMode.LIGHT -> "Bright, warm, and easy to scan"
+                                            ThemeMode.DARK -> "Dimmer surfaces for low-light use"
+                                            ThemeMode.SYSTEM -> "Match your phone automatically"
+                                        },
+                                        leadingIcon = Icons.Outlined.Palette,
+                                        trailing = {
+                                            StatusChip(
+                                                label = if (state.preferences.themeMode == mode) "Active" else "Available",
+                                                tone = if (state.preferences.themeMode == mode) StatusChipTone.Success else StatusChipTone.Neutral,
+                                            )
+                                        },
+                                        onClick = { settingsViewModel.setThemeMode(mode) },
+                                    )
+                                }
+                            }
+                        }
+                        item {
+                            SettingsSection(
+                                title = "Notifications",
+                                subtitle = "Control app-level alerts and prompts",
+                            ) {
+                                SettingsToggleItem(
+                                    title = "Order notifications",
+                                    supportingText = "Keep customer and delivery updates visible in the app",
+                                    leadingIcon = Icons.Outlined.Notifications,
+                                    checked = state.preferences.notificationsEnabled,
+                                    onCheckedChange = settingsViewModel::setNotificationsEnabled,
+                                )
+                            }
+                        }
+                        item {
+                            SettingsSection(
+                                title = "Help & support",
+                                subtitle = "Get answers quickly or contact the team",
+                            ) {
+                                SettingsListItem(
+                                    title = "FAQ",
+                                    supportingText = "Ordering, delivery, and account help",
+                                    leadingIcon = Icons.AutoMirrored.Outlined.HelpOutline,
+                                    onClick = { showFaq = true },
+                                )
+                                SettingsListItem(
+                                    title = "Contact support",
+                                    supportingText = "Send an email to the support team",
+                                    leadingIcon = Icons.Outlined.Email,
+                                    onClick = {
+                                        val intent =
+                                            Intent(
+                                                Intent.ACTION_SENDTO,
+                                                Uri.parse("mailto:support@sardarjifoodcorner.shop?subject=Sardar Ji Food Corner Support"),
+                                            )
+                                        context.startActivity(intent)
+                                    },
+                                )
+                            }
+                        }
+                    }
+
+                    LazyColumn(
+                        modifier = Modifier.weight(1f),
+                        contentPadding = PaddingValues(bottom = 32.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp),
+                    ) {
+                        item {
+                            SettingsSection(
+                                title = "Profile",
+                                subtitle = "Keep your ordering identity and receipts up to date",
+                            ) {
+                                SettingsListItem(
+                                    title = "Edit profile",
+                                    supportingText = "Update your name and email",
+                                    leadingIcon = Icons.Outlined.PersonOutline,
+                                    onClick = { showProfileEditor = true },
+                                )
+                            }
+                        }
+                        item {
+                            SettingsSection(
+                                title = "Account",
+                                subtitle = "Manage your login safely",
+                            ) {
+                                SettingsListItem(
+                                    title = "Log out",
+                                    supportingText = "End your session on this device",
+                                    leadingIcon = Icons.AutoMirrored.Outlined.Logout,
+                                    onClick = settingsViewModel::logout,
+                                )
+                                SettingsListItem(
+                                    title = "Delete account",
+                                    supportingText = "Coming soon. Contact support if you need help right now.",
+                                    leadingIcon = Icons.Outlined.DeleteOutline,
+                                )
+                            }
+                        }
                     }
                 }
-            }
-
-            item {
-                SettingsSection(
-                    title = "Appearance",
-                    subtitle = "Switch instantly between light, dark, and system theme",
+            } else {
+                LazyColumn(
+                    contentPadding = PaddingValues(start = adaptiveState.horizontalPadding, end = adaptiveState.horizontalPadding, top = 12.dp, bottom = 32.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
-                    ThemeMode.entries.forEach { mode ->
-                        SettingsListItem(
-                            title = when (mode) {
-                                ThemeMode.LIGHT -> "Light mode"
-                                ThemeMode.DARK -> "Dark mode"
-                                ThemeMode.SYSTEM -> "System default"
-                            },
-                            supportingText = when (mode) {
-                                ThemeMode.LIGHT -> "Bright, warm, and easy to scan"
-                                ThemeMode.DARK -> "Dimmer surfaces for low-light use"
-                                ThemeMode.SYSTEM -> "Match your phone automatically"
-                            },
-                            leadingIcon = Icons.Outlined.Palette,
-                            trailing = {
-                                StatusChip(
-                                    label = if (state.preferences.themeMode == mode) "Active" else "Available",
-                                    tone = if (state.preferences.themeMode == mode) StatusChipTone.Success else StatusChipTone.Neutral,
-                                )
-                            },
-                            onClick = { settingsViewModel.setThemeMode(mode) },
-                        )
+                    item {
+                        ElevatedCard(colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.surface), shape = MaterialTheme.shapes.extraLarge) {
+                            Row(modifier = Modifier.fillMaxWidth().padding(18.dp), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                                InitialsAvatar(name = state.session?.user?.name ?: "Guest", modifier = Modifier.padding(top = 2.dp))
+                                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                    Text(
+                                        text = state.session?.user?.name ?: "Guest",
+                                        style = MaterialTheme.typography.titleLarge,
+                                        fontWeight = FontWeight.Bold,
+                                    )
+                                    Text(
+                                        text = state.session?.user?.email ?: "Sign in to personalize your app",
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                    StatusChip(
+                                        label = if (state.preferences.notificationsEnabled) "Notifications on" else "Notifications muted",
+                                        tone = if (state.preferences.notificationsEnabled) StatusChipTone.Success else StatusChipTone.Neutral,
+                                    )
+                                }
+                            }
+                        }
                     }
-                }
-            }
 
-            item {
-                SettingsSection(
-                    title = "Profile",
-                    subtitle = "Keep your ordering identity and receipts up to date",
-                ) {
-                    SettingsListItem(
-                        title = "Edit profile",
-                        supportingText = "Update your name and email",
-                        leadingIcon = Icons.Outlined.PersonOutline,
-                        onClick = { showProfileEditor = true },
-                    )
-                }
-            }
-
-            item {
-                SettingsSection(
-                    title = "Notifications",
-                    subtitle = "Control app-level alerts and prompts",
-                ) {
-                    SettingsToggleItem(
-                        title = "Order notifications",
-                        supportingText = "Keep customer and delivery updates visible in the app",
-                        leadingIcon = Icons.Outlined.Notifications,
-                        checked = state.preferences.notificationsEnabled,
-                        onCheckedChange = settingsViewModel::setNotificationsEnabled,
-                    )
-                }
-            }
-
-            item {
-                SettingsSection(
-                    title = "Help & support",
-                    subtitle = "Get answers quickly or contact the team",
-                ) {
-                    SettingsListItem(
-                        title = "FAQ",
-                        supportingText = "Ordering, delivery, and account help",
-                        leadingIcon = Icons.Outlined.HelpOutline,
-                        onClick = { showFaq = true },
-                    )
-                    SettingsListItem(
-                        title = "Contact support",
-                        supportingText = "Send an email to the support team",
-                        leadingIcon = Icons.Outlined.Email,
-                        onClick = {
-                            val intent =
-                                Intent(
-                                    Intent.ACTION_SENDTO,
-                                    Uri.parse("mailto:support@sardarjifoodcorner.shop?subject=Sardar Ji Food Corner Support"),
+                    item {
+                        SettingsSection(
+                            title = "Appearance",
+                            subtitle = "Switch instantly between light, dark, and system theme",
+                        ) {
+                            ThemeMode.entries.forEach { mode ->
+                                SettingsListItem(
+                                    title = when (mode) {
+                                        ThemeMode.LIGHT -> "Light mode"
+                                        ThemeMode.DARK -> "Dark mode"
+                                        ThemeMode.SYSTEM -> "System default"
+                                    },
+                                    supportingText = when (mode) {
+                                        ThemeMode.LIGHT -> "Bright, warm, and easy to scan"
+                                        ThemeMode.DARK -> "Dimmer surfaces for low-light use"
+                                        ThemeMode.SYSTEM -> "Match your phone automatically"
+                                    },
+                                    leadingIcon = Icons.Outlined.Palette,
+                                    trailing = {
+                                        StatusChip(
+                                            label = if (state.preferences.themeMode == mode) "Active" else "Available",
+                                            tone = if (state.preferences.themeMode == mode) StatusChipTone.Success else StatusChipTone.Neutral,
+                                        )
+                                    },
+                                    onClick = { settingsViewModel.setThemeMode(mode) },
                                 )
-                            context.startActivity(intent)
-                        },
-                    )
-                }
-            }
+                            }
+                        }
+                    }
 
-            item {
-                SettingsSection(
-                    title = "Account",
-                    subtitle = "Manage your login safely",
-                ) {
-                    SettingsListItem(
-                        title = "Log out",
-                        supportingText = "End your session on this device",
-                        leadingIcon = Icons.Outlined.Logout,
-                        onClick = settingsViewModel::logout,
-                    )
-                    SettingsListItem(
-                        title = "Delete account",
-                        supportingText = "Coming soon. Contact support if you need help right now.",
-                        leadingIcon = Icons.Outlined.DeleteOutline,
-                    )
+                    item {
+                        SettingsSection(
+                            title = "Profile",
+                            subtitle = "Keep your ordering identity and receipts up to date",
+                        ) {
+                            SettingsListItem(
+                                title = "Edit profile",
+                                supportingText = "Update your name and email",
+                                leadingIcon = Icons.Outlined.PersonOutline,
+                                onClick = { showProfileEditor = true },
+                            )
+                        }
+                    }
+
+                    item {
+                        SettingsSection(
+                            title = "Notifications",
+                            subtitle = "Control app-level alerts and prompts",
+                        ) {
+                            SettingsToggleItem(
+                                title = "Order notifications",
+                                supportingText = "Keep customer and delivery updates visible in the app",
+                                leadingIcon = Icons.Outlined.Notifications,
+                                checked = state.preferences.notificationsEnabled,
+                                onCheckedChange = settingsViewModel::setNotificationsEnabled,
+                            )
+                        }
+                    }
+
+                    item {
+                        SettingsSection(
+                            title = "Help & support",
+                            subtitle = "Get answers quickly or contact the team",
+                        ) {
+                            SettingsListItem(
+                                title = "FAQ",
+                                supportingText = "Ordering, delivery, and account help",
+                                leadingIcon = Icons.AutoMirrored.Outlined.HelpOutline,
+                                onClick = { showFaq = true },
+                            )
+                            SettingsListItem(
+                                title = "Contact support",
+                                supportingText = "Send an email to the support team",
+                                leadingIcon = Icons.Outlined.Email,
+                                onClick = {
+                                    val intent =
+                                        Intent(
+                                            Intent.ACTION_SENDTO,
+                                            Uri.parse("mailto:support@sardarjifoodcorner.shop?subject=Sardar Ji Food Corner Support"),
+                                        )
+                                    context.startActivity(intent)
+                                },
+                            )
+                        }
+                    }
+
+                    item {
+                        SettingsSection(
+                            title = "Account",
+                            subtitle = "Manage your login safely",
+                        ) {
+                            SettingsListItem(
+                                title = "Log out",
+                                supportingText = "End your session on this device",
+                                leadingIcon = Icons.AutoMirrored.Outlined.Logout,
+                                onClick = settingsViewModel::logout,
+                            )
+                            SettingsListItem(
+                                title = "Delete account",
+                                supportingText = "Coming soon. Contact support if you need help right now.",
+                                leadingIcon = Icons.Outlined.DeleteOutline,
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -248,7 +418,7 @@ private fun SettingsSection(
     subtitle: String,
     content: @Composable () -> Unit,
 ) {
-    ElevatedCard(colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.surface)) {
+    ElevatedCard(colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.surface), shape = MaterialTheme.shapes.extraLarge) {
         Column(
             modifier = Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),

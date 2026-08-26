@@ -26,6 +26,13 @@ data class PaymentDraft(
     val purpose: String = "food-order",
 )
 
+data class StarPayCheckoutPayload(
+    val checkoutUrl: String,
+    val orderId: String,
+    val amount: Int,
+    val purpose: String
+)
+
 data class RazorpayCheckoutPayload(
     val keyId: String,
     val orderId: String,
@@ -88,6 +95,7 @@ interface OrdersRepository {
         couponCode: String,
         pricing: Map<String, Any?>,
     ): Order
+    suspend fun createStarPayOrder(draft: PaymentDraft): StarPayCheckoutPayload
     suspend fun createRazorpayOrder(draft: PaymentDraft): RazorpayCheckoutPayload
     suspend fun verifyRazorpayPayment(
         paymentId: String,

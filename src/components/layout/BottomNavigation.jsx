@@ -19,7 +19,7 @@ const navItems = [
   },
   {
     id: 'categories',
-    label: 'Categories',
+    label: 'Menu',
     to: '/menu',
     icon: LayoutGrid,
     matches: (pathname) => pathname === '/menu' || pathname.startsWith('/product/'),
@@ -60,6 +60,7 @@ export const BottomNavigation = () => {
     icon: UserRound,
     matches: (pathname) =>
       pathname === '/profile' ||
+      pathname === '/settings' ||
       pathname === '/auth' ||
       pathname === '/my-subscription' ||
       pathname.startsWith('/profile/') ||

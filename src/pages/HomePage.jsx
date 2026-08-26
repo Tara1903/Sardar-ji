@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
-import { CalendarDays, Clock3, History, MapPin, ShoppingBag, Star, Truck } from 'lucide-react';
+import { CalendarDays, Clock3, Download, History, MapPin, ShoppingBag, Smartphone, Star, Truck } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { PageTransition } from '../components/common/PageTransition';
 import { PromoBanner } from '../components/common/PromoBanner';
@@ -17,6 +17,16 @@ import { useCart } from '../contexts/CartContext';
 import { createCategoryGridItems, APP_HOME_VALUE_PILLS, APP_PLAN_CARDS, APP_QUICK_CHIPS, APP_TRUST_BADGES, buildHomeProductRails, filterProductsByQuickChip } from '../data/appExperience';
 import { isNativeAppShell } from '../lib/nativeApp';
 import { triggerNativeHaptic } from '../lib/nativeFeatures';
+import { trackAppDownloadClick } from '../utils/analytics';
+import {
+  APP_DOWNLOAD_FILE_NAME,
+  APP_DOWNLOAD_LABEL,
+  APP_DOWNLOAD_PAGE_PATH,
+  APP_DOWNLOAD_SUPPORT_NOTE,
+  APP_LATEST_VERSION,
+  APP_RELEASE_DATE,
+  getAppDownloadUrl,
+} from '../utils/appDownload';
 import { formatCurrency } from '../utils/format';
 import { getCartOfferState } from '../utils/pricing';
 import {
@@ -61,6 +71,8 @@ export const HomePage = () => {
   const nativeAppShell = isNativeAppShell();
   const liveCartState = getCartOfferState(items, products, settings?.deliveryRules);
   const heroConfig = appConfig.hero;
+  const heroMedia = appConfig.heroMedia || {};
+  const premiumCopy = appConfig.copy || {};
   const railCategories = appConfig.categories?.length ? appConfig.categories : categories;
   const profileSnapshot = useMemo(() => readProfileSnapshot(user?.id), [user?.id]);
   const availableProducts = useMemo(
@@ -77,11 +89,17 @@ export const HomePage = () => {
   );
   const featuredProducts = chipFilteredProducts.slice(0, 4);
   const heroSlides = useMemo(
-    () => createHeroSlides({ heroConfig, products: availableProducts.slice(0, 4) }),
-    [availableProducts, heroConfig],
+    () =>
+      createHeroSlides({
+        heroConfig,
+        heroMedia,
+        copy: premiumCopy,
+        products: availableProducts.slice(0, 4),
+      }),
+    [availableProducts, heroConfig, heroMedia, premiumCopy],
   );
   const productRails = useMemo(
-    () => buildHomeProductRails(chipFilteredProducts).slice(0, 5),
+    () => buildHomeProductRails(chipFilteredProducts).slice(0, 3),
     [chipFilteredProducts],
   );
   const categoryGridItems = useMemo(
@@ -92,6 +110,8 @@ export const HomePage = () => {
   const latestOrder = profileSnapshot?.orders?.[0] || null;
   const activeOrder =
     profileSnapshot?.orders?.find((order) => ACTIVE_ORDER_STATUSES.has(order.status)) || null;
+  const businessName = settings?.businessName || 'Sardar Ji Food Corner';
+  const appDownloadUrl = getAppDownloadUrl();
   const activeSubscription =
     profileSnapshot?.subscription?.status === 'active' &&
     Number(profileSnapshot?.subscription?.daysLeft || 0) > 0;
@@ -356,14 +376,14 @@ export const HomePage = () => {
 
           <HeroCarousel onPrimaryAction={() => navigate('/menu')} primaryLabel="Order Now" slides={heroSlides} />
 
-          <div className="app-home-status-grid">
+          <div className="app-home-status-grid app-home-premium-grid">
             <motion.article
               animate={{ opacity: 1, y: 0 }}
               className="app-home-status-card"
               initial={{ opacity: 0, y: 10 }}
             >
-              <p className="eyebrow">Ordering now</p>
-              <h2>Food first, decisions faster</h2>
+              <p className="eyebrow">{premiumCopy.homeEyebrow || 'Ordering now'}</p>
+              <h2>{premiumCopy.homeTrustTitle || 'Food first, decisions faster'}</h2>
               <div className="app-home-status-meta">
                 <span className="hero-chip">
                   <MapPin size={14} />
@@ -390,7 +410,7 @@ export const HomePage = () => {
               description={
                 itemCount
                   ? `${itemCount} items are already in your cart. ${liveCartState.offerMessage}`
-                  : `Monthly Thali starts at ${formatCurrency(MONTHLY_SUBSCRIPTION_PRICE)} with its own plan tracking flow.`
+                  : `${premiumCopy.rewardsTitle || 'Monthly Thali starts at a premium everyday price.'} Plans begin at ${formatCurrency(MONTHLY_SUBSCRIPTION_PRICE)}.`
               }
               eyebrow={itemCount ? 'Live cart' : 'Subscription'}
               title={
@@ -406,19 +426,21 @@ export const HomePage = () => {
             <div className="section-heading compact">
               <div>
                 <p className="eyebrow">Quick filters</p>
-                <h2>Find your meal mood instantly</h2>
-                <p className="section-heading-note">Swipe and narrow down what you want in one tap.</p>
+                <h2>Find the right meal faster</h2>
+                <p className="section-heading-note">
+                  Use a small set of strong filters instead of digging through the full menu.
+                </p>
               </div>
             </div>
             <QuickChips activeChip={activeChip} chips={APP_QUICK_CHIPS} onSelectChip={setActiveChip} />
           </div>
 
           <FeaturedProductsGrid
-            description="Fast-moving dishes with direct add-to-cart actions right away."
+            description="The strongest picks stay up front so customers can move from desire to checkout with less friction."
             eyebrow="Featured now"
             loading={loading}
             products={featuredProducts}
-            title="Quick order picks"
+            title="Signature quick picks"
             viewAllTo={activeChip === 'all' ? '/menu' : `/menu?chip=${encodeURIComponent(activeChip)}`}
             whatsappNumber={settings?.whatsappNumber}
           />
@@ -441,7 +463,7 @@ export const HomePage = () => {
               <div className="section-heading compact">
                 <div>
                   <p className="eyebrow">Offers</p>
-                  <h2>See the value before you start adding</h2>
+                  <h2>Clarity before checkout</h2>
                 </div>
               </div>
               <div className="app-offer-strip">
@@ -462,6 +484,52 @@ export const HomePage = () => {
               </div>
             </section>
           ) : null}
+
+          <section className="app-download-teaser-section">
+            <PromoBanner
+              actions={
+                <>
+                  <a
+                    className="btn btn-primary"
+                    download={APP_DOWNLOAD_FILE_NAME}
+                    href={appDownloadUrl}
+                    onClick={() => trackAppDownloadClick({ source: 'home-download-teaser' })}
+                  >
+                    <Download size={16} />
+                    {APP_DOWNLOAD_LABEL}
+                  </a>
+                  <Link className="btn btn-secondary" to={APP_DOWNLOAD_PAGE_PATH}>
+                    <Smartphone size={16} />
+                    Preview the app
+                  </Link>
+                </>
+              }
+              className="app-download-teaser"
+              description={`Install the newest Android build to try the redesigned ${businessName} experience with faster browsing, smarter cart flow, and cleaner tracking.`}
+              eyebrow="Download our app"
+              extraContent={
+                <div className="app-section-block">
+                  <div className="app-home-status-meta">
+                    <span className="hero-chip">
+                      <Smartphone size={14} />
+                      Native Android app
+                    </span>
+                    <span className="hero-chip">
+                      <Download size={14} />
+                      v{APP_LATEST_VERSION}
+                    </span>
+                    <span className="hero-chip">
+                      <Clock3 size={14} />
+                      Updated {APP_RELEASE_DATE}
+                    </span>
+                  </div>
+                  <p className="section-heading-note">{APP_DOWNLOAD_SUPPORT_NOTE}</p>
+                </div>
+              }
+              title={`Take the latest ${businessName} build with you`}
+              tone="warning"
+            />
+          </section>
 
           {productRails.map((rail) => (
             <HorizontalProductRow

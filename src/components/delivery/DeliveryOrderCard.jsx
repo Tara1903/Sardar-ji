@@ -19,17 +19,20 @@ export const DeliveryOrderCard = ({
     <article className={`panel-card delivery-order-card ${isAppVariant ? 'delivery-order-card-app' : ''}`.trim()}>
       <div className="space-between">
         <div>
-          <p className="eyebrow">{order.orderNumber}</p>
+          <p className="eyebrow">Assigned order</p>
           <h3>{order.customerName}</h3>
+          <strong className="delivery-order-number">{order.orderNumber}</strong>
         </div>
         <span className={`status-pill status-${order.status.toLowerCase().replace(/\s+/g, '-')}`}>{order.status}</span>
       </div>
 
-      <p>{order.address.fullAddress}</p>
-      <p>
-        {order.address.landmark} • {order.address.pincode}
-      </p>
-      <p>Customer phone: {order.customerPhone}</p>
+      <div className="delivery-order-route">
+        <p>{order.address.fullAddress}</p>
+        <p>
+          {order.address.landmark} • {order.address.pincode}
+        </p>
+        <p>Customer phone: {order.customerPhone}</p>
+      </div>
 
       <div className="order-meta-grid">
         <div>

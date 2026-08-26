@@ -11,8 +11,9 @@ import { OrderTimeline } from '../components/order/OrderTimeline';
 import { ReviewRequestCard } from '../components/order/ReviewRequestCard';
 import { TrackingMap } from '../components/order/TrackingMap';
 import { SeoMeta } from '../components/seo/SeoMeta';
+import { useAppData } from '../contexts/AppDataContext';
 import { CONTENT_FADE_VARIANTS, CONTENT_STACK_VARIANTS, SURFACE_REVEAL_VARIANTS } from '../motion/variants';
-import { formatDateTime, formatEtaLabel } from '../utils/format';
+import { formatCurrency, formatDateTime, formatEtaLabel } from '../utils/format';
 import { STORE_GOOGLE_REVIEW_URL } from '../utils/storefront';
 
 const readTrackingCache = (orderId) => {
@@ -48,6 +49,7 @@ const writeTrackingCache = (orderId, payload) => {
 export const TrackOrderPage = () => {
   const { orderId } = useParams();
   const location = useLocation();
+  const { appConfig } = useAppData();
   const cachedTracking = readTrackingCache(orderId);
   const [order, setOrder] = useState(cachedTracking || null);
   const [error, setError] = useState('');
@@ -130,70 +132,157 @@ export const TrackOrderPage = () => {
     return <Loader message="Fetching live order updates..." />;
   }
 
+  const orderItems = order.items || [];
+  const deliveryAddress =
+    order.address?.fullAddress ||
+    'Delivery address syncs as soon as the order detail payload is available.';
+  const driverName = order.assignedDeliveryBoyName || 'Delivery partner';
+  const premiumCopy = appConfig?.copy || {};
+  const etaLabel = formatEtaLabel(order.estimatedDeliveryAt);
+  const etaHeadline =
+    etaLabel === 'Arriving soon'
+      ? 'Arriving shortly'
+      : etaLabel === 'ETA updating'
+        ? 'Delivery ETA updating'
+        : `Arriving in ${etaLabel}`;
+
   return (
     <PageTransition>
       <SeoMeta noIndex path={`/track/${orderId}`} title={`Track Order ${order.orderNumber}`} />
       <section className="section first-section">
-        <div className="container tracking-layout">
+        <div className="container tracking-layout tracking-saffron-stack">
+          {location.state?.justPlaced ? (
+            <PromoBanner
+              className="tracking-success-banner"
+              description={`Order ${location.state.orderNumber || ''} is now being tracked live.`.trim()}
+              eyebrow="Order live"
+              title="Your order has been placed successfully"
+              tone="success"
+            />
+          ) : null}
+
           <motion.div
             animate="show"
-            className="panel-card tracking-main-panel"
+            className="panel-card tracking-saffron-hero"
             initial="hidden"
             variants={SURFACE_REVEAL_VARIANTS}
           >
-            {location.state?.justPlaced ? (
-              <PromoBanner
-                className="tracking-success-banner"
-                description={`Order ${location.state.orderNumber || ''} is now being tracked live.`.trim()}
-                eyebrow="Order live"
-                title="Your order has been placed successfully"
-                tone="success"
-              />
-            ) : null}
+            <div className="tracking-saffron-map">
+              <TrackingMap location={order.tracking?.currentLocation} />
+            </div>
             <motion.div
               animate="show"
-              className="tracking-header-stack"
+              className="tracking-saffron-summary"
               initial="hidden"
               variants={CONTENT_STACK_VARIANTS}
             >
-              <motion.div className="tracking-heading-row" variants={CONTENT_FADE_VARIANTS}>
+              <motion.div className="tracking-saffron-headline" variants={CONTENT_FADE_VARIANTS}>
                 <div>
-                  <p className="eyebrow">Tracking #{order.orderNumber}</p>
-                  <h1>{order.status}</h1>
+                  <p className="eyebrow">
+                    {premiumCopy.trackingLabel || 'Live route'} • Order #{order.orderNumber}
+                  </p>
+                  <h1>{etaHeadline}</h1>
+                  <p>{order.status} and refreshing live every few seconds.</p>
                 </div>
                 <div className="tracking-status-pills">
                   <span className="tracking-status-pill is-live">Live tracking</span>
-                  <span className="tracking-status-pill">{order.orderNumber}</span>
+                  <span className="tracking-status-pill">{order.status}</span>
+                  {order.total ? (
+                    <span className="tracking-status-pill">{formatCurrency(order.total)}</span>
+                  ) : null}
                 </div>
               </motion.div>
-              <motion.div className="order-meta-grid" variants={CONTENT_FADE_VARIANTS}>
+
+              <motion.div className="tracking-saffron-meta" variants={CONTENT_FADE_VARIANTS}>
                 <div>
                   <Clock3 size={16} />
-                  <span>
-                    ETA: {formatEtaLabel(order.estimatedDeliveryAt)} ({formatDateTime(order.estimatedDeliveryAt)})
-                  </span>
+                  <span>{formatDateTime(order.estimatedDeliveryAt)}</span>
                 </div>
                 <div>
                   <MapPinned size={16} />
-                  <span>Live updates every 4 seconds</span>
+                  <span>{deliveryAddress}</span>
+                </div>
+              </motion.div>
+
+              <motion.div className="tracking-live-rail" variants={CONTENT_FADE_VARIANTS}>
+                <div>
+                  <span>Refresh cadence</span>
+                  <strong>Every 4 seconds</strong>
+                </div>
+                <div>
+                  <span>Milestone flow</span>
+                  <strong>Prep, dispatch, doorstep</strong>
+                </div>
+                <div>
+                  <span>Delivery mode</span>
+                  <strong>{order.paymentMethod || 'Standard order'}</strong>
+                </div>
+              </motion.div>
+
+              <motion.div className="tracking-driver-card" variants={CONTENT_FADE_VARIANTS}>
+                <div className="tracking-driver-avatar">
+                  {(driverName || 'SJ')
+                    .split(' ')
+                    .filter(Boolean)
+                    .slice(0, 2)
+                    .map((part) => part[0])
+                    .join('')}
+                </div>
+                <div>
+                  <strong>{driverName}</strong>
+                  <p>{order.status === 'Delivered' ? 'Completed successfully' : 'Following the quickest route to you'}</p>
                 </div>
               </motion.div>
             </motion.div>
-            <OrderTimeline currentStatus={order.status} timeline={order.tracking?.timeline} />
           </motion.div>
-          <motion.div
-            animate="show"
-            className="panel-card tracking-panel"
-            initial="hidden"
-            variants={SURFACE_REVEAL_VARIANTS}
-          >
-            <div className="tracking-panel-copy">
-              <p className="eyebrow">Delivery map</p>
-              <h3>Watch your order get closer</h3>
-              <p>The rider location refreshes automatically, so you know exactly when to head to the door.</p>
-            </div>
-            <TrackingMap location={order.tracking?.currentLocation} />
-          </motion.div>
+
+          <div className="tracking-saffron-grid">
+            <motion.div
+              animate="show"
+              className="panel-card tracking-main-panel"
+              initial="hidden"
+              variants={SURFACE_REVEAL_VARIANTS}
+            >
+              <div className="tracking-panel-copy">
+                <p className="eyebrow">Order progress</p>
+                <h3>Watch each milestone clear</h3>
+                <p>Preparation, dispatch, and last-mile updates stay in one timeline.</p>
+              </div>
+              <OrderTimeline currentStatus={order.status} timeline={order.tracking?.timeline} />
+            </motion.div>
+
+            <motion.div
+              animate="show"
+              className="panel-card tracking-panel tracking-order-summary-panel"
+              initial="hidden"
+              variants={SURFACE_REVEAL_VARIANTS}
+            >
+              <div className="tracking-panel-copy">
+                <p className="eyebrow">Order summary</p>
+                <h3>{orderItems.length} item{orderItems.length === 1 ? '' : 's'} in this delivery</h3>
+                <p>Total payable {order.total ? `• ${formatCurrency(order.total)}` : ''}</p>
+              </div>
+              <div className="tracking-order-summary-list">
+                {orderItems.slice(0, 5).map((item) => (
+                  <div className="tracking-order-summary-row" key={`${order.id}-${item.id}-${item.name}`}>
+                    <div>
+                      <strong>{item.quantity}x {item.name}</strong>
+                      {item.addonSummary ? <p>{item.addonSummary}</p> : null}
+                    </div>
+                    <span>{item.price ? formatCurrency(item.price * item.quantity) : ''}</span>
+                  </div>
+                ))}
+                {!orderItems.length ? (
+                  <div className="tracking-order-summary-row">
+                    <div>
+                      <strong>Order contents updating</strong>
+                      <p>Live tracking is available even when the item payload arrives separately.</p>
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+            </motion.div>
+          </div>
         </div>
         {order.status === 'Delivered' ? (
           <div className="container tracking-review-wrap">

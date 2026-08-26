@@ -19,11 +19,19 @@ buildscript {
 
 apply from: "variables.gradle"
 
+def configuredBuildRoot = System.getenv("SJFC_ANDROID_BUILD_ROOT")
+def workspaceBuildRoot = configuredBuildRoot ? file(configuredBuildRoot) : file("${rootDir}/../gtmp/android-build")
+rootProject.layout.buildDirectory.set(workspaceBuildRoot)
+
 allprojects {
     repositories {
         google()
         mavenCentral()
     }
+}
+
+subprojects {
+    layout.buildDirectory.set(new File(workspaceBuildRoot, project.name))
 }
 
 task clean(type: Delete) {

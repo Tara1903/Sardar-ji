@@ -4,6 +4,7 @@ import { AnimatePresence } from 'framer-motion';
 import { AppShell } from './components/layout/AppShell';
 import { ProtectedRoute } from './components/common/ProtectedRoute';
 import { Loader } from './components/common/Loader';
+import { ErrorBoundary } from './components/common/ErrorBoundary';
 import { NotificationCenter } from './components/common/NotificationCenter';
 import { NativeAppBridge } from './components/common/NativeAppBridge';
 import { GoogleAnalytics } from './components/seo/GoogleAnalytics';
@@ -33,6 +34,9 @@ const TrackOrderPage = lazy(() =>
 const AuthPage = lazy(() => import('./pages/AuthPage').then((module) => ({ default: module.AuthPage })));
 const ProfilePage = lazy(() =>
   import('./pages/ProfilePage').then((module) => ({ default: module.ProfilePage })),
+);
+const SettingsPage = lazy(() =>
+  import('./pages/SettingsPage').then((module) => ({ default: module.SettingsPage })),
 );
 const SubscriptionPage = lazy(() =>
   import('./pages/SubscriptionPage').then((module) => ({ default: module.SubscriptionPage })),
@@ -151,6 +155,7 @@ const AnimatedRoutes = () => {
   const location = useLocation();
   const isNativeShell = isNativeAppShell();
 
+
   return (
     <Suspense fallback={<Loader message="Opening Sardar Ji Food Corner..." />}>
       <AnimatePresence mode="wait">
@@ -179,6 +184,14 @@ const AnimatedRoutes = () => {
               }
             />
             <Route
+              path="/order-success"
+              element={
+                <ProtectedRoute roles={['customer']}>
+                  <OrderSuccessPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
               path="/order-success/:orderId"
               element={
                 <ProtectedRoute roles={['customer']}>
@@ -192,6 +205,14 @@ const AnimatedRoutes = () => {
               element={
                 <ProtectedRoute roles={['customer']}>
                   <ProfilePage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/settings"
+              element={
+                <ProtectedRoute roles={['customer']}>
+                  <SettingsPage />
                 </ProtectedRoute>
               }
             />
@@ -252,7 +273,9 @@ export default function App() {
       <NativeOfflineNotice />
       <NativeAppUpdatePrompt />
       <NotificationCenter />
-      <AnimatedRoutes />
+      <ErrorBoundary>
+        <AnimatedRoutes />
+      </ErrorBoundary>
     </BrowserRouter>
   );
 }

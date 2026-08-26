@@ -1,6 +1,14 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Gift, ShoppingBag } from 'lucide-react';
+import {
+  Gift,
+  LogOut,
+  Mail,
+  ReceiptText,
+  Settings,
+  ShieldCheck,
+  ShoppingBag,
+} from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../api/client';
 import { PageTransition } from '../components/common/PageTransition';
@@ -21,6 +29,15 @@ import {
 import { formatCurrency, formatDateOnly, formatDateTime, initials } from '../utils/format';
 import { STORE_GOOGLE_REVIEW_URL } from '../utils/storefront';
 import { triggerNativeHaptic } from '../lib/nativeFeatures';
+
+const ACTIVE_ORDER_STATUSES = new Set([
+  'Pending',
+  'Confirmed',
+  'Preparing',
+  'Ready',
+  'On the way',
+  'Out for Delivery',
+]);
 
 const readProfileCache = (userId) => {
   if (typeof window === 'undefined' || !userId) {
@@ -55,7 +72,7 @@ const writeProfileCache = (userId, payload) => {
 export const ProfilePage = () => {
   const navigate = useNavigate();
   const { user, token, logout, refreshUser } = useAuth();
-  const { products } = useAppData();
+  const { appConfig, products } = useAppData();
   const { addItemsToCart } = useCart();
   const cachedProfile = readProfileCache(user?.id);
   const [orders, setOrders] = useState(cachedProfile?.orders || []);
@@ -120,8 +137,10 @@ export const ProfilePage = () => {
     .filter((coupon) => coupon.status === 'used')
     .reduce((total, coupon) => total + coupon.amount, 0);
   const activeSubscription = subscription?.status === 'active' && subscription?.daysLeft > 0;
+  const activeOrder = orders.find((order) => ACTIVE_ORDER_STATUSES.has(order.status));
   const latestDeliveredOrder = orders.find((order) => order.status === 'Delivered');
   const totalSpend = orders.reduce((total, order) => total + (Number(order.total) || 0), 0);
+  const premiumCopy = appConfig?.copy || {};
 
   const handleReorder = (order) => {
     const nextItems = (order.items || [])
@@ -152,15 +171,23 @@ export const ProfilePage = () => {
     <PageTransition>
       <SeoMeta noIndex path="/profile" title="Customer Profile" />
       <section className="section first-section">
-        <motion.div animate="show" className="container profile-layout profile-layout-premium" initial="hidden" variants={CONTENT_STACK_VARIANTS}>
-          <motion.div className="profile-header panel-card profile-header-premium" variants={SURFACE_REVEAL_VARIANTS}>
-            <div className="profile-header-main">
-              <div className="profile-avatar">{initials(user.name)}</div>
-              <div className="profile-header-copy">
-                <p className="eyebrow">Customer profile</p>
+        <motion.div
+          animate="show"
+          className="container profile-layout profile-hub-layout"
+          initial="hidden"
+          variants={CONTENT_STACK_VARIANTS}
+        >
+          <motion.div className="panel-card profile-hub-hero" variants={SURFACE_REVEAL_VARIANTS}>
+            <div className="profile-hub-hero-main">
+              <div className="profile-avatar profile-hub-avatar">{initials(user.name)}</div>
+              <div className="profile-hub-copy">
+                <p className="eyebrow">{premiumCopy.profileLabel || 'Membership and account'}</p>
                 <h1>{user.name}</h1>
                 <p>{user.email}</p>
               </div>
+              <Link className="icon-btn profile-hub-settings" to="/settings">
+                <Settings size={18} />
+              </Link>
             </div>
             <div className="profile-summary-pills">
               <span className="profile-summary-pill">{orders.length} orders</span>
@@ -169,98 +196,116 @@ export const ProfilePage = () => {
                 {activeSubscription ? `${subscription.daysLeft} days left` : 'Plan inactive'}
               </span>
             </div>
-            <motion.button
-              animate="rest"
-              className="btn btn-secondary"
-              initial="rest"
-              onClick={logout}
-              type="button"
-              variants={BUTTON_PRESS_VARIANTS}
-              whileHover="hover"
-              whileTap="tap"
-            >
-              Logout
-            </motion.button>
           </motion.div>
 
-          <motion.div variants={STAGGER_ITEM_VARIANTS}>
-            <ReferralProgress progress={progress} />
+          <motion.div className="profile-hub-stats" variants={CONTENT_FADE_VARIANTS}>
+            <article className="panel-card profile-stat-card">
+              <span>Wallet</span>
+              <strong>{formatCurrency(walletBalance)}</strong>
+              <p>{activeCoupons.length} active reward coupons</p>
+            </article>
+            <article className="panel-card profile-stat-card">
+              <span>Plan</span>
+              <strong>{subscription?.planName || 'Monthly Thali'}</strong>
+              <p>{activeSubscription ? `${subscription.daysLeft} days remaining` : 'Start your first monthly plan'}</p>
+            </article>
+            <article className="panel-card profile-stat-card">
+              <span>Rewards earned</span>
+              <strong>{formatCurrency(lifetimeRewards)}</strong>
+              <p>{formatCurrency(usedRewards)} already redeemed</p>
+            </article>
           </motion.div>
 
-          <motion.div className="panel-card profile-feature-card" variants={SURFACE_REVEAL_VARIANTS}>
-            <div className="section-heading compact">
-              <div>
-                <p className="eyebrow">My Subscription</p>
-                <h3>Monthly plan status</h3>
-              </div>
-              <Link className="text-link" to="/my-subscription">
-                View plan
-              </Link>
-            </div>
-            <div className="user-detail-grid">
-              <div>
-                <span>Plan</span>
-                <strong>{subscription?.planName || 'Monthly Thali'}</strong>
-              </div>
-              <div>
-                <span>Status</span>
-                <strong>{activeSubscription ? 'Active' : subscription ? 'Expired' : 'Not started'}</strong>
-              </div>
-              <div>
-                <span>Days left</span>
-                <strong>{activeSubscription ? `${subscription.daysLeft} days` : '0 days'}</strong>
-              </div>
-              <div>
-                <span>Valid till</span>
-                <strong>{subscription?.endDate ? formatDateOnly(subscription.endDate) : 'Start your plan'}</strong>
-              </div>
-            </div>
-          </motion.div>
-
-          {activeCoupons.length ? (
-            <motion.div className="panel-card profile-feature-card" variants={SURFACE_REVEAL_VARIANTS}>
+          <motion.div className="profile-hub-grid" variants={CONTENT_FADE_VARIANTS}>
+            <motion.section className="panel-card profile-hub-section" variants={SURFACE_REVEAL_VARIANTS}>
               <div className="section-heading compact">
                 <div>
-                  <p className="eyebrow">Refer & earn wallet</p>
-                  <h3>Rewards ready to use</h3>
+                  <p className="eyebrow">Quick access</p>
+                  <h2>Everything important in one tap</h2>
                 </div>
               </div>
-              <div className="user-detail-grid">
-                <div>
-                  <span>Wallet balance</span>
-                  <strong>{formatCurrency(walletBalance)}</strong>
-                </div>
-                <div>
-                  <span>Lifetime earned</span>
-                  <strong>{formatCurrency(lifetimeRewards)}</strong>
-                </div>
-                <div>
-                  <span>Used rewards</span>
-                  <strong>{formatCurrency(usedRewards)}</strong>
-                </div>
-                <div>
-                  <span>Active coupons</span>
-                  <strong>{activeCoupons.length}</strong>
-                </div>
-              </div>
-              <div className="coupon-list">
-                {activeCoupons.map((coupon, index) => (
-                  <motion.div
-                    className="coupon-row profile-coupon-row"
-                    custom={index}
-                    key={coupon.id}
-                    variants={STAGGER_ITEM_VARIANTS}
-                  >
+              <div className="profile-action-list">
+                {activeOrder ? (
+                  <Link className="profile-action-row" to={`/track/${activeOrder.id}`}>
                     <div>
-                      <strong>{coupon.code}</strong>
-                      <p>Expires {formatDateOnly(coupon.expiresAt)}</p>
+                      <strong>Track current order</strong>
+                      <p>{activeOrder.orderNumber} is {activeOrder.status}</p>
                     </div>
-                    <strong>{formatCurrency(coupon.amount)}</strong>
-                  </motion.div>
-                ))}
+                    <ReceiptText size={18} />
+                  </Link>
+                ) : null}
+                <Link className="profile-action-row" to="/my-subscription">
+                  <div>
+                    <strong>Manage subscription</strong>
+                    <p>
+                      {activeSubscription
+                        ? `Valid till ${formatDateOnly(subscription.endDate)}`
+                        : 'Pause, resume, or start a monthly plan'}
+                    </p>
+                  </div>
+                  <ShieldCheck size={18} />
+                </Link>
+                <Link className="profile-action-row" to="/settings">
+                  <div>
+                    <strong>Open settings</strong>
+                    <p>Theme, notifications, profile comfort, and support.</p>
+                  </div>
+                  <Settings size={18} />
+                </Link>
+                <a
+                  className="profile-action-row"
+                  href="mailto:support@sardarjifoodcorner.shop?subject=Sardar%20Ji%20Support"
+                >
+                  <div>
+                    <strong>Support</strong>
+                    <p>Reach the team directly if you need help with an order.</p>
+                  </div>
+                  <Mail size={18} />
+                </a>
               </div>
-            </motion.div>
-          ) : null}
+            </motion.section>
+
+            <motion.section className="panel-card profile-hub-section" variants={SURFACE_REVEAL_VARIANTS}>
+              <div className="section-heading compact">
+                <div>
+                  <p className="eyebrow">Referral progress</p>
+                  <h2>Rewards that keep stacking</h2>
+                </div>
+              </div>
+              <ReferralProgress progress={progress} />
+              {!user.referralApplied ? (
+                <div className="profile-referral-apply">
+                  <div className="profile-referral-copy">
+                    <Gift size={18} />
+                    <div>
+                      <strong>Apply a referral code</strong>
+                      <p>Unlock progress from a friend’s invite and move faster toward rewards.</p>
+                    </div>
+                  </div>
+                  <div className="inline-form">
+                    <input
+                      onChange={(event) => setReferralCode(event.target.value)}
+                      placeholder="Enter referral code"
+                      value={referralCode}
+                    />
+                    <motion.button
+                      animate="rest"
+                      className="btn btn-primary"
+                      initial="rest"
+                      onClick={handleApplyReferral}
+                      type="button"
+                      variants={BUTTON_PRESS_VARIANTS}
+                      whileHover="hover"
+                      whileTap="tap"
+                    >
+                      Apply
+                    </motion.button>
+                  </div>
+                  {error ? <p className="error-text">{error}</p> : null}
+                </div>
+              ) : null}
+            </motion.section>
+          </motion.div>
 
           {latestDeliveredOrder ? (
             <motion.div variants={SURFACE_REVEAL_VARIANTS}>
@@ -272,35 +317,7 @@ export const ProfilePage = () => {
             </motion.div>
           ) : null}
 
-          {!user.referralApplied ? (
-            <motion.div className="panel-card profile-feature-card" variants={SURFACE_REVEAL_VARIANTS}>
-              <div className="space-between">
-                <div>
-                  <p className="eyebrow">Apply a referral</p>
-                  <h3>Unlock progress from a friend’s code</h3>
-                </div>
-                <Gift size={18} />
-              </div>
-              <div className="inline-form">
-                <input onChange={(event) => setReferralCode(event.target.value)} placeholder="Enter referral code" value={referralCode} />
-                <motion.button
-                  animate="rest"
-                  className="btn btn-primary"
-                  initial="rest"
-                  onClick={handleApplyReferral}
-                  type="button"
-                  variants={BUTTON_PRESS_VARIANTS}
-                  whileHover="hover"
-                  whileTap="tap"
-                >
-                  Apply
-                </motion.button>
-              </div>
-              {error ? <p className="error-text">{error}</p> : null}
-            </motion.div>
-          ) : null}
-
-          <motion.div className="panel-card profile-feature-card" variants={SURFACE_REVEAL_VARIANTS}>
+          <motion.div className="panel-card profile-feature-card profile-orders-section" variants={SURFACE_REVEAL_VARIANTS}>
             <div className="section-heading compact">
               <div>
                 <p className="eyebrow">Recent orders</p>
@@ -308,11 +325,11 @@ export const ProfilePage = () => {
               </div>
               <Link className="text-link" to="/menu">
                 <ShoppingBag size={16} />
-                Reorder
+                Browse menu
               </Link>
             </div>
             <div className="orders-list">
-              {orders.map((order, index) => (
+              {orders.slice(0, 6).map((order, index) => (
                 <motion.div
                   className="order-row profile-order-row"
                   custom={index}
@@ -347,6 +364,22 @@ export const ProfilePage = () => {
                 </motion.div>
               ))}
             </div>
+          </motion.div>
+
+          <motion.div className="profile-hub-footer" variants={SURFACE_REVEAL_VARIANTS}>
+            <motion.button
+              animate="rest"
+              className="btn btn-secondary"
+              initial="rest"
+              onClick={logout}
+              type="button"
+              variants={BUTTON_PRESS_VARIANTS}
+              whileHover="hover"
+              whileTap="tap"
+            >
+              <LogOut size={16} />
+              Log out
+            </motion.button>
           </motion.div>
         </motion.div>
       </section>

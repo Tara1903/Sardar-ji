@@ -34,6 +34,11 @@ export const AdminDashboardPage = () => {
   ).length;
   const handoffOrders = orders.filter((order) => order.status === 'Out for Delivery').length;
   const unavailableProducts = products.filter((product) => product.isAvailable === false).length;
+  const grossRevenue = orders.reduce((total, order) => total + (Number(order.total) || 0), 0);
+  const averageBasket = orders.length ? grossRevenue / orders.length : 0;
+  const visibilityLiveCount = visibilitySummary.filter(
+    ([key]) => settingsDraft?.storefront?.sections?.[key] !== false,
+  ).length;
 
   const referralLeaders = useMemo(
     () =>
@@ -177,6 +182,57 @@ export const AdminDashboardPage = () => {
 
   return (
     <section className="admin-dashboard-stack">
+      <div className="admin-executive-grid">
+        <article className="panel-card admin-executive-card admin-executive-card-primary">
+          <p className="eyebrow">Live operations</p>
+          <h2>What needs attention right now</h2>
+          <div className="admin-executive-metrics">
+            <div>
+              <span>Kitchen pressure</span>
+              <strong>{pendingOrders}</strong>
+            </div>
+            <div>
+              <span>Delivery handoff</span>
+              <strong>{handoffOrders}</strong>
+            </div>
+            <div>
+              <span>Paused menu items</span>
+              <strong>{unavailableProducts}</strong>
+            </div>
+          </div>
+        </article>
+
+        <article className="panel-card admin-executive-card">
+          <p className="eyebrow">Commercial pulse</p>
+          <h3>Quiet revenue view</h3>
+          <div className="admin-executive-metrics is-compact">
+            <div>
+              <span>Gross revenue</span>
+              <strong>₹{grossRevenue.toLocaleString('en-IN')}</strong>
+            </div>
+            <div>
+              <span>Average basket</span>
+              <strong>₹{Math.round(averageBasket).toLocaleString('en-IN')}</strong>
+            </div>
+          </div>
+        </article>
+
+        <article className="panel-card admin-executive-card">
+          <p className="eyebrow">Storefront posture</p>
+          <h3>Customer-facing health</h3>
+          <div className="admin-executive-metrics is-compact">
+            <div>
+              <span>Visible sections</span>
+              <strong>{visibilityLiveCount}/5</strong>
+            </div>
+            <div>
+              <span>Discovery links</span>
+              <strong>{googleBusiness.menuUrl && googleBusiness.orderUrl ? 'Ready' : 'Incomplete'}</strong>
+            </div>
+          </div>
+        </article>
+      </div>
+
       <div className="metrics-grid admin-metrics-grid">
         <article className="panel-card admin-stat-card">
           <LayoutDashboard size={18} />

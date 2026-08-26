@@ -1753,6 +1753,13 @@ const direct = {
       token,
     }),
 
+  createStarPayOrder: async (payload, token) =>
+    requestAppRoute('/api/starpay/create-order', {
+      method: 'POST',
+      body: payload,
+      token,
+    }),
+
   verifyRazorpayPayment: async (payload, token) =>
     requestAppRoute('/api/razorpay/verify-payment', {
       method: 'POST',
@@ -1865,5 +1872,6 @@ export const api = {
       token,
     }),
   createRazorpayOrder: (payload, token) => direct.createRazorpayOrder(payload, token),
+  createStarPayOrder: (payload, token) => direct.createStarPayOrder(payload, token),
   verifyRazorpayPayment: (payload, token) => direct.verifyRazorpayPayment(payload, token),
 };

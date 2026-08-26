@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { CheckCircle2, Clock3, MapPinned, Radar } from 'lucide-react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { api } from '../api/client';
 import { PageTransition } from '../components/common/PageTransition';
 import { EmptyState } from '../components/common/EmptyState';
@@ -10,7 +10,13 @@ import { useAuth } from '../contexts/AuthContext';
 import { formatCurrency, formatDateTime, formatEtaLabel } from '../utils/format';
 
 export const OrderSuccessPage = () => {
-  const { orderId } = useParams();
+  const { orderId: routeOrderId } = useParams();
+  const [searchParams] = useSearchParams();
+  const orderId =
+    routeOrderId ||
+    searchParams.get('order_id') ||
+    searchParams.get('orderId') ||
+    searchParams.get('id');
   const navigate = useNavigate();
   const { token } = useAuth();
   const [order, setOrder] = useState(null);
@@ -18,6 +24,11 @@ export const OrderSuccessPage = () => {
   const [redirectSeconds, setRedirectSeconds] = useState(4);
 
   useEffect(() => {
+    if (!orderId) {
+      setError('Order details not found. Please check your order in Tracking.');
+      return;
+    }
+
     const loadOrder = async () => {
       try {
         const response = await api.getOrder(orderId, token);

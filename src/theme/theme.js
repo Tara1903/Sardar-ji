@@ -3,17 +3,27 @@ import { DEFAULT_OFFERS, SPECIAL_OFFER_SUBTITLE, SPECIAL_OFFER_TITLE } from '../
 
 export const designTokens = {
   colors: {
-    primary: '#e23744',
-    secondary: '#16a34a',
-    background: '#f8fafc',
-    card: '#ffffff',
-    textPrimary: '#111827',
-    textSecondary: '#6b7280',
-    highlight: '#facc15',
+    primary: '#ca8a3c',
+    secondary: '#5d6a62',
+    background: '#f6f1ea',
+    card: '#fffaf4',
+    textPrimary: '#17181d',
+    textSecondary: '#6f716f',
+    highlight: '#ead6ae',
+    surfaceMuted: '#f0e6d8',
+    surfaceStrong: '#111318',
+    line: '#ddd2c4',
+    success: '#708d76',
+    warning: '#b88c4e',
+    danger: '#b76556',
+    info: '#687b92',
+    kitchen: '#9e6a30',
+    delivery: '#66778d',
+    live: '#d19a4a',
   },
   typography: {
-    heading: "'Inter', system-ui, sans-serif",
-    body: "'Inter', system-ui, sans-serif",
+    heading: "'Plus Jakarta Sans', system-ui, sans-serif",
+    body: "'Be Vietnam Pro', system-ui, sans-serif",
   },
   radii: {
     sm: '16px',
@@ -30,13 +40,35 @@ export const designTokens = {
 };
 
 export const defaultHeroConfig = {
-  headline: 'Hot, Fresh & Delicious Food Delivered Fast',
-  subtext: 'Enjoy premium taste from Sardar Ji Food Corner',
-  offerText: '₹299 = Free Delivery | ₹499 = Free Delivery + Free 🥭',
+  headline: 'Premium pure veg meals, delivered with quiet confidence.',
+  subtext:
+    'A calmer food-ordering experience with rich taste, faster choices, and cleaner tracking from the first tap to the doorstep.',
+  offerText: 'Free delivery from ₹299 | Premium rewards from ₹499',
   backgroundImage:
+    'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=1800&q=80',
+  primaryCta: 'Order dinner',
+  secondaryCta: 'Browse menu',
+};
+
+export const defaultHeroMedia = {
+  home:
+    'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=1800&q=80',
+  menu:
+    'https://images.unsplash.com/photo-1517244683847-7456b63c5969?auto=format&fit=crop&w=1800&q=80',
+  tracking:
+    'https://images.unsplash.com/photo-1529692236671-f1f6cf9683ba?auto=format&fit=crop&w=1800&q=80',
+  profile:
     'https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=1800&q=80',
-  primaryCta: 'Order Now',
-  secondaryCta: 'View Menu',
+};
+
+export const defaultPremiumCopy = {
+  homeEyebrow: 'Sardar Ji Signature',
+  homeTrustTitle: 'Thoughtful service, premium taste, and a cleaner order flow.',
+  rewardsTitle: 'Rewards tuned for regular customers, not noisy promotions.',
+  trackingLabel: 'Live route',
+  profileLabel: 'Membership and account',
+  adminLabel: 'Operations command',
+  deliveryLabel: 'Field workflow',
 };
 
 export const defaultPopupConfig = {
@@ -51,17 +83,18 @@ export const defaultPopupConfig = {
 };
 
 export const defaultOffersConfig = {
-  spotlightEyebrow: 'Today’s highlights',
-  spotlightTitle: 'Offers and quick reassurance that help people order faster',
-  bannerEyebrow: 'Offer of the day',
+  spotlightEyebrow: 'Value, clearly stated',
+  spotlightTitle: 'Rewards that clarify the order instead of shouting over it',
+  bannerEyebrow: 'Live order value',
   bannerTitle: SPECIAL_OFFER_TITLE,
   bannerDescription: SPECIAL_OFFER_SUBTITLE,
-  cardTitle299: '₹299 = Free Delivery (≤5km)',
-  cardDescription299: 'Stay above ₹299 and we waive delivery charges within 5 km of the store.',
-  cardTitle499: '₹499 = Free Delivery + FREE Mango Juice 🥭',
+  cardTitle299: '₹299 unlocks free delivery',
+  cardDescription299:
+    'Stay above ₹299 and delivery is waived within the standard nearby service area.',
+  cardTitle499: '₹499 unlocks the premium reward tier',
   cardDescription499:
-    'Cross ₹499 and your order unlocks both free delivery and a complimentary mango juice.',
-  deliveryMessage: 'Delivery pricing updates automatically with distance and cart value.',
+    'Cross ₹499 and we add the strongest active reward automatically, including the complimentary mango juice offer when eligible.',
+  deliveryMessage: 'Delivery value updates automatically with distance, availability, and cart total.',
 };
 
 export const defaultSectionVisibility = {
@@ -101,9 +134,11 @@ export const defaultStorefrontConfig = {
   logoLightUrl: '/brand-logo-light.png',
   logoDarkUrl: '/brand-logo-dark.png',
   hero: defaultHeroConfig,
+  heroMedia: defaultHeroMedia,
   offers: defaultOffersConfig,
   popup: defaultPopupConfig,
   reviews: defaultReviews,
+  copy: defaultPremiumCopy,
   sections: defaultSectionVisibility,
   categoryImages: {},
   productAvailabilitySchedules: {},
@@ -202,15 +237,24 @@ const lightenHex = (hex, factor = 0.14) => {
 };
 
 const createDarkPalette = (theme) => ({
-  background: mixHex(theme.background, '#0b120f', 0.88),
-  card: mixHex(theme.card, '#131d19', 0.9),
-  textPrimary: '#f4f7f2',
-  textSecondary: '#a8b4aa',
-  line: 'rgba(244, 247, 242, 0.12)',
+  background: mixHex(theme.background, '#101217', 0.92),
+  card: mixHex(theme.card, '#171a20', 0.9),
+  textPrimary: '#f4efe8',
+  textSecondary: '#b3aba1',
+  line: 'rgba(244, 239, 232, 0.12)',
   primary: lightenHex(theme.primary, 0.08),
   primaryStrong: lightenHex(darkenHex(theme.primary, 0.1), 0.04),
-  secondary: lightenHex(theme.secondary, 0.08),
+  secondary: lightenHex(theme.secondary, 0.04),
   highlight: lightenHex(theme.highlight, 0.02),
+  surfaceMuted: mixHex(theme.surfaceMuted || theme.background, '#242831', 0.72),
+  surfaceStrong: '#f6f1ea',
+  success: lightenHex(theme.success || '#708d76', 0.08),
+  warning: lightenHex(theme.warning || '#b88c4e', 0.08),
+  danger: lightenHex(theme.danger || '#b76556', 0.08),
+  info: lightenHex(theme.info || '#687b92', 0.08),
+  kitchen: lightenHex(theme.kitchen || '#9e6a30', 0.08),
+  delivery: lightenHex(theme.delivery || '#66778d', 0.08),
+  live: lightenHex(theme.live || theme.primary, 0.08),
 });
 
 export const mergeTheme = (theme = {}) => ({
@@ -239,6 +283,10 @@ export const mergeStorefrontConfig = (storefront = {}) => {
       ...defaultHeroConfig,
       ...(storefront.hero || {}),
     },
+    heroMedia: {
+      ...defaultHeroMedia,
+      ...(storefront.heroMedia || {}),
+    },
     offers: {
       ...defaultOffersConfig,
       ...(storefront.offers || {}),
@@ -246,6 +294,10 @@ export const mergeStorefrontConfig = (storefront = {}) => {
     popup: {
       ...defaultPopupConfig,
       ...(storefront.popup || {}),
+    },
+    copy: {
+      ...defaultPremiumCopy,
+      ...(storefront.copy || {}),
     },
     reviews:
       storefront.reviews?.length
@@ -278,21 +330,27 @@ export const getThemeCssVariables = (theme = designTokens.colors) => {
   return {
     '--theme-bg-light': mergedTheme.background,
     '--theme-surface-light': mergedTheme.card,
-    '--theme-surface-muted-light': rgba(mergedTheme.primary, 0.06),
-    '--theme-surface-strong-light': mergedTheme.textPrimary,
+    '--theme-surface-muted-light': mergedTheme.surfaceMuted || rgba(mergedTheme.primary, 0.06),
+    '--theme-surface-strong-light': mergedTheme.surfaceStrong || mergedTheme.textPrimary,
     '--theme-text-light': mergedTheme.textPrimary,
     '--theme-muted-light': mergedTheme.textSecondary,
-    '--theme-line-light': rgba(mergedTheme.textPrimary, 0.08),
+    '--theme-line-light': mergedTheme.line || rgba(mergedTheme.textPrimary, 0.08),
     '--theme-brand-light': mergedTheme.primary,
     '--theme-brand-strong-light': darkenHex(mergedTheme.primary),
     '--theme-brand-secondary-light': mergedTheme.secondary,
     '--theme-accent-light': mergedTheme.highlight,
     '--theme-accent-soft-light': rgba(mergedTheme.highlight, 0.18),
-    '--theme-danger-light': '#b91c1c',
+    '--theme-success-light': mergedTheme.success || '#708d76',
+    '--theme-warning-light': mergedTheme.warning || '#b88c4e',
+    '--theme-danger-light': mergedTheme.danger || '#b76556',
+    '--theme-info-light': mergedTheme.info || '#687b92',
+    '--theme-kitchen-light': mergedTheme.kitchen || '#9e6a30',
+    '--theme-delivery-light': mergedTheme.delivery || '#66778d',
+    '--theme-live-light': mergedTheme.live || mergedTheme.primary,
     '--theme-bg-dark': darkTheme.background,
     '--theme-surface-dark': darkTheme.card,
-    '--theme-surface-muted-dark': rgba(mergedTheme.primary, 0.18),
-    '--theme-surface-strong-dark': darkTheme.textPrimary,
+    '--theme-surface-muted-dark': darkTheme.surfaceMuted,
+    '--theme-surface-strong-dark': darkTheme.surfaceStrong,
     '--theme-text-dark': darkTheme.textPrimary,
     '--theme-muted-dark': darkTheme.textSecondary,
     '--theme-line-dark': darkTheme.line,
@@ -301,7 +359,13 @@ export const getThemeCssVariables = (theme = designTokens.colors) => {
     '--theme-brand-secondary-dark': darkTheme.secondary,
     '--theme-accent-dark': darkTheme.highlight,
     '--theme-accent-soft-dark': rgba(darkTheme.highlight, 0.24),
-    '--theme-danger-dark': '#f87171',
+    '--theme-success-dark': darkTheme.success,
+    '--theme-warning-dark': darkTheme.warning,
+    '--theme-danger-dark': darkTheme.danger,
+    '--theme-info-dark': darkTheme.info,
+    '--theme-kitchen-dark': darkTheme.kitchen,
+    '--theme-delivery-dark': darkTheme.delivery,
+    '--theme-live-dark': darkTheme.live,
     '--shadow': designTokens.shadows.medium,
     '--shadow-soft': designTokens.shadows.soft,
     '--radius-xl': designTokens.radii.xl,
@@ -366,10 +430,12 @@ export const createAppConfig = ({ categories = [], products = [], settings = nul
     logoLightUrl: storefront.logoLightUrl,
     logoDarkUrl: storefront.logoDarkUrl,
     hero: storefront.hero,
+    heroMedia: storefront.heroMedia,
     offers: {
       ...storefront.offers,
       cards,
     },
+    copy: storefront.copy,
     categories: categories.map((category) => ({
       ...category,
       image: getCategoryImage(category, storefront),

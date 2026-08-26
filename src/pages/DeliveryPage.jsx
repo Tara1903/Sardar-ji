@@ -311,12 +311,12 @@ export const DeliveryPage = () => {
   return (
     <div className="panel-page">
       <SeoMeta noIndex path="/delivery" title="Delivery Panel" />
-      <header className="panel-header">
+      <header className="panel-header delivery-panel-header">
         <div>
           <BrandLockup className="panel-brand" compact linkTo="/" showTagline={false} />
-          <p className="eyebrow">Delivery panel</p>
+          <p className="eyebrow">Delivery workflow</p>
           <h1>Welcome, {user.name}</h1>
-          <p>Assigned orders, customer addresses, and live GPS sharing in one place.</p>
+          <p>Next action, route progress, and customer contact stay in the first viewport.</p>
         </div>
         <div className="panel-header-actions">
           <ThemeSwitcher compact label="Delivery theme" />
@@ -328,6 +328,34 @@ export const DeliveryPage = () => {
       </header>
 
       <main className="panel-content">
+        <section className="delivery-priority-strip">
+          <article className="panel-card delivery-priority-card">
+            <p className="eyebrow">Next route</p>
+            <h2>
+              {filteredOrders[0]?.orderNumber || 'No active route'}
+            </h2>
+            <p>
+              {filteredOrders[0]
+                ? `${filteredOrders[0].customerName} • ${filteredOrders[0].address?.fullAddress || 'Address syncing'}`
+                : 'When a new assignment comes in, it will surface here first.'}
+            </p>
+          </article>
+
+          <div className="delivery-filter-row" role="tablist" aria-label="Delivery queues">
+            {DELIVERY_APP_FILTERS.map((filter) => (
+              <button
+                aria-pressed={activeFilter === filter.id}
+                className={`quick-chip ${activeFilter === filter.id ? 'active' : ''}`.trim()}
+                key={filter.id}
+                onClick={() => setActiveFilter(filter.id)}
+                type="button"
+              >
+                {filter.label}
+              </button>
+            ))}
+          </div>
+        </section>
+
         <section className="metrics-grid admin-metrics-grid">
           <article className="panel-card">
             <PackageOpen size={18} />
@@ -354,7 +382,7 @@ export const DeliveryPage = () => {
         {error ? <p className="error-text spaced">{error}</p> : null}
 
         <section className="delivery-grid">
-          {orders.map((order) => (
+          {filteredOrders.map((order) => (
             <DeliveryOrderCard
               key={order.id}
               onStartTracking={setTrackingOrderId}

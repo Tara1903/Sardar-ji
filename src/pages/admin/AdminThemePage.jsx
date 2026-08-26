@@ -2,11 +2,35 @@ import { Brush } from 'lucide-react';
 import { useAdmin } from '../../contexts/AdminContext';
 
 const themeFields = [
-  ['primary', 'Primary color'],
-  ['secondary', 'Secondary color'],
-  ['highlight', 'Highlight color'],
-  ['background', 'Background color'],
-  ['card', 'Card color'],
+  ['primary', 'Saffron accent'],
+  ['secondary', 'Operational secondary'],
+  ['highlight', 'Warm highlight'],
+  ['background', 'App background'],
+  ['card', 'Primary surface'],
+  ['surfaceMuted', 'Muted surface'],
+  ['line', 'Border line'],
+  ['success', 'Success'],
+  ['warning', 'Warning'],
+  ['danger', 'Danger'],
+  ['delivery', 'Delivery status'],
+  ['kitchen', 'Kitchen status'],
+];
+
+const heroMediaFields = [
+  ['home', 'Home hero image'],
+  ['menu', 'Menu hero image'],
+  ['tracking', 'Tracking hero image'],
+  ['profile', 'Profile hero image'],
+];
+
+const copyFields = [
+  ['homeEyebrow', 'Home eyebrow'],
+  ['homeTrustTitle', 'Home trust title'],
+  ['rewardsTitle', 'Rewards title'],
+  ['trackingLabel', 'Tracking label'],
+  ['profileLabel', 'Profile label'],
+  ['adminLabel', 'Admin label'],
+  ['deliveryLabel', 'Delivery label'],
 ];
 
 export const AdminThemePage = () => {
@@ -17,6 +41,8 @@ export const AdminThemePage = () => {
   }
 
   const theme = settingsDraft.storefront?.theme || {};
+  const heroMedia = settingsDraft.storefront?.heroMedia || {};
+  const copy = settingsDraft.storefront?.copy || {};
   const hasThemeSpecificLogos =
     Boolean(settingsDraft.storefront?.logoLightUrl) || Boolean(settingsDraft.storefront?.logoDarkUrl);
   const sharedLogoUrl =
@@ -41,12 +67,12 @@ export const AdminThemePage = () => {
   };
 
   return (
-    <section className="admin-page-grid">
+    <section className="admin-dashboard-stack">
       <article className="panel-card admin-card-section">
         <div className="section-heading compact">
           <div>
-            <p className="eyebrow">Theme settings</p>
-            <h2>Update colors across the website</h2>
+            <p className="eyebrow">Brand system</p>
+            <h2>Premium palette, logos, photography, and copy</h2>
           </div>
           <Brush size={18} />
         </div>
@@ -122,6 +148,54 @@ export const AdminThemePage = () => {
           ))}
         </div>
 
+        <div className="admin-form-stack">
+          <div className="section-heading compact">
+            <div>
+              <p className="eyebrow">Hero media</p>
+              <h3>Use real photography across customer surfaces</h3>
+            </div>
+          </div>
+
+          {heroMediaFields.map(([key, label]) => (
+            <label key={key}>
+              {label}
+              <input
+                onChange={(event) =>
+                  updateStorefrontSection('heroMedia', (current) => ({
+                    ...current,
+                    [key]: event.target.value,
+                  }))
+                }
+                value={heroMedia[key] || ''}
+              />
+            </label>
+          ))}
+        </div>
+
+        <div className="admin-form-stack">
+          <div className="section-heading compact">
+            <div>
+              <p className="eyebrow">Premium copy</p>
+              <h3>Shared language across customer, admin, and delivery</h3>
+            </div>
+          </div>
+
+          {copyFields.map(([key, label]) => (
+            <label key={key}>
+              {label}
+              <input
+                onChange={(event) =>
+                  updateStorefrontSection('copy', (current) => ({
+                    ...current,
+                    [key]: event.target.value,
+                  }))
+                }
+                value={copy[key] || ''}
+              />
+            </label>
+          ))}
+        </div>
+
         <div className="admin-button-stack">
           <button
             className="btn btn-primary"
@@ -138,7 +212,7 @@ export const AdminThemePage = () => {
         <div className="section-heading compact">
           <div>
             <p className="eyebrow">Preview palette</p>
-            <h2>Logo and palette preview</h2>
+            <h2>Logo, palette, and media preview</h2>
           </div>
         </div>
 
@@ -157,6 +231,18 @@ export const AdminThemePage = () => {
               <div>
                 <strong>{label}</strong>
                 <p>{theme[key] || '#000000'}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="admin-theme-preview">
+          {heroMediaFields.map(([key, label]) => (
+            <div className="admin-theme-chip" key={key}>
+              <span className="admin-theme-swatch admin-theme-swatch-image" />
+              <div>
+                <strong>{label}</strong>
+                <p>{heroMedia[key] || 'Not set'}</p>
               </div>
             </div>
           ))}

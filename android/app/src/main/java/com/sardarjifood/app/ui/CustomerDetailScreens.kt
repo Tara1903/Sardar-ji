@@ -1,11 +1,13 @@
 package com.sardarjifood.app.ui
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -48,6 +50,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
@@ -61,6 +64,7 @@ import com.sardarjifood.app.data.computePricing
 import com.sardarjifood.app.data.createInitialAddonSelection
 import com.sardarjifood.app.data.isAddonSelectionComplete
 import com.sardarjifood.app.data.repository.RazorpayCheckoutPayload
+import com.sardarjifood.app.data.repository.StarPayCheckoutPayload
 import com.sardarjifood.app.model.Address
 import com.sardarjifood.app.model.AppSession
 import com.sardarjifood.app.model.Product
@@ -172,13 +176,25 @@ fun AuthScreen(
     }
 
     LazyColumn(
-        modifier = Modifier.fillMaxSize(),
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .background(
+                    Brush.verticalGradient(
+                        colors =
+                            listOf(
+                                MaterialTheme.colorScheme.background,
+                                MaterialTheme.colorScheme.surface,
+                            ),
+                    ),
+                ),
         contentPadding = PaddingValues(20.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
         item {
-            ElevatedCard {
+            ElevatedCard(shape = MaterialTheme.shapes.extraLarge) {
                 Column(modifier = Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    StatusChip(label = if (state.isRegister) "Create account" else "Welcome back", tone = StatusChipTone.Warning)
                     Text(
                         if (state.isRegister) "Create your app account" else "Welcome back",
                         style = MaterialTheme.typography.headlineMedium,
@@ -340,18 +356,29 @@ fun ProductDetailRoute(
 
     Scaffold(
         bottomBar = {
-            Button(
+            PrimaryActionButton(
+                text = if (product.addonGroups.isEmpty()) "Add to cart • ${formatCurrency(product.price)}" else "Customize & add",
                 onClick = { if (product.addonGroups.isEmpty()) viewModel.addProductToCart(product) else showAddons = true },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-            ) {
-                Text(if (product.addonGroups.isEmpty()) "Add to cart • ${formatCurrency(product.price)}" else "Customize & add")
-            }
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+            )
         },
     ) { padding ->
         LazyColumn(
-            modifier = Modifier.fillMaxSize(),
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .background(
+                        Brush.verticalGradient(
+                            colors =
+                                listOf(
+                                    MaterialTheme.colorScheme.background,
+                                    MaterialTheme.colorScheme.surface,
+                                ),
+                        ),
+                    ),
             contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 18.dp + padding.calculateTopPadding(), bottom = 110.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
@@ -360,7 +387,7 @@ fun ProductDetailRoute(
             }
             item {
                 Box {
-                    SquareFoodImage(image = product.image)
+                    SquareFoodImage(image = product.image, modifier = Modifier.height(320.dp))
                     IconButton(
                         onClick = { onToggleFavorite(product.id) },
                         modifier = Modifier.align(Alignment.TopEnd),
@@ -383,9 +410,9 @@ fun ProductDetailRoute(
             }
             if (product.addonGroups.isNotEmpty()) {
                 item {
-                    ElevatedCard {
+                    ElevatedCard(shape = MaterialTheme.shapes.extraLarge) {
                         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Text("Available add-ons", fontWeight = FontWeight.Bold)
+                            SectionHeader(title = "Available add-ons", subtitle = "Customize this dish before adding it")
                             product.addonGroups.forEach { group ->
                                 Text("${group.title} • ${if (group.selectionType == "multiple") "Multiple" else "Single"}", color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
@@ -413,9 +440,11 @@ fun CheckoutRoute(
     viewModel: MainViewModel,
     onBack: () -> Unit,
     onOrderPlaced: () -> Unit,
+    onLaunchStarPay: (StarPayCheckoutPayload) -> Unit,
     onLaunchRazorpay: (RazorpayCheckoutPayload, PendingPaymentContext) -> Unit,
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val adaptiveState = rememberAdaptiveState()
     val cartLines by viewModel.cartLines.collectAsStateWithLifecycle()
     val session = state.session
     val scope = rememberCoroutineScope()
@@ -447,56 +476,164 @@ fun CheckoutRoute(
         }
     }
 
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 18.dp, bottom = 120.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp),
-    ) {
-        item { TextButton(onClick = onBack) { Text("Back") } }
-        item { Text("Checkout", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.ExtraBold) }
-        item { OutlinedTextField(value = name, onValueChange = { name = it }, modifier = Modifier.fillMaxWidth(), label = { Text("Name") }) }
-        item { OutlinedTextField(value = phone, onValueChange = { phone = it }, modifier = Modifier.fillMaxWidth(), label = { Text("Phone number") }) }
-        item { OutlinedTextField(value = fullAddress, onValueChange = { fullAddress = it }, modifier = Modifier.fillMaxWidth(), label = { Text("Full address") }) }
-        item { OutlinedTextField(value = landmark, onValueChange = { landmark = it }, modifier = Modifier.fillMaxWidth(), label = { Text("Landmark") }) }
-        item { OutlinedTextField(value = pincode, onValueChange = { pincode = it }, modifier = Modifier.fillMaxWidth(), label = { Text("Pincode") }) }
-        item { OutlinedTextField(value = note, onValueChange = { note = it }, modifier = Modifier.fillMaxWidth(), label = { Text("Delivery note (optional)") }) }
-        item {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                FilterChip(selected = selectedPayment == "COD", onClick = { selectedPayment = "COD" }, label = { Text("Cash on delivery") })
-                FilterChip(selected = selectedPayment == "ONLINE", onClick = { selectedPayment = "ONLINE" }, label = { Text("Pay online") })
-            }
-        }
-        item {
-            ElevatedCard {
-                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    SummaryRow("Subtotal", formatCurrency(pricing.subtotal))
-                    SummaryRow(pricing.deliveryFeeLabel, if (pricing.deliveryFee == 0) "FREE" else formatCurrency(pricing.deliveryFee))
-                    if (pricing.discount > 0) SummaryRow("Coupon", "-${formatCurrency(pricing.discount)}")
-                    SummaryRow("Total", formatCurrency(pricing.total), highlight = true)
+    val submitCheckout: () -> Unit = {
+        val address = Address(name = name, phoneNumber = phone, fullAddress = fullAddress, landmark = landmark, pincode = pincode)
+        if (selectedPayment == "COD") {
+            viewModel.placeCashOrder(address = address, note = note)
+        } else {
+            scope.launch {
+                runCatching {
+                    viewModel.createStarPayDraft(address = address, note = note)
+                }.onSuccess { checkoutPayload ->
+                    onLaunchStarPay(checkoutPayload)
+                }.onFailure { error ->
+                    viewModel.showError(error.message ?: "Unable to start online payment.")
                 }
             }
         }
-        item {
-            Button(
-                onClick = {
-                    val address = Address(name = name, phoneNumber = phone, fullAddress = fullAddress, landmark = landmark, pincode = pincode)
-                    if (selectedPayment == "COD") {
-                        viewModel.placeCashOrder(address = address, note = note)
-                    } else {
-                        scope.launch {
-                            runCatching {
-                                viewModel.createRazorpayDraft(address = address, note = note)
-                            }.onSuccess { checkoutPayload ->
-                                onLaunchRazorpay(checkoutPayload, PendingPaymentContext(address = address, note = note, couponCode = ""))
-                            }.onFailure { error ->
-                                viewModel.showError(error.message ?: "Unable to start online payment.")
+    }
+
+    val checkoutCta = if (selectedPayment == "COD") "Place order • ${formatCurrency(pricing.total)}" else "Continue to pay • ${formatCurrency(pricing.total)}"
+
+    AppScaffold(
+        title = "Checkout",
+        subtitle = "Delivery and payment",
+        topActions = { TextButton(onClick = onBack) { Text("Back") } },
+    ) { padding ->
+        CenteredContentFrame(
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .background(
+                        Brush.verticalGradient(
+                            colors =
+                                listOf(
+                                    MaterialTheme.colorScheme.background,
+                                    MaterialTheme.colorScheme.surface,
+                                ),
+                        ),
+                    ),
+            adaptiveState = adaptiveState,
+        ) {
+            if (adaptiveState.isMediumUp) {
+                Row(
+                    modifier = Modifier.fillMaxSize().padding(horizontal = adaptiveState.horizontalPadding, vertical = 18.dp),
+                    horizontalArrangement = Arrangement.spacedBy(adaptiveState.paneSpacing),
+                ) {
+                    LazyColumn(
+                        modifier = Modifier.weight(1.15f).fillMaxHeight(),
+                        contentPadding = PaddingValues(bottom = 32.dp),
+                        verticalArrangement = Arrangement.spacedBy(14.dp),
+                    ) {
+                        item {
+                            ElevatedCard(shape = MaterialTheme.shapes.extraLarge) {
+                                Column(modifier = Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    StatusChip(label = "Secure checkout", tone = StatusChipTone.Warning)
+                                    Text("Checkout", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.ExtraBold)
+                                    Text("Delivery details, payment, and totals in one clean flow.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                            }
+                        }
+                        item { OutlinedTextField(value = name, onValueChange = { name = it }, modifier = Modifier.fillMaxWidth(), label = { Text("Name") }) }
+                        item { OutlinedTextField(value = phone, onValueChange = { phone = it }, modifier = Modifier.fillMaxWidth(), label = { Text("Phone number") }) }
+                        item { OutlinedTextField(value = fullAddress, onValueChange = { fullAddress = it }, modifier = Modifier.fillMaxWidth(), label = { Text("Full address") }) }
+                        item { OutlinedTextField(value = landmark, onValueChange = { landmark = it }, modifier = Modifier.fillMaxWidth(), label = { Text("Landmark") }) }
+                        item { OutlinedTextField(value = pincode, onValueChange = { pincode = it }, modifier = Modifier.fillMaxWidth(), label = { Text("Pincode") }) }
+                        item { OutlinedTextField(value = note, onValueChange = { note = it }, modifier = Modifier.fillMaxWidth(), label = { Text("Delivery note (optional)") }) }
+                        item {
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                FilterChip(selected = selectedPayment == "COD", onClick = { selectedPayment = "COD" }, label = { Text("Cash on delivery") })
+                                FilterChip(selected = selectedPayment == "ONLINE", onClick = { selectedPayment = "ONLINE" }, label = { Text("Pay online") })
                             }
                         }
                     }
-                },
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Text(if (selectedPayment == "COD") "Place order • ${formatCurrency(pricing.total)}" else "Continue to pay • ${formatCurrency(pricing.total)}")
+
+                    Column(
+                        modifier = Modifier.weight(0.85f),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        ElevatedCard(shape = MaterialTheme.shapes.extraLarge) {
+                            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                SummaryRow("Subtotal", formatCurrency(pricing.subtotal))
+                                SummaryRow(pricing.deliveryFeeLabel, if (pricing.deliveryFee == 0) "FREE" else formatCurrency(pricing.deliveryFee))
+                                if (pricing.discount > 0) SummaryRow("Coupon", "-${formatCurrency(pricing.discount)}")
+                                SummaryRow("Total", formatCurrency(pricing.total), highlight = true)
+                            }
+                        }
+                        ElevatedCard(shape = MaterialTheme.shapes.extraLarge) {
+                            Column(modifier = Modifier.fillMaxWidth().padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                                StatusChip(label = if (selectedPayment == "COD") "Pay on delivery" else "Online payment", tone = StatusChipTone.Success)
+                                PrimaryActionButton(
+                                    text = checkoutCta,
+                                    onClick = submitCheckout,
+                                    modifier = Modifier.fillMaxWidth(),
+                                    loading = state.processingCheckout,
+                                )
+                            }
+                        }
+                    }
+                }
+            } else {
+                Box(modifier = Modifier.fillMaxSize()) {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(start = adaptiveState.horizontalPadding, end = adaptiveState.horizontalPadding, top = 18.dp, bottom = 220.dp),
+                        verticalArrangement = Arrangement.spacedBy(14.dp),
+                    ) {
+                        item {
+                            ElevatedCard(shape = MaterialTheme.shapes.extraLarge) {
+                                Column(modifier = Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    StatusChip(label = "Secure checkout", tone = StatusChipTone.Warning)
+                                    Text("Checkout", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.ExtraBold)
+                                    Text("Delivery details, payment, and totals in one clean flow.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                            }
+                        }
+                        item { OutlinedTextField(value = name, onValueChange = { name = it }, modifier = Modifier.fillMaxWidth(), label = { Text("Name") }) }
+                        item { OutlinedTextField(value = phone, onValueChange = { phone = it }, modifier = Modifier.fillMaxWidth(), label = { Text("Phone number") }) }
+                        item { OutlinedTextField(value = fullAddress, onValueChange = { fullAddress = it }, modifier = Modifier.fillMaxWidth(), label = { Text("Full address") }) }
+                        item { OutlinedTextField(value = landmark, onValueChange = { landmark = it }, modifier = Modifier.fillMaxWidth(), label = { Text("Landmark") }) }
+                        item { OutlinedTextField(value = pincode, onValueChange = { pincode = it }, modifier = Modifier.fillMaxWidth(), label = { Text("Pincode") }) }
+                        item { OutlinedTextField(value = note, onValueChange = { note = it }, modifier = Modifier.fillMaxWidth(), label = { Text("Delivery note (optional)") }) }
+                        item {
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                FilterChip(selected = selectedPayment == "COD", onClick = { selectedPayment = "COD" }, label = { Text("Cash on delivery") })
+                                FilterChip(selected = selectedPayment == "ONLINE", onClick = { selectedPayment = "ONLINE" }, label = { Text("Pay online") })
+                            }
+                        }
+                        item {
+                            ElevatedCard(shape = MaterialTheme.shapes.extraLarge) {
+                                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                    SummaryRow("Subtotal", formatCurrency(pricing.subtotal))
+                                    SummaryRow(pricing.deliveryFeeLabel, if (pricing.deliveryFee == 0) "FREE" else formatCurrency(pricing.deliveryFee))
+                                    if (pricing.discount > 0) SummaryRow("Coupon", "-${formatCurrency(pricing.discount)}")
+                                    SummaryRow("Total", formatCurrency(pricing.total), highlight = true)
+                                }
+                            }
+                        }
+                    }
+
+                    ElevatedCard(
+                        modifier =
+                            Modifier
+                                .align(Alignment.BottomCenter)
+                                .fillMaxWidth()
+                                .padding(adaptiveState.horizontalPadding),
+                        shape = MaterialTheme.shapes.extraLarge,
+                    ) {
+                        Column(modifier = Modifier.fillMaxWidth().padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                            Text("Total", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(formatCurrency(pricing.total), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.ExtraBold)
+                            PrimaryActionButton(
+                                text = checkoutCta,
+                                onClick = submitCheckout,
+                                modifier = Modifier.fillMaxWidth(),
+                                loading = state.processingCheckout,
+                            )
+                        }
+                    }
+                }
             }
         }
     }

@@ -1,24 +1,24 @@
 const APP_DOWNLOAD_HOST = 'https://www.sardarjifoodcorner.shop';
 
 export const APP_RELEASE = Object.freeze({
-  version: '2.1.2',
-  build: 21,
+  version: '2.2.2',
+  build: 24,
   minimumSupportedBuild: 18,
   minimumSupportedVersion: '2.0.0',
   forceUpdate: false,
-  releaseDate: '26 Apr 2026',
+  releaseDate: '28 Apr 2026',
   downloadPath: '/downloads/sardar-ji-food-corner.apk',
   downloadPagePath: '/download-app',
   fileName: 'sardar-ji-food-corner.apk',
   downloadLabel: 'Download App',
   updateLabel: 'Update App',
-  supportNote: 'Android 8.0+ supported • Full native Android app • Kotlin + Jetpack Compose • Pure veg ordering app',
+  supportNote: 'Android 7.0+ supported • Signed native Android app • Kotlin + Jetpack Compose • Pure veg ordering app',
   releaseHighlights: [
-    'Customer order updates now use one unified notification pipeline across realtime, browser push, Android push, and email',
-    'Admin and delivery status changes now trigger the same backend notification orchestration, so customer alerts stay consistent from every operational flow',
-    'The native Android app now shows foreground in-app notification banners instead of relying only on background push delivery',
-    'Admins using the native app now get realtime new-order alerts with a visible in-app prompt plus beep and voice announcement fallback',
-    'FCM token refresh, logout cleanup, and deep-link routing were tightened so push opens land on the right screen more reliably',
+    'The flagship redesign now reaches customer, admin, and delivery with a quieter premium graphite, ivory, and saffron brand system',
+    'Home, menu, cart, checkout, profile, settings, and live order tracking now feel more polished with tighter hierarchy and cleaner motion',
+    'Admin operations and delivery workflows now use stronger task grouping, status clarity, and denser premium layouts',
+    'Android launcher icons and splash screens were refreshed to match the latest Sardar Ji Food Corner branding',
+    'This release also keeps the Android 16-ready native shell improvements, including edge-to-edge polish and richer order progress handling',
   ],
 });
 

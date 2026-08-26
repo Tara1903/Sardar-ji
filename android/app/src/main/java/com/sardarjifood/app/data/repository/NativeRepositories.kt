@@ -538,6 +538,37 @@ class NativeOrdersRepository(
         return getOrder(response.string("id"))
     }
 
+    override suspend fun createStarPayOrder(draft: PaymentDraft): StarPayCheckoutPayload {
+        return kotlinx.coroutines.withContext(ioDispatcher) {
+            val response =
+                callVercelFunction(
+                    path = "api/starpay/create-order",
+                    method = "POST",
+                    body =
+                        kotlinx.serialization.json.buildJsonObject {
+                            put("purpose", kotlinx.serialization.json.JsonPrimitive("food-order"))
+                            put("customerName", kotlinx.serialization.json.JsonPrimitive(draft.customerName ?: ""))
+                            put("phoneNumber", kotlinx.serialization.json.JsonPrimitive(draft.phoneNumber ?: ""))
+                            put(
+                                "payload",
+                                kotlinx.serialization.json.buildJsonObject {
+                                    put("items", serializeCartItems(draft.items))
+                                    put("address", serializeAddress(draft.address))
+                                    put("couponCode", kotlinx.serialization.json.JsonPrimitive(draft.couponCode))
+                                    put("pricing", kotlinx.serialization.json.buildJsonObject { put("distanceKm", kotlinx.serialization.json.JsonPrimitive(draft.distanceKm ?: 0.0)) })
+                                },
+                            )
+                        },
+                )
+            StarPayCheckoutPayload(
+                checkoutUrl = response.getString("checkoutUrl"),
+                orderId = response.getString("orderId"),
+                amount = response.getInt("amount"),
+                purpose = response.getString("purpose")
+            )
+        }
+    }
+
     override suspend fun createRazorpayOrder(draft: PaymentDraft): RazorpayCheckoutPayload {
         val token = requireSession().accessToken
         val response =

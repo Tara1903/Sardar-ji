@@ -10,6 +10,8 @@ import android.os.Build
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
+import androidx.core.content.ContextCompat
+import androidx.core.graphics.drawable.IconCompat
 import com.sardarjifood.app.AppLog
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
@@ -47,11 +49,14 @@ class SardarJiFirebaseMessagingService : FirebaseMessagingService() {
             val title = message.notification?.title ?: message.data["title"] ?: "Sardar Ji Food Corner"
             val body = message.notification?.body ?: message.data["message"] ?: "You have a new update."
             val targetUrl = sanitizeTargetUrl(message.data["url"] ?: message.data["deep_link"])
+            val orderId = message.data["orderId"].orEmpty()
+            val orderNumber = message.data["orderNumber"].orEmpty()
+            val orderStatus = message.data["status"].orEmpty()
             val notificationEvent =
                 AppNotificationCenter.createCustomerOrderStatusEvent(
-                    orderId = message.data["orderId"].orEmpty(),
-                    orderNumber = message.data["orderNumber"].orEmpty(),
-                    status = message.data["status"].orEmpty(),
+                    orderId = orderId,
+                    orderNumber = orderNumber,
+                    status = orderStatus,
                     rawNotificationKey = message.data["notificationKey"].orEmpty(),
                 )
 
@@ -81,8 +86,7 @@ class SardarJiFirebaseMessagingService : FirebaseMessagingService() {
                 return
             }
 
-            NotificationManagerCompat.from(this).notify(
-                System.currentTimeMillis().toInt(),
+            val builder =
                 NotificationCompat.Builder(this, CHANNEL_ID)
                     .setSmallIcon(R.mipmap.ic_launcher)
                     .setContentTitle(title)
@@ -91,8 +95,21 @@ class SardarJiFirebaseMessagingService : FirebaseMessagingService() {
                     .setContentIntent(pendingIntent)
                     .setPriority(NotificationCompat.PRIORITY_HIGH)
                     .setAutoCancel(true)
-                    .build(),
-            )
+            buildProgressStyle(orderStatus)?.let { progressStyle ->
+                val brandColor = ContextCompat.getColor(this, R.color.sj_brand)
+                builder
+                    .setSubText(orderNumber.ifBlank { "Active order" })
+                    .setCategory(NotificationCompat.CATEGORY_PROGRESS)
+                    .setColor(brandColor)
+                    .setColorized(true)
+                    .setOnlyAlertOnce(true)
+                    .setOngoing(!isTerminalOrderStatus(orderStatus))
+                    .setAutoCancel(isTerminalOrderStatus(orderStatus))
+                    .setStyle(progressStyle)
+            }
+
+            val notificationId = orderId.ifBlank { targetUrl }.hashCode()
+            NotificationManagerCompat.from(this).notify(notificationId, builder.build())
             AppLog.info("PushService", "Displayed push notification for $targetUrl.")
         }.onFailure { throwable ->
             AppLog.error("PushService", "Failed while handling incoming FCM message.", throwable)
@@ -116,6 +133,45 @@ class SardarJiFirebaseMessagingService : FirebaseMessagingService() {
     companion object {
         const val CHANNEL_ID = "sjfc_orders"
     }
+
+    private fun buildProgressStyle(status: String): NotificationCompat.ProgressStyle? {
+        if (Build.VERSION.SDK_INT < 36) {
+            return null
+        }
+
+        val progress = progressForStatus(status) ?: return null
+        val brandColor = ContextCompat.getColor(this, R.color.sj_brand)
+        val progressPoints =
+            listOf(
+                NotificationCompat.ProgressStyle.Point(28).setColor(brandColor),
+                NotificationCompat.ProgressStyle.Point(70).setColor(brandColor),
+            )
+        val progressSegments =
+            listOf(
+                NotificationCompat.ProgressStyle.Segment(28).setColor(brandColor),
+                NotificationCompat.ProgressStyle.Segment(42).setColor(brandColor),
+                NotificationCompat.ProgressStyle.Segment(30).setColor(brandColor),
+            )
+
+        return NotificationCompat.ProgressStyle()
+            .setStyledByProgress(true)
+            .setProgress(progress)
+            .setProgressTrackerIcon(IconCompat.createWithResource(this, R.mipmap.ic_launcher_round))
+            .setProgressPoints(progressPoints)
+            .setProgressSegments(progressSegments)
+    }
+
+    private fun progressForStatus(status: String): Int? =
+        when (status.trim().lowercase().replace('-', '_').replace(' ', '_')) {
+            "pending", "confirmed", "accepted", "placed" -> 18
+            "preparing", "processing", "cooking", "ready" -> 52
+            "out_for_delivery", "assigned", "picked_up", "on_the_way", "nearby" -> 82
+            "delivered" -> 100
+            else -> null
+        }
+
+    private fun isTerminalOrderStatus(status: String): Boolean =
+        status.trim().lowercase() in setOf("delivered", "cancelled")
 
     private fun sanitizeTargetUrl(value: String?): String {
         val candidate = value?.trim().orEmpty()
