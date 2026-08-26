@@ -1,0 +1,32 @@
+com.getcapacitor.android.capacitor-android-lifecycle-viewmodel-2.6.2-0 C:\Users\taras\.gradle\caches\8.14.3\transforms\18267d3bd8a041cdd84c4dce03fdbb10\transformed\lifecycle-viewmodel-2.6.2\res
+com.getcapacitor.android.capacitor-android-activity-1.11.0-1 C:\Users\taras\.gradle\caches\8.14.3\transforms\1a5877995f5a941d6c74a28fdd53386f\transformed\activity-1.11.0\res
+com.getcapacitor.android.capacitor-android-lifecycle-process-2.6.2-2 C:\Users\taras\.gradle\caches\8.14.3\transforms\2104e32d1cc467f6a3321eba7e94fa90\transformed\lifecycle-process-2.6.2\res
+com.getcapacitor.android.capacitor-android-annotation-experimental-1.4.1-3 C:\Users\taras\.gradle\caches\8.14.3\transforms\2ea3bc8a58c71f15c450cf0665d58733\transformed\annotation-experimental-1.4.1\res
+com.getcapacitor.android.capacitor-android-core-runtime-2.2.0-4 C:\Users\taras\.gradle\caches\8.14.3\transforms\2f0e0b0d49edee7529bdf02e67b89a7b\transformed\core-runtime-2.2.0\res
+com.getcapacitor.android.capacitor-android-emoji2-views-helper-1.3.0-5 C:\Users\taras\.gradle\caches\8.14.3\transforms\3e2ca37d177189d147644852d7d1a928\transformed\emoji2-views-helper-1.3.0\res
+com.getcapacitor.android.capacitor-android-lifecycle-runtime-2.6.2-6 C:\Users\taras\.gradle\caches\8.14.3\transforms\437e957593b68d3d2c32a9f4f2be167f\transformed\lifecycle-runtime-2.6.2\res
+com.getcapacitor.android.capacitor-android-core-ktx-1.17.0-7 C:\Users\taras\.gradle\caches\8.14.3\transforms\673b60673be3950ca751b911fa9dceba\transformed\core-ktx-1.17.0\res
+com.getcapacitor.android.capacitor-android-appcompat-resources-1.7.1-8 C:\Users\taras\.gradle\caches\8.14.3\transforms\6a0fde67a1270082e5243ea6ef716de4\transformed\appcompat-resources-1.7.1\res
+com.getcapacitor.android.capacitor-android-lifecycle-livedata-core-2.6.2-9 C:\Users\taras\.gradle\caches\8.14.3\transforms\6d2ec15f1d7b5343b066ee70fdaa656a\transformed\lifecycle-livedata-core-2.6.2\res
+com.getcapacitor.android.capacitor-android-appcompat-1.7.1-10 C:\Users\taras\.gradle\caches\8.14.3\transforms\8352c85f8f8d79c7d02a9e08b3466561\transformed\appcompat-1.7.1\res
+com.getcapacitor.android.capacitor-android-webkit-1.14.0-11 C:\Users\taras\.gradle\caches\8.14.3\transforms\8971e3ba248f524e73b8810b4b1d3c24\transformed\webkit-1.14.0\res
+com.getcapacitor.android.capacitor-android-startup-runtime-1.1.1-12 C:\Users\taras\.gradle\caches\8.14.3\transforms\8e8d6e0fdfb8ec54ab60f5e5f8d8b4de\transformed\startup-runtime-1.1.1\res
+com.getcapacitor.android.capacitor-android-lifecycle-viewmodel-savedstate-2.6.2-13 C:\Users\taras\.gradle\caches\8.14.3\transforms\95442852057e5bfe3a889de86556aaad\transformed\lifecycle-viewmodel-savedstate-2.6.2\res
+com.getcapacitor.android.capacitor-android-lifecycle-livedata-2.6.2-14 C:\Users\taras\.gradle\caches\8.14.3\transforms\a102161a467c31fab8dfea41195c927f\transformed\lifecycle-livedata-2.6.2\res
+com.getcapacitor.android.capacitor-android-core-1.17.0-15 C:\Users\taras\.gradle\caches\8.14.3\transforms\a36e4764cf04aab7808011d2ae3f224f\transformed\core-1.17.0\res
+com.getcapacitor.android.capacitor-android-tracing-1.2.0-16 C:\Users\taras\.gradle\caches\8.14.3\transforms\a5063865b52a0d94abac6d7469e92cb4\transformed\tracing-1.2.0\res
+com.getcapacitor.android.capacitor-android-emoji2-1.3.0-17 C:\Users\taras\.gradle\caches\8.14.3\transforms\aa1f87513e0a39f5a92239e6154c31e6\transformed\emoji2-1.3.0\res
+com.getcapacitor.android.capacitor-android-core-viewtree-1.0.0-18 C:\Users\taras\.gradle\caches\8.14.3\transforms\afb26774a324c3abe54721ba329aa7bd\transformed\core-viewtree-1.0.0\res
+com.getcapacitor.android.capacitor-android-core-splashscreen-1.0.1-19 C:\Users\taras\.gradle\caches\8.14.3\transforms\b56207d0a9bdd0cef4dc6d88a1495a95\transformed\core-splashscreen-1.0.1\res
+com.getcapacitor.android.capacitor-android-profileinstaller-1.4.0-20 C:\Users\taras\.gradle\caches\8.14.3\transforms\bbefbfea3f7827b8cbee1e2ce14b6b5a\transformed\profileinstaller-1.4.0\res
+com.getcapacitor.android.capacitor-android-coordinatorlayout-1.3.0-21 C:\Users\taras\.gradle\caches\8.14.3\transforms\bc22782c947a8260481e8e3935798dbd\transformed\coordinatorlayout-1.3.0\res
+com.getcapacitor.android.capacitor-android-savedstate-1.2.1-22 C:\Users\taras\.gradle\caches\8.14.3\transforms\d602d084aeaa68144bd2ddc17a76a40a\transformed\savedstate-1.2.1\res
+com.getcapacitor.android.capacitor-android-fragment-1.8.9-23 C:\Users\taras\.gradle\caches\8.14.3\transforms\f7a9719daee284264e45a525fb503ca3\transformed\fragment-1.8.9\res
+com.getcapacitor.android.capacitor-android-pngs-24 C:\Web Apps\Sardar ji\gtmp\android-build\capacitor-android\generated\res\pngs\release
+com.getcapacitor.android.capacitor-android-resValues-25 C:\Web Apps\Sardar ji\gtmp\android-build\capacitor-android\generated\res\resValues\release
+com.getcapacitor.android.capacitor-android-updated_navigation_xml-26 C:\Web Apps\Sardar ji\gtmp\android-build\capacitor-android\generated\updated_navigation_xml\release
+com.getcapacitor.android.capacitor-android-mergeReleaseResources-27 C:\Web Apps\Sardar ji\gtmp\android-build\capacitor-android\intermediates\incremental\release\mergeReleaseResources\merged.dir
+com.getcapacitor.android.capacitor-android-mergeReleaseResources-28 C:\Web Apps\Sardar ji\gtmp\android-build\capacitor-android\intermediates\incremental\release\mergeReleaseResources\stripped.dir
+com.getcapacitor.android.capacitor-android-release-29 C:\Web Apps\Sardar ji\gtmp\android-build\capacitor-android\intermediates\merged_res\release\mergeReleaseResources
+com.getcapacitor.android.capacitor-android-main-30 C:\Web Apps\Sardar ji\node_modules\@capacitor\android\capacitor\src\main\res
+com.getcapacitor.android.capacitor-android-release-31 C:\Web Apps\Sardar ji\node_modules\@capacitor\android\capacitor\src\release\res

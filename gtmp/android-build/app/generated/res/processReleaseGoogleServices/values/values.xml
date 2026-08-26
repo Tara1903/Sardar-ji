@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="gcm_defaultSenderId" translatable="false">837298853278</string>
+    <string name="google_api_key" translatable="false">AIzaSyB1zdkPmBMnTktPd2zYvAVc2E7ZV6psd2M</string>
+    <string name="google_app_id" translatable="false">1:837298853278:android:1efa81b5b90e6b64d7328f</string>
+    <string name="google_crash_reporting_api_key" translatable="false">AIzaSyB1zdkPmBMnTktPd2zYvAVc2E7ZV6psd2M</string>
+    <string name="google_storage_bucket" translatable="false">sardar-ji-food-corner.firebasestorage.app</string>
+    <string name="project_id" translatable="false">sardar-ji-food-corner</string>
+</resources>

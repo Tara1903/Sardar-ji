@@ -1,0 +1,11 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /delivery
+Disallow: /checkout
+Disallow: /profile
+Disallow: /auth
+Disallow: /cart
+Disallow: /my-subscription
+
+Sitemap: https://www.sardarjifoodcorner.shop/sitemap.xml

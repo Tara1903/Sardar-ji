@@ -1,0 +1,36 @@
+{
+    "logs": [
+        {
+            "outputFile": "com.capacitorjs.plugins.geolocation.capacitor-geolocation-release-34:/values-hdpi-v4/values-hdpi-v4.xml",
+            "map": [
+                {
+                    "source": "C:\\Users\\taras\\.gradle\\caches\\8.14.3\\transforms\\8352c85f8f8d79c7d02a9e08b3466561\\transformed\\appcompat-1.7.1\\res\\values-hdpi-v4\\values-hdpi-v4.xml",
+                    "from": {
+                        "startLines": "2",
+                        "startColumns": "4",
+                        "startOffsets": "55",
+                        "endLines": "6",
+                        "endColumns": "13",
+                        "endOffsets": "327"
+                    }
+                }
+            ]
+        },
+        {
+            "outputFile": "com.capacitorjs.plugins.geolocation.capacitor-geolocation-mergeReleaseResources-32:/values-hdpi-v4/values-hdpi-v4.xml",
+            "map": [
+                {
+                    "source": "C:\\Users\\taras\\.gradle\\caches\\8.14.3\\transforms\\8352c85f8f8d79c7d02a9e08b3466561\\transformed\\appcompat-1.7.1\\res\\values-hdpi-v4\\values-hdpi-v4.xml",
+                    "from": {
+                        "startLines": "2",
+                        "startColumns": "4",
+                        "startOffsets": "55",
+                        "endLines": "6",
+                        "endColumns": "13",
+                        "endOffsets": "327"
+                    }
+                }
+            ]
+        }
+    ]
+}

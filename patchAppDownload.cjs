@@ -1,0 +1,26 @@
+const fs = require('fs');
+const path = 'src/utils/appDownload.js';
+let content = fs.readFileSync(path, 'utf8');
+
+const updatedObject = `export const APP_RELEASE = Object.freeze({
+  version: '2.3.0',
+  build: 25,
+  minimumSupportedBuild: 18,
+  minimumSupportedVersion: '2.0.0',
+  forceUpdate: false,
+  releaseDate: '27 Aug 2026',
+  downloadPath: '/downloads/sardar-ji-food-corner.apk',
+  downloadPagePath: '/download-app',
+  fileName: 'sardar-ji-food-corner.apk',
+  downloadLabel: 'Download App',
+  updateLabel: 'Update App',
+  supportNote: 'Android 7.0+ supported • Signed native Android app • Kotlin + Jetpack Compose • Pure veg ordering app',
+  releaseHighlights: [
+    'Introduced StarPay Payment Gateway for 0% commission UPI and QR payments',
+    'Swapped out Razorpay for our very own native checkout screen',
+    'Payment workflow now supports direct deep linking back to the app on success'
+  ],
+});`;
+
+content = content.replace(/export const APP_RELEASE = Object\.freeze\(\{[\s\S]*?\}\);/, updatedObject);
+fs.writeFileSync(path, content, 'utf8');

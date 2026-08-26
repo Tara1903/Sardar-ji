@@ -1,0 +1,38 @@
+{
+    "logs": [
+        {
+            "outputFile": "com.sardarjifood.app-mergeReleaseResources-81:/values-v30/values-v30.xml",
+            "map": [
+                {
+                    "source": "C:\\Users\\taras\\.gradle\\caches\\8.14.3\\transforms\\317c940fee5cf08d5de8b8d79c01e9c1\\transformed\\core-splashscreen-1.2.0\\res\\values-v30\\values-v30.xml",
+                    "from": {
+                        "startLines": "2",
+                        "startColumns": "4",
+                        "startOffsets": "55",
+                        "endLines": "7",
+                        "endColumns": "12",
+                        "endOffsets": "433"
+                    },
+                    "to": {
+                        "startLines": "3",
+                        "startColumns": "4",
+                        "startOffsets": "128",
+                        "endLines": "8",
+                        "endColumns": "12",
+                        "endOffsets": "506"
+                    }
+                },
+                {
+                    "source": "C:\\Users\\taras\\.gradle\\caches\\8.14.3\\transforms\\91c4ed9bf83ae67fbb036e6a9f94f41c\\transformed\\material3-release\\res\\values-v30\\values-v30.xml",
+                    "from": {
+                        "startLines": "2",
+                        "startColumns": "4",
+                        "startOffsets": "55",
+                        "endColumns": "72",
+                        "endOffsets": "123"
+                    }
+                }
+            ]
+        }
+    ]
+}

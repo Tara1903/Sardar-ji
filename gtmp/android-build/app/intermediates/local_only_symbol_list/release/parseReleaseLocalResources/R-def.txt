@@ -1,0 +1,34 @@
+R_DEF: Internal format may change without notice
+local
+color ic_launcher_background
+color sj_background
+color sj_brand
+color sj_brand_dark
+drawable ic_launcher_background
+drawable ic_launcher_foreground
+drawable splash
+font be_vietnam_pro_bold
+font be_vietnam_pro_medium
+font be_vietnam_pro_regular
+font be_vietnam_pro_semibold
+font plus_jakarta_sans
+layout activity_main
+mipmap ic_launcher
+mipmap ic_launcher_background
+mipmap ic_launcher_foreground
+mipmap ic_launcher_round
+string app_name
+string custom_url_scheme
+string gcm_defaultSenderId
+string google_api_key
+string google_app_id
+string google_crash_reporting_api_key
+string google_storage_bucket
+string package_name
+string project_id
+string title_activity_main
+style Base.Theme.SardarJi
+style Theme.SardarJi
+style Theme.SardarJi.Splash
+xml config
+xml file_paths

@@ -1,0 +1,1 @@
+import{j as s}from"./motion-D4N-ugiO.js";const i=({title:t,description:e,action:r})=>s.jsxs("div",{className:"empty-state",children:[s.jsx("h3",{children:t}),s.jsx("p",{children:e}),r]});export{i as E};

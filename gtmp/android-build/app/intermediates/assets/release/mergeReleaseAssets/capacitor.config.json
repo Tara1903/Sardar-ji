@@ -1,0 +1,22 @@
+{
+	"appId": "com.sardarjifood.app",
+	"appName": "Sardar Ji Food Corner",
+	"webDir": "dist",
+	"plugins": {
+		"SplashScreen": {
+			"launchAutoHide": false,
+			"launchShowDuration": 0,
+			"backgroundColor": "#f7f8ef",
+			"showSpinner": false,
+			"androidScaleType": "CENTER_INSIDE",
+			"launchFadeOutDuration": 250,
+			"splashFullScreen": true,
+			"splashImmersive": true
+		},
+		"StatusBar": {
+			"overlaysWebView": false,
+			"backgroundColor": "#F7F8EF",
+			"style": "DARK"
+		}
+	}
+}

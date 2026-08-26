@@ -1,0 +1,1 @@
+import{j as a,m as t}from"./motion-D4N-ugiO.js";import{aP as n}from"./index-BCRhyQIw.js";const s=({children:i})=>a.jsx(t.main,{animate:"animate",exit:"exit",initial:"initial",variants:n,children:i});export{s as P};
