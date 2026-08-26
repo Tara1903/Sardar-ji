@@ -539,34 +539,25 @@ class NativeOrdersRepository(
     }
 
     override suspend fun createStarPayOrder(draft: PaymentDraft): StarPayCheckoutPayload {
-        return kotlinx.coroutines.withContext(ioDispatcher) {
-            val response =
-                callVercelFunction(
-                    path = "api/starpay/create-order",
-                    method = "POST",
-                    body =
-                        kotlinx.serialization.json.buildJsonObject {
-                            put("purpose", kotlinx.serialization.json.JsonPrimitive("food-order"))
-                            put("customerName", kotlinx.serialization.json.JsonPrimitive(draft.customerName ?: ""))
-                            put("phoneNumber", kotlinx.serialization.json.JsonPrimitive(draft.phoneNumber ?: ""))
-                            put(
-                                "payload",
-                                kotlinx.serialization.json.buildJsonObject {
-                                    put("items", serializeCartItems(draft.items))
-                                    put("address", serializeAddress(draft.address))
-                                    put("couponCode", kotlinx.serialization.json.JsonPrimitive(draft.couponCode))
-                                    put("pricing", kotlinx.serialization.json.buildJsonObject { put("distanceKm", kotlinx.serialization.json.JsonPrimitive(draft.distanceKm ?: 0.0)) })
-                                },
-                            )
-                        },
-                )
-            StarPayCheckoutPayload(
-                checkoutUrl = response.getString("checkoutUrl"),
-                orderId = response.getString("orderId"),
-                amount = response.getInt("amount"),
-                purpose = response.getString("purpose")
-            )
-        }
+        val token = requireSession().accessToken
+        val response =
+            siteHttpClient.request(
+                path = "api/starpay/create-order",
+                method = "POST",
+                token = token,
+                body = mapOf(
+                    "purpose" to draft.purpose,
+                    "payload" to draft.payload,
+                    "customerName" to draft.customerName,
+                    "phoneNumber" to draft.phoneNumber
+                ),
+            ).asJsonObjectOrEmpty()
+        return StarPayCheckoutPayload(
+            checkoutUrl = response.string("checkoutUrl"),
+            orderId = response.string("orderId"),
+            amount = response.get("amount")?.takeIf { !it.isJsonNull }?.asInt ?: 0,
+            purpose = response.string("purpose")
+        )
     }
 
     override suspend fun createRazorpayOrder(draft: PaymentDraft): RazorpayCheckoutPayload {

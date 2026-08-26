@@ -23,10 +23,24 @@ def configuredBuildRoot = System.getenv("SJFC_ANDROID_BUILD_ROOT")
 def workspaceBuildRoot = configuredBuildRoot ? file(configuredBuildRoot) : file("${rootDir}/../gtmp/android-build")
 rootProject.layout.buildDirectory.set(workspaceBuildRoot)
 
+
+
+
+
 allprojects {
     repositories {
         google()
         mavenCentral()
+    }
+    configurations.all {
+        resolutionStrategy {
+            force 'org.jetbrains.kotlin:kotlin-stdlib:1.9.25'
+            force 'org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.25'
+            force 'org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.9.25'
+            force 'org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.1'
+            force 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1'
+            force 'org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.8.1'
+        }
     }
 }
 

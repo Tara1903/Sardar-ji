@@ -214,9 +214,6 @@ fun NativeFoodApp(
                             onOpenProduct = { product -> navController.navigate("product/${product.id}") },
                             onOpenOrder = { orderId -> navController.navigate("order/$orderId") },
                             onCheckout = { navController.navigate("checkout") },
-                              onLaunchStarPay = { payload ->
-                                  navController.navigate("starpay_checkout?url=${java.net.URLEncoder.encode(payload.checkoutUrl, "UTF-8")}")
-                              },
                             onOpenSettings = { navController.navigate("settings") },
                         )
                     }
@@ -315,7 +312,10 @@ fun NativeFoodApp(
                             viewModel = viewModel,
                             onBack = { navController.popBackStack() },
                             onOrderPlaced = { navController.navigate("customer?tab=2") },
-                            onLaunchStarPay = { payload -> navController.navigate("starpay_checkout?url=${java.net.URLEncoder.encode(payload.checkoutUrl, \"UTF-8\")}") },
+                            onLaunchStarPay = { payload -> 
+                                val encoded = java.net.URLEncoder.encode(payload.checkoutUrl, "UTF-8")
+                                navController.navigate("starpay_checkout?url=$encoded")
+                            },
                             onLaunchRazorpay = onLaunchRazorpay,
                         )
                     }

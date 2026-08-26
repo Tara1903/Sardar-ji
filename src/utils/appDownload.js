@@ -1,24 +1,22 @@
 const APP_DOWNLOAD_HOST = 'https://www.sardarjifoodcorner.shop';
 
 export const APP_RELEASE = Object.freeze({
-  version: '2.2.2',
-  build: 24,
+  version: '2.3.0',
+  build: 25,
   minimumSupportedBuild: 18,
   minimumSupportedVersion: '2.0.0',
   forceUpdate: false,
-  releaseDate: '28 Apr 2026',
+  releaseDate: '27 Aug 2026',
   downloadPath: '/downloads/sardar-ji-food-corner.apk',
   downloadPagePath: '/download-app',
   fileName: 'sardar-ji-food-corner.apk',
   downloadLabel: 'Download App',
   updateLabel: 'Update App',
-  supportNote: 'Android 7.0+ supported • Signed native Android app • Kotlin + Jetpack Compose • Pure veg ordering app',
+  supportNote: 'Android 7.0+ supported � Signed native Android app � Kotlin + Jetpack Compose � Pure veg ordering app',
   releaseHighlights: [
-    'The flagship redesign now reaches customer, admin, and delivery with a quieter premium graphite, ivory, and saffron brand system',
-    'Home, menu, cart, checkout, profile, settings, and live order tracking now feel more polished with tighter hierarchy and cleaner motion',
-    'Admin operations and delivery workflows now use stronger task grouping, status clarity, and denser premium layouts',
-    'Android launcher icons and splash screens were refreshed to match the latest Sardar Ji Food Corner branding',
-    'This release also keeps the Android 16-ready native shell improvements, including edge-to-edge polish and richer order progress handling',
+    'Introduced StarPay Payment Gateway for 0% commission UPI and QR payments',
+    'Swapped out Razorpay for our very own native checkout screen',
+    'Payment workflow now supports direct deep linking back to the app on success'
   ],
 });
 

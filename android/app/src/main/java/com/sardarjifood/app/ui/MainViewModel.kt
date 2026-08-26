@@ -339,17 +339,33 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     suspend fun createStarPayDraft(address: Address, note: String = "", couponCode: String = "", distanceKm: Double? = null): StarPayCheckoutPayload {
         val session = _uiState.value.session ?: throw IllegalStateException("Not logged in.")
-        val draft =
-            PaymentDraft(
-                customerName = session.user.name,
-                phoneNumber = session.user.phoneNumber,
-                items = _cartLines.value,
-                address = address,
-                note = note,
-                couponCode = couponCode,
-                distanceKm = distanceKm,
-            )
+        val cart = container.cartRepository.getCurrentCart()
+        val pricing = currentCartPricing(distanceKm)
+        val payload = mapOf(
+            "items" to cart.map { item ->
+                mapOf(
+                    "id" to item.id, "lineId" to item.lineId, "quantity" to item.quantity,
+                    "price" to item.price, "basePrice" to item.basePrice, "name" to item.name,
+                    "isFreebie" to item.isFreebie, "isAddonLine" to item.isAddonLine,
+                    "parentLineId" to item.parentLineId, "parentProductId" to item.parentProductId,
+                    "groupId" to item.groupId, "groupTitle" to item.groupTitle,
+                    "addonSummary" to item.addonSummary
+                )
+            },
+            "address" to address, "note" to note, "couponCode" to couponCode,
+            "pricing" to mapOf(
+                "subtotal" to pricing.subtotal, "deliveryFee" to pricing.deliveryFee,
+                "handlingFee" to pricing.handlingFee, "discount" to pricing.discount,
+                "total" to pricing.total, "distanceKm" to pricing.distanceKm
+            ),
+            "customerPhone" to session.user.phoneNumber, "customerName" to session.user.name
+        )
 
+        val draft = PaymentDraft(
+            customerName = session.user.name,
+            phoneNumber = session.user.phoneNumber,
+            payload = payload
+        )
         return container.ordersRepository.createStarPayOrder(draft)
     }
 
