@@ -67,10 +67,16 @@ export default async function handler(req, res) {
       body: JSON.stringify({
         amount: amountInRupees,
         description: purpose === 'monthly-subscription' ? 'Monthly Thali Subscription' : 'Food delivery order',
+        businessName: 'Sardar Ji Food Corner',
+        appName: 'Sardar Ji Food Corner',
         customerName: customerName,
         customerEmail: customerEmail,
         customerPhone: customerPhone,
-        metadata: metadata,
+        metadata: {
+          ...metadata,
+          businessName: 'Sardar Ji Food Corner',
+          appName: 'Sardar Ji Food Corner',
+        },
         returnUrl: `${siteUrl}/order-success`,
         webhookUrl: `${siteUrl}/api/starpay/webhook`,
       }),
